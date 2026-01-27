@@ -73,3 +73,19 @@ bun run preview
 ```
 
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+
+## Base de données
+
+Pour créer les tables dans votre base de données MySQL locale (via XAMPP par exemple) :
+
+1. Assurez-vous que MySQL est lancé dans votre panneau de contrôle XAMPP.
+2. Créez une base de données nommée `agenda_db` (ou celle spécifiée dans le fichier `.env`).
+3. Modifiez le fichier `.env` si nécessaire pour correspondre à vos identifiants MySQL. Exemple pour XAMPP :
+   ```env
+   DATABASE_URL="mysql://root:@localhost:3306/agenda_db"
+   ```
+4. Exécutez la commande suivante pour créer les tables :
+
+```bash
+npx prisma migrate dev --name init
+```

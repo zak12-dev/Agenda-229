@@ -16,7 +16,7 @@
     "@nuxt/image": "^2.0.0",
     "@nuxt/ui": "^4.4.0",
     "@pinia/nuxt": "^0.11.3",
-    "@prisma/client": "^7.3.0",
+    "@prisma/client": "^6.19.2",
     "better-auth": "^1.4.17",
     "nuxt": "^4.3.0",
     "pinia": "^3.0.4",
@@ -31,8 +31,8 @@
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
-
     "prettier": "^3.8.1",
-    "prisma": "^7.3.0"
-  }
+    "prisma": "^6.19.2"
+  },
+  "packageManager": "pnpm@10.28.0+sha512.05df71d1421f21399e053fde567cea34d446fa02c76571441bfc1c7956e98e363088982d940465fd34480d4d90a0668bc12362f8aa88000a64e83d0b0e47be48"
 }

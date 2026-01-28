@@ -96,5 +96,16 @@ Vous pouvez vous connecter avec le compte admin créé par le seed :
 - **Password**: `Password123!`
 
 ## Conseils pour Insomnia
+
+### ⚠️ Headers Requis (IMPORTANT)
+Better Auth inclut une protection contre les attaques CSRF. Pour que les requêtes `POST` fonctionnent dans Insomnia, vous **DEVEZ** ajouter les headers suivants :
+
+1.  **Content-Type**: `application/json`
+2.  **Origin**: `http://localhost:3000` (ou l'URL de votre serveur)
+
+Si vous oubliez le header **Origin**, vous recevrez l'erreur :
+`{"code": "MISSING_OR_NULL_ORIGIN", "message": "Missing or null Origin"}`
+
+### Autres conseils
 - Assurez-vous que l'option **"Send cookies"** est activée dans vos requêtes Insomnia pour maintenir la session entre les appels.
 - Utilisez un environnement Insomnia pour stocker la `base_url`.

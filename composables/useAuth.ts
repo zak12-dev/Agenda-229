@@ -17,9 +17,9 @@ export const useAuth = () => {
       provider: "google",
     });
   };
-  
-  const loginWithGithub = async () => {
-    await authClient.signIn.social({ provider: "github" });
+
+  const loginWithFacebook = async () => {
+    await authClient.signIn.social({ provider: "facebook" });
   };
 const createUser = async (
     name: string,

@@ -23,7 +23,7 @@
         name="q"
         :placeholder="isMobile ? 'Rechercher...' : 'Rechercher un événement, un lieu, une catégorie...'"
         v-model="query"
-        class="w-full pl-10 sm:pl-12 pr-20 sm:pr-24 py-3 sm:py-4 text-sm sm:text-base text-gray-900 placeholder-gray-400 bg-white border border-gray-200 rounded-xl sm:rounded-2xl shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:shadow-md hover:border-gray-300"
+        class="w-full pl-10 sm:pl-12 pr-20 sm:pr-24 py-3 sm:py-4 text-sm sm:text-base text-gray-900 placeholder-gray-400 bg-white border border-gray-200 rounded-xl sm:rounded-full shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:shadow-md hover:border-gray-300 h-11"
         @input="onInput"
         @focus="handleFocus"
         @keydown.esc="closeSuggestions"

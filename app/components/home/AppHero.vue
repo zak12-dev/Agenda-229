@@ -9,30 +9,30 @@ const props = defineProps({
     default: () => [
       {
         id: 1,
-        title: 'Festival Électro 2026',
-        subtitle: 'Les plus grands DJs européens',
-        date: '2026-03-15',
-        location: 'Paris La Défense Arena',
-        image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1920&q=80',
+        title: 'We love eya 2026 ',
+        subtitle: 'Les plus grands DJs européens et africains réunis',
+        date: '27 Decembre 2026',
+        location: 'Cotonou, Place de l\'amazone',
+        image: '/images/weloveeya.jpeg',
         category: 'Festival'
       },
       {
         id: 2,
-        title: 'Jazz sous les Étoiles',
+        title: 'Vodoun Day ',
         subtitle: 'Une soirée inoubliable',
-        date: '2026-03-20',
-        location: 'Théâtre Antique, Lyon',
-        image: 'https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=1920&q=80',
-        category: 'Concert'
+        date: '2027-01-10',
+        location: 'Bénin, Arène de Ouidah',
+        image: '/images/vodoudays.jpeg',
+        category: 'Festival'
       },
       {
         id: 3,
-        title: 'Expo Van Gogh Immersive',
-        subtitle: 'Expérience 360° unique',
+        title: '10 ans Vano Baby',
+        subtitle: 'Concert 10 ans de carrière',
         date: '2026-03-25',
-        location: 'Grand Palais, Paris',
+        location: 'Place de l\'amazone, Cotonou',
         image: 'https://images.unsplash.com/photo-1531243269054-5ebf6f34081e?w=1920&q=80',
-        category: 'Exposition'
+        category: 'Concert'
       }
     ]
   }
@@ -105,7 +105,7 @@ onMounted(() => {
     @mouseleave="startAutoPlay"
   >
     <!-- Background avec transition -->
-    <div class="carousel-backgrounds">
+    <div class="carousel-backgrounds h-max-[100px]">
       <div
         v-for="(event, index) in featuredEvents"
         :key="event.id"
@@ -115,7 +115,7 @@ onMounted(() => {
         <NuxtImg
           :src="event.image"
           :alt="event.title"
-          class="bg-image"
+          class="bg-image "
           loading="eager"
           quality="85"
         />
@@ -126,7 +126,7 @@ onMounted(() => {
     <AppHeader />
 
     <!-- Contenu principal -->
-    <div class="hero-content" :class="{ 'hero-content--ready': isReady }">
+    <div class="hero-content " :class="{ 'hero-content--ready': isReady }">
       <div class="container">
         <!-- Event actuel -->
         <div class="event-showcase">

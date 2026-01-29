@@ -38,10 +38,10 @@ function goToSignUp() {
 }
 
 const navitems = computed<NavigationMenuItem[]>(() => [
-  { label: 'Accueil', to: '/', active: route.path === '/' },
-  { label: 'Articles', to: '/blog', active: route.path.startsWith('/blog') },
-  { label: 'Galerie', to: '/gallery', active: route.path.startsWith('/gallery') },
-  { label: 'Contact', to: '/contact', active: route.path.startsWith('/contact') },
+  
+  { label: 'Evènement', to: '/blog', active: route.path.startsWith('/blog') },
+  { label: 'Favoris', to: '/about', active: route.path === '/about', icon: 'i-lucide-heart' },
+  
 ])
 
 const dropdownitems: DropdownMenuItem[][] = [
@@ -62,7 +62,7 @@ const dropdownitems: DropdownMenuItem[][] = [
    
     ]"
   >
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-14 sm:h-16 lg:h-18">
         
         <!-- Logo Glass -->
@@ -77,7 +77,7 @@ const dropdownitems: DropdownMenuItem[][] = [
           </div>
           <span
             :class="[
-              'hidden sm:block text-base lg:text-lg font-medium tracking-tight transition-all duration-500 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600',
+              'hidden sm:block text-base lg:text-3xl font-bold tracking-tight transition-all duration-500 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600',
              
             ]"
           >
@@ -118,7 +118,7 @@ const dropdownitems: DropdownMenuItem[][] = [
           >
             <button
               :class="[
-                'flex items-center gap-2 px-4 py-2 text-sm font-light tracking-wide transition-all duration-500 bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20 rounded-full ',
+                'flex items-center gap-2 px-4 py-2 text-sm font-medium tracking-wide transition-all duration-500 bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20 rounded-full ',
               ]"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -3,11 +3,13 @@ import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { onMounted, ref } from 'vue'
 import { useToast } from '#imports'
+import { useAuth } from '../../../composables/useAuth'
 
 const toast = useToast()
 const loading = ref(false)
 
 
+const { createUser } = useAuth()
 
 const schema = z.object({
   name: z.string().min(3, 'Nom trop court'),
@@ -29,32 +31,29 @@ const state = ref({
   password: '',
   confirmPassword: ''
 })
+    
 
-async function onSubmit(event: FormSubmitEvent<Schema>) {
-  loading.value = true
+async function onSubmit() {
+  loading.value = true    
 
   try {
-    const { confirmPassword, ...data } = event.data
+    const { name, email, password, confirmPassword } = state.value
 
-    await $fetch('/api/auth/register', {
-      method: 'POST',
-      body: data
-    })
+    await createUser(name, email, password, confirmPassword)
 
     toast.add({ title: 'Compte créé avec succès', color: 'green' })
     await navigateTo('/auth/login')
 
   } catch (e: any) {
-  let message = 'Erreur lors de l’inscription'
+    let message = 'Erreur lors de l’inscription'
 
-  // Si le serveur renvoie un objet JSON
-  if (e?.data?.message) message = e.data.message
-  else if (e?.data?.error) message = e.data.error
-  // Si le serveur renvoie juste du texte
-  else if (typeof e?.data === 'string') message = e.data
+    if (e?.data?.message) message = e.data.message
+    else if (e?.data?.error) message = e.data.error
+    else if (typeof e?.data === 'string') message = e.data
 
-  toast.add({ title: message, color: 'red' })
-} finally {
+    toast.add({ title: message, color: 'red' })
+
+  } finally {
     loading.value = false
   }
 }

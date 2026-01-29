@@ -2,7 +2,7 @@ import { createAuthClient } from "better-auth/client";
 
 export const useAuth = () => {
   const authClient = createAuthClient({
-    baseURL: "http://localhost:3000",
+    baseURL: useRuntimeConfig().public.apiBase,
 
     fetchOptions: {
       credentials: "include", // indispensable pour les cookies
@@ -95,12 +95,12 @@ const createUser = async (
   return {
     session,
     loginWithGoogle,
+    loginWithFacebook,
     loginWithEmail,
     logout,
     fetchSession,
     createUser,
   };
-  return { session, loginWithGoogle, logout, fetchSession };
-
+ 
 
 };

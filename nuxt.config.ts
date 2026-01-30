@@ -10,7 +10,7 @@ export default defineNuxtConfig({
       pathPrefix: false,
     },
   ],
-  // app était mal placé (manquait une virgule après ui)
+
   app: {
     head: {
       link: [

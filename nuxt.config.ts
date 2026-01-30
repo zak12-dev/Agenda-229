@@ -29,6 +29,12 @@ export default defineNuxtConfig({
       ]
     }
   },
- 
-  
+  nitro: {
+    storage: {
+      uploads: {
+        driver: 'fs',
+        base: './public/uploads'
+      }
+    }
+  }
 })

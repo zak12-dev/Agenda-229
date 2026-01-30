@@ -4,7 +4,6 @@ import { requireAuth } from "~~/server/utils/protect";
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event);
   const id = getRouterParam(event, 'id');
-  const body = await readBody(event);
 
   if (!id) {
     throw createError({
@@ -32,6 +31,30 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // Gestion du multipart ou du JSON
+    const contentType = getHeader(event, 'content-type') || '';
+    let data: any = {};
+    let imageFile: any = null;
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await readMultipartFormData(event);
+      if (formData) {
+        for (const field of formData) {
+          if (!field.name) continue;
+          const value = field.data.toString();
+          if (field.name === 'categoryIds') {
+            try { data.categoryIds = JSON.parse(value); } catch { data.categoryIds = [value]; }
+          } else if (field.name === 'image') {
+            imageFile = field;
+          } else {
+            data[field.name] = value;
+          }
+        }
+      }
+    } else {
+      data = await readBody(event);
+    }
+
     const {
       title,
       description,
@@ -42,7 +65,14 @@ export default defineEventHandler(async (event) => {
       image,
       villeId,
       categoryIds
-    } = body;
+    } = data;
+
+    let imagePath = image;
+    if (imageFile && imageFile.filename) {
+      const fileName = `${Date.now()}-${imageFile.filename}`;
+      await useStorage('uploads').setItemRaw(fileName, imageFile.data);
+      imagePath = `/uploads/${fileName}`;
+    }
 
     const updatedEvent = await prisma.event.update({
       where: { id },
@@ -51,9 +81,9 @@ export default defineEventHandler(async (event) => {
         description,
         location,
         eventDate: eventDate ? new Date(eventDate) : undefined,
-        startDate: startDate ? new Date(startDate) : undefined,
-        endDate: endDate !== undefined ? (endDate ? new Date(endDate) : null) : undefined,
-        image,
+        startDate: startDate !== undefined ? startDate : undefined,
+        endDate: endDate !== undefined ? endDate : undefined,
+        image: imagePath,
         villeId,
         categories: categoryIds ? {
           deleteMany: {},

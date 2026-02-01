@@ -39,7 +39,7 @@ function goToSignUp() {
 
 const navitems = computed<NavigationMenuItem[]>(() => [
   
-  { label: 'Evènement', to: '/blog', active: route.path.startsWith('/blog') },
+  { label: 'Evènement', to: '/events', active: route.path.startsWith('/events') },
   { label: 'Favoris', to: '/about', active: route.path === '/about', icon: 'i-lucide-heart' },
   
 ])

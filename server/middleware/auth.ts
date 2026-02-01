@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   if (event.path.startsWith("/api/auth")) return;
 
   // Seules les pages protégées
-  const protectedPaths = ["/admin", "/user" ];
+  const protectedPaths = [ "/user" ];
   if (!protectedPaths.some(p => event.path.startsWith(p))) return;
 
   const session = await auth.api.getSession({ headers: event.node.req.headers });

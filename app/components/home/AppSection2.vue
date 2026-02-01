@@ -11,38 +11,42 @@ const props = defineProps({
         id: 1, 
         time: '19:00', 
         title: 'Concert Piano Solo',
-        venue: 'Philharmonie',
-        type: 'Musique',
+        category: 'Gastronomie',
+        date: '15 Mars ',
+        location: 'Lyon',
         availability: 'Quelques places'
       },
       { 
-        id: 2, 
-        time: '20:30', 
-        title: 'Stand-up Comedy Night',
-        venue: 'Le Rire Moderne',
-        type: 'Spectacle',
-        availability: 'Dernières places'
+        id: 1, 
+        time: '19:00', 
+        title: 'Concert Piano Solo',
+        category: 'Gastronomie',
+        date: '17 Mars ',
+        location: 'Lyon',
+        availability: 'Quelques places'
       },
-      { 
-        id: 3, 
-        time: '21:00', 
-        title: 'DJ Set Électro',
-        venue: 'La Machine',
-        type: 'Soirée',
-        availability: 'Disponible'
+     { 
+        id: 1, 
+        time: '19:00', 
+        title: 'Concert Piano Solo',
+        category: 'Gastronomie',
+        date: '25 Mars ',
+        location: 'Lyon',
+        availability: 'Quelques places'
+      }, { 
+        id: 1, 
+        time: '19:00', 
+        title: 'Concert Piano Solo',
+        category: 'Gastronomie',
+        date: '25 Mars ',
+        location: 'Lyon',
+        availability: 'Quelques places'
       }
     ]
   }
 })
 
-// Filtres
-const filters = [
-  { id: 'all', label: 'Tous', icon: '🎯' },
-  { id: 'today', label: 'Aujourd\'hui', icon: '📅' },
-  { id: 'week', label: 'Cette semaine', icon: '📆' },
-  { id: 'weekend', label: 'Ce week-end', icon: '🎉' },
-  { id: 'free', label: 'Gratuits', icon: '🎁' }
-]
+
 
 const activeFilter = ref('today')
 
@@ -56,27 +60,17 @@ const today = computed(() => {
   const date = new Date()
   return {
     day: date.toLocaleDateString('fr-FR', { weekday: 'long' }),
-    date: date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+    date: date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
   }
 })
 
 // Animation
 const isReady = ref(false)
 setTimeout(() => { isReady.value = true }, 100)
-
-// Recherche rapide
-const quickSearch = ref('')
-function handleQuickSearch() {
-  if (quickSearch.value.trim()) {
-    navigateTo(`/events?q=${quickSearch.value}`)
-  }
-}
 </script>
 
 <template>
   <section class="hero-minimal">
-    <AppHeader />
-
     <div class="hero-container" :class="{ 'hero-container--ready': isReady }">
       <div class="content-grid">
         <!-- Colonne gauche : Info + Recherche -->
@@ -90,7 +84,7 @@ function handleQuickSearch() {
             
             <h1 class="hero-title">
               Que faire
-              <span class="title-accent">ce soir</span> ?
+              <span class="title-accent">ce mois-ci</span> ?
             </h1>
             
             <p class="hero-subtitle">
@@ -98,40 +92,11 @@ function handleQuickSearch() {
             </p>
           </div>
 
-          <!-- Recherche minimaliste -->
-          <div class="search-minimal">
-            <form @submit.prevent="handleQuickSearch" class="search-form">
-              <input
-                v-model="quickSearch"
-                type="text"
-                placeholder="Rechercher un événement, lieu ou artiste..."
-                class="search-input-minimal"
-              />
-              <button type="submit" class="search-btn-minimal">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
-            </form>
-          </div>
-
-          <!-- Filtres rapides -->
-          <div class="filters-row">
-            <button
-              v-for="filter in filters"
-              :key="filter.id"
-              class="filter-chip"
-              :class="{ 'filter-chip--active': activeFilter === filter.id }"
-              @click="applyFilter(filter.id)"
-            >
-              <span class="filter-icon">{{ filter.icon }}</span>
-              <span class="filter-label">{{ filter.label }}</span>
-            </button>
-          </div>
-
+         
+         
           <!-- CTA Principal -->
           <button @click="navigateTo('/events')" class="cta-explore">
-            <span>Explorer tous les événements</span>
+            <span>Explorer tous les événements de ce mois</span>
             <svg class="cta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>
@@ -142,7 +107,7 @@ function handleQuickSearch() {
         <div class="right-column">
           <div class="timeline-card">
             <div class="timeline-header">
-              <h3 class="timeline-title">Aujourd'hui</h3>
+              <h3 class="timeline-title">{{ today.date }}</h3>
               <div class="timeline-badge">
                 {{ todayEvents.length }} événements
               </div>
@@ -150,37 +115,29 @@ function handleQuickSearch() {
 
             <div class="timeline-list">
               <div
-                v-for="(event, index) in todayEvents"
+               v-for="(event, index) in todayEvents.slice(0, 3)"
                 :key="event.id"
                 class="timeline-item"
                 :style="{ transitionDelay: `${index * 100}ms` }"
               >
                 <!-- Temps -->
-                <div class="timeline-time">
-                  <div class="time-value">{{ event.time }}</div>
+                <div class="timeline-time ">
+                  <div class="time-value ml-5">{{ event.date }} </div>
                   <div class="timeline-dot"></div>
                   <div class="timeline-line" v-if="index < todayEvents.length - 1"></div>
                 </div>
 
                 <!-- Contenu événement -->
                 <div class="timeline-content">
-                  <div class="event-type">{{ event.type }}</div>
+                  <div class="event-type">{{ event.category }}</div>
                   <h4 class="event-title-timeline">{{ event.title }}</h4>
                   <div class="event-venue">
                     <svg class="venue-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     </svg>
-                    {{ event.venue }}
+                    {{ event.location }}
                   </div>
-                  <div 
-                    class="event-availability"
-                    :class="{
-                      'availability--low': event.availability.includes('Dernières'),
-                      'availability--high': event.availability === 'Disponible'
-                    }"
-                  >
-                    {{ event.availability }}
-                  </div>
+                  
                   <button class="event-quick-action">
                     Voir les détails
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -192,24 +149,14 @@ function handleQuickSearch() {
             </div>
 
             <!-- Footer timeline -->
-            <div class="timeline-footer">
+            <div class="timeline-footer -mt-15">
               <button @click="navigateTo('/events?filter=today')" class="timeline-see-all">
                 Voir tous les événements d'aujourd'hui
               </button>
             </div>
           </div>
 
-          <!-- Stats compactes -->
-          <div class="stats-compact">
-            <div class="stat-compact">
-              <div class="stat-number-compact">2,450</div>
-              <div class="stat-label-compact">Événements ce mois</div>
-            </div>
-            <div class="stat-compact">
-              <div class="stat-number-compact">89</div>
-              <div class="stat-label-compact">Nouveautés cette semaine</div>
-            </div>
-          </div>
+          
         </div>
       </div>
     </div>

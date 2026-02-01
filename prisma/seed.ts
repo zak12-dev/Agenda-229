@@ -49,7 +49,8 @@ async function main() {
       data: {
         userId: adminUser.id,
         accountId: adminUser.email,
-        providerId: 'email',
+        providerId: 'credential',
+        password: hashedPassword,
       }
     })
 

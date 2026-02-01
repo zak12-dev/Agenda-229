@@ -16,8 +16,10 @@
     "@nuxt/image": "^2.0.0",
     "@nuxt/ui": "^4.4.0",
     "@pinia/nuxt": "^0.11.3",
+
     "@prisma/client": "^6.19.2",
     "@tailwindcss/typography": "^0.5.19",
+
     "better-auth": "^1.4.17",
     "lucide": "^0.563.0",
     "lucide-vue-next": "^0.563.0",
@@ -40,8 +42,8 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
     "prettier": "^3.8.1",
-    "prisma": "^6.19.2",
+    "prisma": "6.19.2",
     "tsx": "^4.21.0"
   },
-  "packageManager": "pnpm@10.28.0+sha512.05df71d1421f21399e053fde567cea34d446fa02c76571441bfc1c7956e98e363088982d940465fd34480d4d90a0668bc12362f8aa88000a64e83d0b0e47be48"
+  "packageManager": "pnpm@10.28.0"
 }

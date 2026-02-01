@@ -76,7 +76,7 @@ importers:
         specifier: ^3.8.1
         version: 3.8.1
       prisma:
-        specifier: ^6.19.2
+        specifier: 6.19.2
         version: 6.19.2(magicast@0.5.1)(typescript@5.9.3)
       tsx:
         specifier: ^4.21.0

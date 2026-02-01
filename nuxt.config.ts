@@ -12,7 +12,7 @@ export default defineNuxtConfig({
       pathPrefix: false,
     },
   ],
-  // app était mal placé (manquait une virgule après ui)
+
   app: {
     head: {
       link: [
@@ -31,6 +31,7 @@ export default defineNuxtConfig({
       ]
     }
   },
+
   runtimeConfig: {
     public: {
       apiBase: "http://localhost:3000",
@@ -38,4 +39,14 @@ export default defineNuxtConfig({
   },
  
   
+
+  nitro: {
+    storage: {
+      uploads: {
+        driver: 'fs',
+        base: './public/uploads'
+      }
+    }
+  }
+
 })

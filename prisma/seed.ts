@@ -38,9 +38,10 @@ async function main() {
       data: {
         name: 'Super Admin',
         email: adminEmail,
-        password: hashedPassword, // Stored in User table
+        // password: hashedPassword, // Stored in User table
         roleId: 1, // admin
         status: 'active',
+        // organizerStatus: 'approved',
         emailVerified: true,
       },
     })

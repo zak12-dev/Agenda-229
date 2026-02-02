@@ -78,7 +78,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       color: 'green',
     });
 
-    await navigateTo('/admin');
+    await navigateTo('/dashboard');
 
   } catch (error: any) {
 
@@ -171,7 +171,7 @@ onMounted(() => fetchSession())
                 autocomplete="email"
                 :disabled="loading"
                 aria-label="Email"
-                autofocus="email"
+                autofocus
               />
             </UFormGroup>
 

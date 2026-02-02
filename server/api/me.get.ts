@@ -5,6 +5,7 @@ export default defineEventHandler(async (event) => {
   const user = event.context.user;
   const session = event.context.session;
 
+  console.log("USER FROM /api/me =>", user)
   if (!user || !session) {
     return {
       user: null,

@@ -1,106 +1,144 @@
+// composables/useAuth.ts
 import { createAuthClient } from "better-auth/client";
+import { ref, computed } from "vue";
 
+// =====================
+// TYPES
+// =====================
+export interface CustomSession {
+  id: string;
+  name: string;
+  email: string;
+  emailVerified: boolean;
+  image: string | null;
+  roleId: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+type Role = "user" | "organizer" | "admin";
+
+// =====================
+// COMPOSABLE
+// =====================
 export const useAuth = () => {
   const authClient = createAuthClient({
     baseURL: useRuntimeConfig().public.apiBase,
-
-    fetchOptions: {
-      credentials: "include", // indispensable pour les cookies
-    },
-
+    fetchOptions: { credentials: "include" },
   });
 
-  const session = useState<any | null>("session", () => null);
+  // Session globale
+  const session = useState<CustomSession | null>("session", () => null);
 
+  /* =====================
+     AUTH SOCIAL
+  ===================== */
   const loginWithGoogle = async () => {
-    await authClient.signIn.social({
-      provider: "google",
-    });
+    return authClient.signIn.social({ provider: "google" });
   };
 
   const loginWithFacebook = async () => {
-    await authClient.signIn.social({ provider: "facebook" });
+    return authClient.signIn.social({ provider: "facebook" });
   };
-const createUser = async (
+
+  /* =====================
+     INSCRIPTION
+  ===================== */
+  const createUser = async (
     name: string,
     email: string,
     password: string,
     confirmPassword: string
   ) => {
-
     if (password !== confirmPassword) {
-      throw new Error('Passwords do not match')
+      throw new Error("Passwords do not match");
     }
 
-    try {
-
-      const result = await authClient.signUp.email({
-        name,
-        email,
-        password
-      })
-
-      console.log('Utilisateur créé :', result)
-
-      return result
-
-    } catch (error) {
-      console.error('Erreur inscription :', error)
-      throw error
-    }
-  }
-
-
-  const loginWithEmail = async (
-    email: string,
-    password: string,
-    rememberMe: boolean = true
-  ) => {
-    const result = await authClient.signIn.email({
+    const result = await authClient.signUp.email({
       email,
       password,
-      rememberMe,
+      name,
+      callbackURL: "/auth/login", // Important
     });
-    console.log("Erreur de connexion :", result.error);
-    console.log("Erreur de connexion :", result);
 
-
-    if (result?.error) {
-      throw new Error(result.error.message || "Email ou mot de passe incorrect");
-
-    }
-
+    if (result?.error) throw new Error(result.error.message);
     return result;
   };
 
+  /* =====================
+     LOGIN EMAIL
+  ===================== */
+  const loginWithEmail = async (email: string, password: string, rememberMe = true) => {
+    const result = await authClient.signIn.email({ email, password, rememberMe });
+    if (result?.error) throw new Error(result.error.message);
 
+    // Recharge la session
+    await fetchSession();
 
+    // Redirection accueil
+    await navigateTo("/");
+  };
+
+  /* =====================
+     LOGOUT
+  ===================== */
   const logout = async () => {
     await authClient.signOut();
     session.value = null;
+    await navigateTo("/auth/login");
   };
 
+  /* =====================
+     FETCH SESSION
+  ===================== */
   const fetchSession = async () => {
     try {
-      const res: any = await $fetch("/api/me", {
+      const user: CustomSession | null = await $fetch("/api/me", {
         credentials: "include",
       });
 
-      session.value = res.user || null;
-    } catch (error) {
+      session.value = user || null;
+    } catch {
       session.value = null;
     }
   };
 
+  /* =====================
+     ROLES HELPERS
+  ===================== */
+  const role = computed<Role | null>(() => {
+    if (!session.value) return null;
+    switch (session.value.roleId) {
+      case 1: return "user";
+      case 2: return "organizer";
+      case 3: return "admin";
+      default: return "user";
+    }
+  });
+
+  const isUser = computed(() => role.value === "user");
+  const isOrganizer = computed(() => role.value === "organizer");
+  const isAdmin = computed(() => role.value === "admin");
+
   return {
+    // State
     session,
+
+    // Auth
     loginWithGoogle,
     loginWithFacebook,
     loginWithEmail,
     logout,
-    fetchSession,
     createUser,
-  };
- 
 
+    // Session
+    fetchSession,
+
+    // Roles
+    role,
+    isUser,
+    isOrganizer,
+    isAdmin,
+  };
 };

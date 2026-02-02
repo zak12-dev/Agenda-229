@@ -1,3 +1,5 @@
+import { defineNuxtRouteMiddleware, navigateTo } from '#app'
+import { useAuth } from '../composables/useAuth'
 export default defineNuxtRouteMiddleware(async (to, from) => {
   const { session, fetchSession } = useAuth();
 
@@ -9,8 +11,8 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     return navigateTo("/auth/login");
   }
 
-  const role = session.value.role;
-  if (role !== "admin" && role !== "moderator") {
-    return navigateTo("/");
+  const role = session.value.user.role;
+  if (role !== "admin" && role !== "organizer") {
+    return navigateTo("/dashboard");
   }
 });

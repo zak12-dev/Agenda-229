@@ -2,6 +2,10 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { navigateTo } from '#app'
 import type { DropdownMenuItem } from '@nuxt/ui'
+import { useAuth } from '../../../composables/useAuth'
+
+const { session, logout } = useAuth()
+const isLoggedIn = computed(() => !!session) // true si connecté
 
 const route = useRoute()
 const isScrolled = ref(false)
@@ -17,9 +21,12 @@ if (process.client) {
   })
 }
 
-watch(() => route.path, () => {
-  mobileMenuOpen.value = false
-})
+watch(
+  () => route.path,
+  () => {
+    mobileMenuOpen.value = false
+  }
+)
 
 watch(mobileMenuOpen, (isOpen) => {
   if (process.client) {
@@ -38,39 +45,63 @@ function goToSignUp() {
 }
 
 const navitems = computed<NavigationMenuItem[]>(() => [
-  
   { label: 'Evènement', to: '/events', active: route.path.startsWith('/events') },
-  { label: 'Favoris', to: '/about', active: route.path === '/about', icon: 'i-lucide-heart' },
-  
+  // Favoris uniquement si connecté
+  ...(session.value
+    ? [
+        {
+          label: 'Favoris',
+          to: '/favorites',
+          active: route.path === '/favorites',
+          icon: 'i-lucide-heart',
+        },
+      ]
+    : []),
 ])
 
-const dropdownitems: DropdownMenuItem[][] = [
-  [
-    { label: 'Connexion', icon: 'i-lucide-log-in', onClick: () => goToLogin() },
-    { label: 'Inscriptions', icon: 'i-lucide-user-plus', onClick: () => goToSignUp() },
-  ],
-  [
-    { label: "Centre d'aide", icon: 'i-lucide-help-circle' },
-  ],
-]
+const dropdownitems = computed<DropdownMenuItem[][]>(() => {
+  if (session.value) {
+    // Utilisateur connecté → menu profil
+    return [
+      [
+        { label: 'Mon profil', icon: 'i-lucide-user', onClick: () => navigateTo('/profile') },
+        {
+          label: 'Déconnexion',
+          icon: 'i-lucide-log-out',
+          onClick: async () => {
+            await logout()
+            navigateTo('/')
+          },
+        },
+      ],
+      [{ label: "Centre d'aide", icon: 'i-lucide-help-circle' }],
+    ]
+  } else {
+    // Non connecté → menu login / signup
+    return [
+      [
+        { label: 'Connexion', icon: 'i-lucide-log-in', onClick: () => goToLogin() },
+        { label: 'Inscriptions', icon: 'i-lucide-user-plus', onClick: () => goToSignUp() },
+      ],
+      [{ label: "Centre d'aide", icon: 'i-lucide-help-circle' }],
+    ]
+  }
+})
 </script>
 
 <template>
   <header
     :class="[
       'fixed top-0 left-0 right-0 z-50 transition-all duration-700 bg-white/95 backdrop-blur-xl border-b border-gray-200/50',
-   
     ]"
   >
     <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-14 sm:h-16 lg:h-18">
-        
         <!-- Logo Glass -->
         <NuxtLink to="/" class="flex items-center gap-2 sm:gap-3 z-50">
-          <div 
+          <div
             :class="[
               'w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-xs sm:text-sm font-semibold transition-all duration-500 bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20',
-             
             ]"
           >
             L&E
@@ -78,7 +109,6 @@ const dropdownitems: DropdownMenuItem[][] = [
           <span
             :class="[
               'hidden sm:block text-base lg:text-3xl font-bold tracking-tight transition-all duration-500 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600',
-             
             ]"
           >
             Plan tɛ wɛ
@@ -86,10 +116,9 @@ const dropdownitems: DropdownMenuItem[][] = [
         </NuxtLink>
 
         <!-- Nav Pills Desktop -->
-        <nav 
+        <nav
           :class="[
             'hidden md:flex items-center gap-0.5 px-2 py-1.5 rounded-full transition-all duration-500 bg-gray-100/90',
-           
           ]"
         >
           <NuxtLink
@@ -98,7 +127,6 @@ const dropdownitems: DropdownMenuItem[][] = [
             :to="item.to"
             :class="[
               'px-4 lg:px-5 py-2 text-xs lg:text-sm font-medium rounded-full transition-all duration-300 bg-white text-purple-600 shadow-sm text-gray-600 hover:text-purple-600',
-              
             ]"
           >
             {{ item.label }}
@@ -112,25 +140,34 @@ const dropdownitems: DropdownMenuItem[][] = [
           </div>
 
           <div class="hidden md:block">
-             <UDropdownMenu
-            :items="dropdownitems"
-            :ui="{ content: 'w-56' }"
-          >
-            <button
-              :class="[
-                'flex items-center gap-2 px-4 py-2 text-sm font-medium tracking-wide transition-all duration-500 bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20 rounded-full ',
-              ]"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              <span class="hidden lg:inline">Compte</span>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-          </UDropdownMenu>
-           
+            <UDropdownMenu :items="dropdownitems" :ui="{ content: 'w-56' }">
+              <button
+                :class="[
+                  'flex items-center gap-2 px-4 py-2 text-sm font-medium tracking-wide transition-all duration-500 bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20 rounded-full ',
+                ]"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+                <span class="hidden lg:inline">
+                  {{ session?.value ? 'Mon profil' : 'Compte' }}
+                </span>
+
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+            </UDropdownMenu>
           </div>
 
           <!-- Burger Glass -->
@@ -144,15 +181,19 @@ const dropdownitems: DropdownMenuItem[][] = [
             ]"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path 
+              <path
                 v-if="!mobileMenuOpen"
-                stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                d="M4 6h16M4 12h16M4 18h16" 
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 6h16M4 12h16M4 18h16"
               />
-              <path 
+              <path
                 v-else
-                stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                d="M6 18L18 6M6 6l12 12" 
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
               />
             </svg>
           </button>
@@ -201,9 +242,7 @@ const dropdownitems: DropdownMenuItem[][] = [
             :to="item.to"
             :class="[
               'block px-4 py-3 rounded-xl text-sm font-medium transition-all',
-              item.active
-                ? 'bg-purple-50 text-purple-600'
-                : 'text-gray-700 hover:bg-gray-50',
+              item.active ? 'bg-purple-50 text-purple-600' : 'text-gray-700 hover:bg-gray-50',
             ]"
           >
             {{ item.label }}

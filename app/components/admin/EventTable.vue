@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import type { Post } from '../../../types/post'
+import type { Event } from '../../../types/event'
 const UTable = resolveComponent('UTable')
 
 
@@ -29,25 +29,25 @@ const loading = ref(true)
 
 const error = ref('')
 
-const fetchPosts = async () => {
+const fetchEvents = async () => {
   loading.value = true
   error.value = ''
   try {
     // Récupération via $fetch côté Nuxt 3
-    const data = await $fetch<Post[]>('/api/posts')
+    const data = await $fetch<Event[]>('/api/events')
 
     // Transformation pour correspondre à ton type Article
-    articles.value = data.map(post => ({
-      id: post.id,
-      title: post.title,
-      category: post.subCategory || 'Sans catégorie',
-      date: post.createdAt, // Prisma renvoie camelCase
+    articles.value = data.map(event => ({
+      id: event.id,
+      title: event.title,
+      category: event.subCategory || 'Sans catégorie',
+      date: event.createdAt, // Prisma renvoie camelCase
       status: 'Publié',
       views: 0
     }))
   } catch (err: any) {
     console.error('Erreur API interne:', err)
-    error.value = 'Impossible de récupérer les articles.'
+    error.value = 'Impossible de récupérer les evenements.'
     articles.value = []
   } finally {
     loading.value = false
@@ -55,32 +55,31 @@ const fetchPosts = async () => {
 }
 
 // Appel initial
-fetchPosts()
+fetchEvents()
 // Fonction pour supprimer un article
 async function deleteArticle(id: number) {
   try {
-    const confirmed = confirm('Voulez-vous vraiment supprimer cet article ?')
+    const confirmed = confirm('Voulez-vous vraiment supprimer cet evenement ?')
     if (!confirmed) return
 
-    const response = await fetch(`/api/posts/${id}`, { method: 'DELETE' })
-    if (!response.ok) throw new Error('Erreur lors de la suppression de l’article')
-
-    // Retirer l’article de la liste locale
+    const response = await fetch(`/api/events/${id}`, { method: 'DELETE' })
+    if (!response.ok) throw new Error('Erreur lors de la suppression de l’evenement')
+    // Retirer l’evenement de la liste locale
     articles.value = articles.value.filter(a => a.id !== id)
-    alert('Article supprimé avec succès ✅')
+    alert('Evenement supprimé avec succès ✅')
   } catch (error) {
     console.error(error)
-    alert('Impossible de supprimer l’article ❌')
+    alert('Impossible de supprimer l’evenement ❌')
   }
 }
 
 // Fonction pour modifier un article
 // ✅ Variables pour contrôler le modal et l'article à éditer
 const isModalOpen = ref(false)         // pour ouvrir/fermer le modal
-const articleToEdit = ref<Post | null>(null) // pour passer l'article à éditer
+const articleToEdit = ref<Event | null>(null) // pour passer l'article à éditer
 
 // Exemple de fonction pour ouvrir le modal en mode édition
-const editArticle = (article: Post) => {
+const editArticle = (article: Event) => {
   articleToEdit.value = article
   isModalOpen.value = true
 }
@@ -290,7 +289,7 @@ const stats = computed(() => [
               square
               class="!text-purple-600 dark:!text-indigo-400 hover:!bg-purple-100/50 dark:hover:!bg-indigo-900/30"
               title="Actualiser"
-              @click="fetchPosts"
+              @click="fetchEvents"
             />
           </div>
         </div>

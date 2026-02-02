@@ -11,6 +11,7 @@ async function main() {
     { id: 1, role: 'admin' },
     { id: 2, role: 'moderator' },
     { id: 3, role: 'user simple' },
+    { id: 4, role: 'organizer' },
   ]
 
   for (const r of roles) {

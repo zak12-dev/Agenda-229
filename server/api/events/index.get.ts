@@ -5,11 +5,7 @@ export default defineEventHandler(async (event) => {
     const events = await prisma.event.findMany({
       include: {
         ville: true,
-        categories: {
-          include: {
-            category: true
-          }
-        },
+        category: true,
         user: {
           select: {
             id: true,

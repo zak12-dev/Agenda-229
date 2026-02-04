@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
   let startDate = "";
   let endDate = "";
   let villeId = "";
-  let categoryIds: string[] = [];
+  let categoryId = "";
   let imageFile: any = null;
 
   for (const field of formData) {
@@ -34,19 +34,20 @@ export default defineEventHandler(async (event) => {
     else if (field.name === "startDate") startDate = value;
     else if (field.name === "endDate") endDate = value;
     else if (field.name === "villeId") villeId = value;
-    else if (field.name === "categoryIds") {
-      try {
-        categoryIds = JSON.parse(value);
-      } catch (e) {
-        // Si ce n'est pas du JSON, on essaie de le traiter comme une valeur unique
-        if (value) categoryIds = [value];
-      }
-    } else if (field.name === "image") {
-      imageFile = field;
-    }
+    else if (field.name === "categoryId") categoryId = value;
+    else if (field.name === "image") imageFile = field;
   }
 
-  if (!title || !description || !location || !eventDate || !startDate || !imageFile || !villeId) {
+  if (
+    !title ||
+    !description ||
+    !location ||
+    !eventDate ||
+    !startDate ||
+    !imageFile ||
+    !villeId ||
+    !categoryId
+  ) {
     throw createError({
       statusCode: 400,
       statusMessage: "Tous les champs obligatoires doivent être remplis",
@@ -55,8 +56,8 @@ export default defineEventHandler(async (event) => {
 
   try {
     // Sauvegarde de l'image
-    const fileName = `${Date.now()}-${imageFile.filename || 'image.png'}`;
-    await useStorage('uploads').setItemRaw(fileName, imageFile.data);
+    const fileName = `${Date.now()}-${imageFile.filename || "image.png"}`;
+    await useStorage("uploads").setItemRaw(fileName, imageFile.data);
     const imagePath = `/uploads/${fileName}`;
 
     const newEvent = await prisma.event.create({
@@ -65,30 +66,23 @@ export default defineEventHandler(async (event) => {
         description,
         location,
         eventDate: new Date(eventDate),
-        startDate, // Désormais une chaîne (ex: "10:00")
-        endDate: endDate || null, // Désormais une chaîne ou null
+        startDate,
+        endDate: endDate || null,
         image: imagePath,
         userId: user.id,
         villeId,
-        categories: {
-          create: categoryIds.map((catId: string) => ({
-            categoryId: catId
-          }))
-        }
+        categoryId,
       },
       include: {
-        categories: {
-          include: {
-            category: true
-          }
-        },
-        ville: true
-      }
+        category: true,
+        ville: true,
+        user: true,
+      },
     });
 
     return {
       message: "Événement créé avec succès",
-      event: newEvent
+      event: newEvent,
     };
   } catch (error) {
     console.error(error);

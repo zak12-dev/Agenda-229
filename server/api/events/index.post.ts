@@ -1,9 +1,10 @@
 import { prisma } from "~~/server/utils/prisma";
 import { requireAuth } from "~~/server/utils/protect";
+import { requireOrganizer } from "~~/server/utils/protect";
 import cloudinary from '../../utils/cloudinary'
 
 export default defineEventHandler(async (event) => {
-  const user = requireAuth(event);
+  const user = requireOrganizer(event);
   const formData = await readMultipartFormData(event);
 
   if (!formData) {

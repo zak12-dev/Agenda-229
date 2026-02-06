@@ -1,5 +1,6 @@
 import { prisma } from "~~/server/utils/prisma";
 import { requireAuth } from "~~/server/utils/protect";
+import cloudinary from '../../utils/cloudinary'
 
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event);
@@ -56,39 +57,49 @@ export default defineEventHandler(async (event) => {
 
   try {
     // Sauvegarde de l'image
-    const fileName = `${Date.now()}-${imageFile.filename || "image.png"}`;
-    await useStorage("uploads").setItemRaw(fileName, imageFile.data);
-    const imagePath = `/uploads/${fileName}`;
-
-    const newEvent = await prisma.event.create({
-      data: {
-        title,
-        description,
-        location,
-        eventDate: new Date(eventDate),
-        startDate,
-        endDate: endDate || null,
-        image: imagePath,
-        userId: user.id,
-        villeId,
-        categoryId,
-      },
-      include: {
-        category: true,
-        ville: true,
-        user: true,
-      },
-    });
-
-    return {
-      message: "Événement créé avec succès",
-      event: newEvent,
-    };
-  } catch (error) {
-    console.error(error);
-    throw createError({
-      statusCode: 500,
-      statusMessage: "Erreur lors de la création de l'événement",
-    });
-  }
-});
+    const timestamp = Date.now()
+        const safeFilename = (imageFile.filename || 'image').replace(/\s+/g, '_')
+        const uniqueSuffix = `${timestamp}-${Math.round(Math.random() * 1E9)}`
+        const uploadResult = await cloudinary.uploader.upload(
+          `data:${imageFile.type};base64,${imageFile.data.toString('base64')}`,
+          {
+            folder: 'blog_posts',
+            public_id: `post-${uniqueSuffix}-${safeFilename}`,
+          }
+        )
+    
+        const imageUrl = uploadResult.secure_url
+    
+        const newEvent = await prisma.event.create({
+          data: {
+            title,
+            description,
+            location,
+            eventDate: new Date(eventDate),
+            startDate,
+            endDate: endDate || null,
+            image: imageUrl,
+            userId: user.id,
+            villeId,
+            categoryId,
+          },
+          include: {
+            category: true,
+            ville: true,
+            user: true,
+          },
+        })
+    
+        return {
+          message: "Ã‰vÃ©nement crÃ©Ã© avec succÃ¨s",
+          event: newEvent,
+        }
+      } catch (error) {
+        console.error(error)
+        throw createError({
+          statusCode: 500,
+          statusMessage: "Erreur lors de la crÃ©ation de l'Ã©vÃ©nement",
+        })
+      }
+    })
+    

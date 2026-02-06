@@ -9,18 +9,18 @@ export default defineEventHandler(async (event) => {
   if (!formData) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Données du formulaire manquantes',
+      statusMessage: 'DonnÃ©es du formulaire manquantes',
     })
   }
 
-  let title = ''
-  let description = ''
-  let location = ''
-  let eventDate = ''
-  let startDate = ''
-  let endDate = ''
-  let villeId = ''
-  let categoryIds: string[] = []
+  let title = ""
+  let description = ""
+  let location = ""
+  let eventDate = ""
+  let startDate = ""
+  let endDate = ""
+  let villeId = ""
+  let categoryId = ""
   let imageFile: any = null
 
   for (const field of formData) {
@@ -28,29 +28,30 @@ export default defineEventHandler(async (event) => {
 
     const value = field.data.toString()
 
-    if (field.name === 'title') title = value
-    else if (field.name === 'description') description = value
-    else if (field.name === 'location') location = value
-    else if (field.name === 'eventDate') eventDate = value
-    else if (field.name === 'startDate') startDate = value
-    else if (field.name === 'endDate') endDate = value
-    else if (field.name === 'villeId') villeId = value
-    else if (field.name === 'categoryIds') {
-      try {
-        categoryIds = JSON.parse(value)
-      } catch (e) {
-        // Si ce n'est pas du JSON, on essaie de le traiter comme une valeur unique
-        if (value) categoryIds = [value]
-      }
-    } else if (field.name === 'image') {
-      imageFile = field
-    }
+    if (field.name === "title") title = value
+    else if (field.name === "description") description = value
+    else if (field.name === "location") location = value
+    else if (field.name === "eventDate") eventDate = value
+    else if (field.name === "startDate") startDate = value
+    else if (field.name === "endDate") endDate = value
+    else if (field.name === "villeId") villeId = value
+    else if (field.name === "categoryId") categoryId = value
+    else if (field.name === "image") imageFile = field
   }
 
-  if (!title || !description || !location || !eventDate || !startDate || !imageFile || !villeId) {
+  if (
+    !title ||
+    !description ||
+    !location ||
+    !eventDate ||
+    !startDate ||
+    !imageFile ||
+    !villeId ||
+    !categoryId
+  ) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Tous les champs obligatoires doivent être remplis',
+      statusMessage: 'Tous les champs obligatoires doivent Ãªtre remplis',
     })
   }
 
@@ -75,36 +76,29 @@ export default defineEventHandler(async (event) => {
         description,
         location,
         eventDate: new Date(eventDate),
-        startDate, // Désormais une chaîne (ex: "10:00")
-        endDate: endDate || null, // Désormais une chaîne ou null
+        startDate,
+        endDate: endDate || null,
         image: imageUrl,
         userId: user.id,
         villeId,
-        categories: {
-          create: categoryIds.map((catId: string) => ({
-            categoryId: catId,
-          })),
-        },
+        categoryId,
       },
       include: {
-        categories: {
-          include: {
-            category: true,
-          },
-        },
+        category: true,
         ville: true,
+        user: true,
       },
     })
 
     return {
-      message: 'Événement créé avec succès',
+      message: "Ã‰vÃ©nement crÃ©Ã© avec succÃ¨s",
       event: newEvent,
     }
   } catch (error) {
     console.error(error)
     throw createError({
       statusCode: 500,
-      statusMessage: "Erreur lors de la création de l'événement",
+      statusMessage: "Erreur lors de la crÃ©ation de l'Ã©vÃ©nement",
     })
   }
 })

@@ -3,7 +3,7 @@ import { requireAuth } from "~~/server/utils/protect";
 
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event);
-  const id = getRouterParam(event, 'id');
+  const id = getRouterParam(event, "id");
 
   if (!id) {
     throw createError({
@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     const existingEvent = await prisma.event.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!existingEvent) {
@@ -31,20 +31,20 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Gestion du multipart ou du JSON
-    const contentType = getHeader(event, 'content-type') || '';
+    const contentType = getHeader(event, "content-type") || "";
     let data: any = {};
     let imageFile: any = null;
 
-    if (contentType.includes('multipart/form-data')) {
+    if (contentType.includes("multipart/form-data")) {
       const formData = await readMultipartFormData(event);
       if (formData) {
         for (const field of formData) {
           if (!field.name) continue;
           const value = field.data.toString();
-          if (field.name === 'categoryIds') {
-            try { data.categoryIds = JSON.parse(value); } catch { data.categoryIds = [value]; }
-          } else if (field.name === 'image') {
+
+          if (field.name === "categoryId") {
+            data.categoryId = value;
+          } else if (field.name === "image") {
             imageFile = field;
           } else {
             data[field.name] = value;
@@ -64,13 +64,13 @@ export default defineEventHandler(async (event) => {
       endDate,
       image,
       villeId,
-      categoryIds
+      categoryId,
     } = data;
 
     let imagePath = image;
     if (imageFile && imageFile.filename) {
       const fileName = `${Date.now()}-${imageFile.filename}`;
-      await useStorage('uploads').setItemRaw(fileName, imageFile.data);
+      await useStorage("uploads").setItemRaw(fileName, imageFile.data);
       imagePath = `/uploads/${fileName}`;
     }
 
@@ -81,30 +81,21 @@ export default defineEventHandler(async (event) => {
         description,
         location,
         eventDate: eventDate ? new Date(eventDate) : undefined,
-        startDate: startDate !== undefined ? startDate : undefined,
-        endDate: endDate !== undefined ? endDate : undefined,
+        startDate: startDate ?? undefined,
+        endDate: endDate ?? undefined,
         image: imagePath,
         villeId,
-        categories: categoryIds ? {
-          deleteMany: {},
-          create: categoryIds.map((catId: string) => ({
-            categoryId: catId
-          }))
-        } : undefined
+        categoryId: categoryId ?? undefined,
       },
       include: {
-        categories: {
-          include: {
-            category: true
-          }
-        },
-        ville: true
-      }
+        category: true,
+        ville: true,
+      },
     });
 
     return {
       message: "Événement mis à jour avec succès",
-      event: updatedEvent
+      event: updatedEvent,
     };
   } catch (error) {
     console.error(error);

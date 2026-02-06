@@ -30,7 +30,7 @@ interface EventForm {
   startDate: string
   endDate: string
   villeId: string
-  categoryIds: string
+  categoryId: string
   image: File | null
 }
 
@@ -42,7 +42,7 @@ const form = reactive<EventForm>({
   startDate: '',
   endDate: '',
   villeId: '',
-  categoryIds: '',
+  categoryId: '',
   image: null,
 })
 
@@ -92,16 +92,6 @@ const removeImage = () => {
   form.image = null
 }
 
-// Toggle catégorie
-const toggleCategory = (categoryId: string) => {
-  const index = form.categoryIds.indexOf(categoryId)
-  if (index > -1) {
-    form.categoryIds.splice(index, 1)
-  } else {
-    form.categoryIds.push(categoryId)
-  }
-}
-
 // Validation
 const isFormValid = computed(() => {
   return (
@@ -112,7 +102,7 @@ const isFormValid = computed(() => {
     form.startDate &&
     form.villeId &&
     form.image &&
-    form.categoryIds.length > 0
+    form.categoryId.length > 0
   )
 })
 
@@ -139,7 +129,7 @@ const submit = async () => {
   formData.append('startDate', form.startDate)
   formData.append('endDate', form.endDate || '')
   formData.append('villeId', form.villeId)
-  formData.append('categoryIds', JSON.stringify(form.categoryIds))
+  formData.append('categoryId', form.categoryId)
 
   if (form.image) {
     formData.append('image', form.image)
@@ -169,7 +159,7 @@ const submit = async () => {
       startDate: '',
       endDate: '',
       villeId: '',
-      categoryIds: [],
+      categoryId: [],
       image: null,
     })
 
@@ -381,7 +371,7 @@ const formatDate = (date: string) => {
           </label>
 
           <select
-            v-model="form.categoryIds"
+            v-model="form.categoryId"
             class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
           >
             <option disabled value="">Sélectionnez une catégorie</option>
@@ -391,7 +381,7 @@ const formatDate = (date: string) => {
             </option>
           </select>
 
-          <p v-if="form.categoryIds" class="text-xs text-purple-600 dark:text-indigo-400 mt-1">
+          <p v-if="form.categoryId" class="text-xs text-purple-600 dark:text-indigo-400 mt-1">
             Catégorie sélectionnée
           </p>
         </div>

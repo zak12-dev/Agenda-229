@@ -1,7 +1,7 @@
 import { prisma } from "~~/server/utils/prisma";
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id');
+  const id = getRouterParam(event, "id");
 
   if (!id) {
     throw createError({
@@ -15,20 +15,16 @@ export default defineEventHandler(async (event) => {
       where: { id },
       include: {
         ville: true,
-        categories: {
-          include: {
-            category: true
-          }
-        },
+        category: true,
         user: {
           select: {
             id: true,
             name: true,
             email: true,
-            image: true
-          }
-        }
-      }
+            image: true,
+          },
+        },
+      },
     });
 
     if (!eventData) {

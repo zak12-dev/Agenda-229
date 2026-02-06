@@ -1,67 +1,75 @@
 <script setup lang="ts">
-import type { NavigationMenuItem } from '@nuxt/ui'
-import { navigateTo } from '#app'
-import type { DropdownMenuItem } from '@nuxt/ui'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import type { NavigationMenuItem, DropdownMenuItem } from '@nuxt/ui'
 import { useAuth } from '../../../composables/useAuth'
+import { navigateTo, useRoute } from '#app'
+import { log } from 'node:console'
 
-const { session, logout } = useAuth()
-const isLoggedIn = computed(() => !!session) // true si connecté
+// ====== AUTH ======
+const { session, logout, fetchSession } = useAuth()
+const isLoggedIn = computed(() => !!session.value?.user)
+console.log('User session:', session.value, isLoggedIn.value)
 
+// ====== STATE ======
 const route = useRoute()
 const isScrolled = ref(false)
 const mobileMenuOpen = ref(false)
 
+// ====== FETCH SESSION AU MONTAGE ======
 if (process.client) {
-  onMounted(() => {
-    const handleScroll = () => {
-      isScrolled.value = window.scrollY > 50
-    }
+  onMounted(async () => {
+    await fetchSession()
+    const handleScroll = () => (isScrolled.value = window.scrollY > 50)
     window.addEventListener('scroll', handleScroll)
     onUnmounted(() => window.removeEventListener('scroll', handleScroll))
   })
 }
 
+// ====== WATCH ======
 watch(
   () => route.path,
-  () => {
-    mobileMenuOpen.value = false
-  }
+  () => (mobileMenuOpen.value = false)
 )
-
 watch(mobileMenuOpen, (isOpen) => {
-  if (process.client) {
-    document.body.style.overflow = isOpen ? 'hidden' : ''
-  }
+  if (process.client) document.body.style.overflow = isOpen ? 'hidden' : ''
 })
 
+// ====== NAVIGATION ======
 function goToLogin() {
   navigateTo('/auth/login')
   mobileMenuOpen.value = false
 }
-
 function goToSignUp() {
   navigateTo('/auth/signup')
   mobileMenuOpen.value = false
 }
 
-const navitems = computed<NavigationMenuItem[]>(() => [
-  { label: 'Evènement', to: '/events', active: route.path.startsWith('/events') },
-  // Favoris uniquement si connecté
-  ...(session.value
-    ? [
+// ====== NAV ITEMS ======
+const navitems = computed<NavigationMenuItem[]>(() =>{
+  
+
+if (isLoggedIn.value) {
+    return [
+       { label: 'Evènement', to: '/events', active: route.path.startsWith('/events') },
+     
+    ]
+  } else {
+    return [
+      [
         {
           label: 'Favoris',
           to: '/favorites',
           active: route.path === '/favorites',
           icon: 'i-lucide-heart',
         },
-      ]
-    : []),
-])
+      ],
+    ]
+  }
+})
 
+// ====== DROPDOWN ITEMS ======
 const dropdownitems = computed<DropdownMenuItem[][]>(() => {
-  if (session.value) {
-    // Utilisateur connecté → menu profil
+  if (isLoggedIn.value) {
     return [
       [
         { label: 'Mon profil', icon: 'i-lucide-user', onClick: () => navigateTo('/profile') },
@@ -77,11 +85,10 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
       [{ label: "Centre d'aide", icon: 'i-lucide-help-circle' }],
     ]
   } else {
-    // Non connecté → menu login / signup
     return [
       [
-        { label: 'Connexion', icon: 'i-lucide-log-in', onClick: () => goToLogin() },
-        { label: 'Inscriptions', icon: 'i-lucide-user-plus', onClick: () => goToSignUp() },
+        { label: 'Connexion', icon: 'i-lucide-log-in', onClick: goToLogin },
+        { label: 'Inscriptions', icon: 'i-lucide-user-plus', onClick: goToSignUp },
       ],
       [{ label: "Centre d'aide", icon: 'i-lucide-help-circle' }],
     ]
@@ -91,43 +98,32 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
 
 <template>
   <header
-    :class="[
-      'fixed top-0 left-0 right-0 z-50 transition-all duration-700 bg-white/95 backdrop-blur-xl border-b border-gray-200/50',
-    ]"
+    class="fixed top-0 left-0 right-0 z-50 transition-all duration-700 bg-white/95 backdrop-blur-xl border-b border-gray-200/50"
   >
     <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-14 sm:h-16 lg:h-18">
-        <!-- Logo Glass -->
+        <!-- Logo -->
         <NuxtLink to="/" class="flex items-center gap-2 sm:gap-3 z-50">
           <div
-            :class="[
-              'w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-xs sm:text-sm font-semibold transition-all duration-500 bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20',
-            ]"
+            class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-xs sm:text-sm font-semibold transition-all duration-500 bg-gradient-to-br from-orange-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20"
           >
-            L&E
+            WLE
           </div>
           <span
-            :class="[
-              'hidden sm:block text-base lg:text-3xl font-bold tracking-tight transition-all duration-500 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600',
-            ]"
+            class="hidden sm:block text-base lg:text-3xl font-bold tracking-tight transition-all duration-500 text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-indigo-600"
+            >WeLoveEvents</span
           >
-            Plan tɛ wɛ
-          </span>
         </NuxtLink>
 
-        <!-- Nav Pills Desktop -->
+        <!-- Desktop Nav -->
         <nav
-          :class="[
-            'hidden md:flex items-center gap-0.5 px-2 py-1.5 rounded-full transition-all duration-500 bg-gray-100/90',
-          ]"
+          class="hidden md:flex items-center gap-0.5 px-2 py-1.5 rounded-full transition-all duration-500 bg-gray-100/90"
         >
           <NuxtLink
             v-for="item in navitems"
             :key="item.to"
             :to="item.to"
-            :class="[
-              'px-4 lg:px-5 py-2 text-xs lg:text-sm font-medium rounded-full transition-all duration-300 bg-white text-purple-600 shadow-sm text-gray-600 hover:text-purple-600',
-            ]"
+            class="px-4 lg:px-5 py-2 text-xs lg:text-sm font-medium rounded-full transition-all duration-300 bg-white text-purple-600 shadow-sm text-gray-600 hover:text-purple-600"
           >
             {{ item.label }}
           </NuxtLink>
@@ -135,16 +131,12 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
 
         <!-- Actions -->
         <div class="flex items-center gap-2 sm:gap-3">
-          <div class="hidden sm:block">
-            <AppSearch />
-          </div>
+          <div class="hidden sm:block"><AppSearch /></div>
 
           <div class="hidden md:block">
             <UDropdownMenu :items="dropdownitems" :ui="{ content: 'w-56' }">
               <button
-                :class="[
-                  'flex items-center gap-2 px-4 py-2 text-sm font-medium tracking-wide transition-all duration-500 bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20 rounded-full ',
-                ]"
+                class="flex items-center gap-2 px-4 py-2 text-sm font-medium tracking-wide transition-all duration-500 bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20 rounded-full"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -154,10 +146,7 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                   />
                 </svg>
-                <span class="hidden lg:inline">
-                  {{ session?.value ? 'Mon profil' : 'Compte' }}
-                </span>
-
+                <span class="hidden lg:inline">{{ isLoggedIn ? 'Mon profil' : 'Compte' }}</span>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     stroke-linecap="round"
@@ -170,14 +159,12 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
             </UDropdownMenu>
           </div>
 
-          <!-- Burger Glass -->
+          <!-- Mobile Burger -->
           <button
             @click="mobileMenuOpen = !mobileMenuOpen"
             :class="[
-              'md:hidden p-2 rounded-lg transition-all duration-300',
-              isScrolled
-                ? 'bg-gray-100 text-gray-700'
-                : 'bg-white/10 backdrop-blur-sm text-white border border-white/10',
+              'md:hidden p-2 rounded-lg transition-all duration-300 bg-white/10 backdrop-blur-sm text-black border border-white/10',
+              
             ]"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,27 +216,18 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
         v-if="mobileMenuOpen"
         class="fixed top-14 sm:top-16 left-0 right-0 bg-white/95 backdrop-blur-2xl border-b border-gray-200/50 z-40 md:hidden max-h-[85vh] overflow-y-auto"
       >
-        <!-- Mobile Search -->
-        <div class="px-4 py-4 border-b border-gray-100 sm:hidden">
-          <AppSearch />
-        </div>
-
-        <!-- Mobile Nav -->
+        <div class="px-4 py-4 border-b border-gray-100 sm:hidden"><AppSearch /></div>
         <nav class="px-4 py-4 space-y-1">
           <NuxtLink
             v-for="item in navitems"
             :key="item.to"
             :to="item.to"
-            :class="[
-              'block px-4 py-3 rounded-xl text-sm font-medium transition-all',
-              item.active ? 'bg-purple-50 text-purple-600' : 'text-gray-700 hover:bg-gray-50',
-            ]"
+            class="block px-4 py-3 rounded-xl text-sm font-medium transition-all"
+            :class="item.active ? 'bg-purple-50 text-purple-600' : 'text-gray-700 hover:bg-gray-50'"
           >
             {{ item.label }}
           </NuxtLink>
         </nav>
-
-        <!-- Mobile Actions -->
         <div class="px-4 py-4 border-t border-gray-100 space-y-2">
           <button
             @click="goToLogin"

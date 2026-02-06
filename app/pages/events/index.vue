@@ -545,13 +545,13 @@
               </div>
             </div>
 
-            <!-- Prix en bas -->
+            <!-- Prix en bas 
             <div class="absolute bottom-4 left-4">
               <div class="flex items-baseline gap-1">
                 <span class="text-2xl font-bold text-white">{{ event.price }}€</span>
                 <span class="text-sm text-white/80">/ pers</span>
               </div>
-            </div>
+            </div>-->
           </div>
 
           <!-- Content -->
@@ -599,7 +599,7 @@
                     d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                   />
                 </svg>
-                <span>{{ event.participants }} places</span>
+                <span>{{ event.view }} vue</span>
               </div>
 
               <!-- CTA Arrow -->
@@ -710,8 +710,9 @@
     <AppFooter />
 </template>
 
-<script setup>
-import { ref, computed, watch } from 'vue'
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from 'vue'
+import type { Event } from '../../../types/event'
 const searchQuery = ref('')
 const showSuggestions = ref(false)
 const activeDropdown = ref(null)
@@ -751,19 +752,34 @@ const prices = ['Gratuit', 'Moins de 20€', '20€ - 50€', '50€ - 100€', 
 
 const popularTags = ['Concert jazz', 'Exposition art', 'Festival été', 'Théâtre Paris']
 
-// Données fictives (Mock events)
+//API Fetching
+
 const events = ref([])
-const pending = ref(true)
-const error = ref(null)
+const loading = ref(true)
+const error = ref<any>(null)
 
-const { data, pending: loading, error: fetchError } = await useFetch('/api/events/event')
+onMounted(async () => {
+  try {
+    const data = await $fetch('/api/events', {
+      method: 'GET',
+    })
 
-watch(() => {
-  if (data.value) {
-    events.value = data.value
+    console.log('Retour API :', data)
+
+    if (Array.isArray(data)) {
+      events.value = data
+      console.log('Événements récupérés :', events.value)
+    } else {
+      console.warn('Les données reçues ne sont pas un tableau :', data)
+    }
+
+  } catch (err) {
+    console.error('Erreur fetch:', err)
+    error.value = err
+  } finally {
+    loading.value = false
   }
 })
-
 
 // Filtrage des événements
 const filteredEvents = computed(() => {
@@ -793,7 +809,7 @@ const filteredEvents = computed(() => {
 const visibleCount = ref(6)
 
 // Combien on ajoute à chaque clic
-const STEP = 3
+const STEP = 6
 
 // Est-ce qu'il reste encore des événements à afficher ?
 const hasMoreEvents = computed(() => {

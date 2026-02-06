@@ -1,16 +1,18 @@
 import { useAuth } from '../composables/useAuth'
+
 export default defineNuxtRouteMiddleware(async (to, from) => {
-  const { session, fetchSession } = useAuth();
+  const { session, fetchSession } = useAuth()
 
   if (!session.value) {
-    await fetchSession();
+    await fetchSession()
   }
 
   if (!session.value) {
-    return navigateTo("/auth/login");
+    return navigateTo("/auth/login")
   }
 
-  if (session.value.user.role !== 'admin') {
-    return navigateTo("/");
+  // Vérifie que le user est admin (roleId = 1 par exemple)
+  if (session.value.user.roleId !== 1) {
+    return navigateTo("/dashboard")
   }
-});
+})

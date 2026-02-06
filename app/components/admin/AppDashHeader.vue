@@ -25,10 +25,10 @@ const pagesConfig: Record<string, { title: string; icon: string; description?: s
     icon: 'i-heroicons-folder',
     description: 'Organisez votre contenu par thématiques'
   },
-  'admin-followers': {
-    title: 'Abonnés',
+  'admin-organizer': {
+    title: 'Organisateur',
     icon: 'i-heroicons-user-group',
-    description: 'Gérez votre communauté'
+    description: 'Gérez les organisateur'
   },
   'admin-analytics': {
     title: 'Analytiques',
@@ -75,7 +75,7 @@ const pageDescription = computed(() => currentPage.value.description)
 
         <!-- Actions et utilitaires -->
         <div class="flex items-center gap-3">
-          <!-- Bouton de recherche rapide -->
+          <!-- Bouton de recherche rapide 
           <UButton
             icon="i-heroicons-magnifying-glass"
             color="gray"
@@ -83,7 +83,7 @@ const pageDescription = computed(() => currentPage.value.description)
             square
             size="lg"
             class="hidden md:flex !text-purple-600 dark:!text-indigo-400 hover:!bg-purple-100/50 dark:hover:!bg-indigo-900/30 !rounded-xl transition-all duration-300"
-          />
+          />-->
 
           <!-- Notifications 
           <UButton

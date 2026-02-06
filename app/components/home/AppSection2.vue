@@ -230,7 +230,7 @@ setTimeout(() => { isReady.value = true }, 100)
 }
 
 .title-accent {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #daaa44 0%, #8b5cf6 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

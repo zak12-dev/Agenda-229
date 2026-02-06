@@ -18,9 +18,9 @@ const navigation = {
     { label: 'Business', to: '/events/business' },
   ],
   Organisateurs: [
-    { label: 'Devenir organisateur', to: '/organizers', requiresAuth: true },
-    { label: 'Créer un événement', to: '/organizers/create-event', requiresAuth: true },
-    { label: 'Dashboard', to: '/organizers/dashboard', requiresAuth: true },
+    { label: 'Devenir organisateur', to: '/organizerForm', requiresAuth: true },
+    { label: 'Créer un événement', to: '/organizerForm', requiresAuth: true },
+    { label: 'Dashboard', to: '/dashboard', requiresAuth: true },
     { label: 'Guide organisateur', to: '/organizers/guide' },
   ],
   Support: [

@@ -5,7 +5,7 @@
       <!-- Titre -->
       <div class="text-center mb-8 sm:mb-10">
         <h2 class="text-3xl sm:text-4xl lg:text-5xl font-light text-gray-900 mb-3">
-          Trouvez votre <span class="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">événement idéal</span>
+          Trouvez votre <span class="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-indigo-600">événement idéal</span>
         </h2>
         <p class="text-sm sm:text-base text-gray-600">
           Explorez plus de 10 000 événements d'exception

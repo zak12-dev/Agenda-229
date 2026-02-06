@@ -1,143 +1,65 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
-import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ref, computed, watchEffect } from 'vue'
 import type { Event } from '../../../types/event'
 
+
 const route = useRoute()
-const loading = ref(false)
+const router = useRouter()
+const loading = ref(true)
+const error = ref<string | null>(null)
+
 const activeTab = ref('details')
+const event = ref<any>(null)
+const similarEvents = ref<Event[]>([])
 
-const id = computed(() => Number(route.params.id))
+const id = computed(() => route.params.id as string) // l'id doit être string pour ton API
 
-const events = ref<Event[]>([
-  {
-    id: 1,
-    title: 'Concert Live Afrobeat',
-    category: 'Concerts & Musique',
-    date: '2026-02-10',
-    location: 'Paris, Salle Pleyel',
-    price: 25,
-    duration: '3h',
-    description: 'Un concert exceptionnel avec les meilleurs artistes afrobeat.',
-    content: `
-      <h2>Une soirée inoubliable</h2>
-      <p>Plongez dans l'univers vibrant de l'afrobeat...</p>
-    `,
-    image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=1200',
-    participants: 250,
-    views: 1250,
-    author: 'Jean Dupont',
-    tags: ['afrobeat', 'concert', 'musique', 'paris'],
-    organizer: 'Live Events Paris',
-    capacity: 500,
-    remainingPlaces: 250,
-  },
-  {
-    id: 2,
-    title: 'Concert Live Afrobeat',
-    category: 'Concerts & Musique',
-    date: '2026-02-10',
-    location: 'Paris, Salle Pleyel',
-    price: 25,
-    duration: '3h',
-    description: 'Un concert exceptionnel avec les meilleurs artistes afrobeat.',
-    content: `
-      <h2>Une soirée inoubliable</h2>
-      <p>Plongez dans l'univers vibrant de l'afrobeat...</p>
-    `,
-    image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=1200',
-    participants: 250,
-    views: 1250,
-    author: 'Jean Dupont',
-    tags: ['afrobeat', 'concert', 'musique', 'paris'],
-    organizer: 'Live Events Paris',
-    capacity: 500,
-    remainingPlaces: 250,
-  },
-  {
-    id: 3,
-    title: 'Festival de Jazz',
-    category: 'Concerts & Musique',
-    date: '2026-03-15',
-    location: 'Lyon, Théâtre des Caves',
-    price: 30,
-    duration: '3h',
-    description: 'Un festival exceptionnel de jazz avec les meilleurs artistes.',
-    content: `
-      <h2>Une soirée inoubliable</h2>
-      <p>Plongez dans l'univers vibrant du jazz...</p>
-    `,
-    image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=1200',
-    participants: 250,
-    views: 1250,
-    author: 'Jean Dupont',
-    tags: ['afrobeat', 'concert', 'musique', 'paris'],
-    organizer: 'Live Events Paris',
-    capacity: 500,
-    remainingPlaces: 250,
-  },
-  {
-    id: 4,
-    title: 'Concert Live Afrobeat',
-    category: 'Concerts & Musique',
-    date: '2026-02-10',
-    location: 'Paris, Salle Pleyel',
-    price: 25,
-    duration: '3h',
-    description: 'Un concert exceptionnel avec les meilleurs artistes afrobeat.',
-    content: `
-      <h2>Une soirée inoubliable</h2>
-      <p>Plongez dans l'univers vibrant de l'afrobeat...</p>
-    `,
-    image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=1200',
-    participants: 250,
-    views: 1250,
-    author: 'Jean Dupont',
-    tags: ['afrobeat', 'concert', 'musique', 'paris'],
-    organizer: 'Live Events Paris',
-    capacity: 500,
-    remainingPlaces: 250,
-  },
-  {
-    id: 4,
-    title: 'Concert Live Afrobeat',
-    category: 'Concerts & Musique',
-    date: '2026-02-10',
-    location: 'Paris, Salle Pleyel',
-    price: 25,
-    duration: '3h',
-    description: 'Un concert exceptionnel avec les meilleurs artistes afrobeat.',
-    content: `
-      <h2>Une soirée inoubliable</h2>
-      <p>Plongez dans l'univers vibrant de l'afrobeat...</p>
-    `,
-    image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=1200',
-    participants: 250,
-    views: 1250,
-    author: 'Jean Dupont',
-    tags: ['afrobeat', 'concert', 'musique', 'paris'],
-    organizer: 'Live Events Paris',
-    capacity: 500,
-    remainingPlaces: 250,
-  },
-])
+// Fonction pour récupérer l'événement depuis l'API
+const fetchEvent = async () => {
+  loading.value = true
+  error.value = null
 
-const similarEvents = computed(() => {
-  if (!event.value) return []
+  try {
+    const { data, error: fetchError } = await useFetch(`/api/events/${id.value}`, {
+      server: false,
+    })
 
-  return events.value
-    .filter((e) => e.category === event.value!.category && e.id !== event.value!.id)
-    .slice(0, 3)
+    console.log('Retour API event :', data.value)
+
+    if (fetchError.value) {
+      throw fetchError.value
+    }
+
+    if (!data.value) {
+      throw new Error('Aucune donnée reçue')
+    }
+ event.value = {
+      ...data.value,
+      organizer: data.value.user?.name, // nom de l’organisateur
+      category: data.value.categories[0]?.category?.name || 'Autre', // première catégorie
+    }
+  
+
+  } catch (err: any) {
+    console.error('Erreur fetch event :', err)
+    error.value = err.message || 'Impossible de récupérer l’événement'
+  } finally {
+    loading.value = false
+  }
+}
+
+// Charger l’événement dès que l’ID est défini
+watchEffect(() => {
+  if (id.value) fetchEvent()
 })
-
-const event = computed(() => events.value.find((e) => e.id === id.value))
 </script>
 
 <template>
-  <div class="min-h-screen ">
+  <div class="min-h-screen">
     <AppHeader />
 
-    <div v-if="event" class=" bg-gradient-to-br from-purple-200 via-white to-indigo-200">
+    <div v-if="event" class="bg-gradient-to-br from-purple-200 via-white to-indigo-200">
       <!-- Hero Magazine Style -->
       <div class="relative pt-16 sm:pt-20">
         <div class="max-w-7xl mx-auto px-6 sm:px-12 py-12">
@@ -553,7 +475,7 @@ const event = computed(() => events.value.find((e) => e.id === id.value))
                 <div class="flex items-center justify-between text-sm text-gray-600">
                   <span class="font-semibold">{{ event.price }}€</span>
                   <span>{{
-                    new Date(event.date).toLocaleDateString('fr-FR', { 
+                    new Date(event.date).toLocaleDateString('fr-FR', {
                       day: 'numeric',
                       month: 'long',
                       year: 'numeric',

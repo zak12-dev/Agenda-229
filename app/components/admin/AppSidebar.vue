@@ -7,11 +7,35 @@ import { ref, computed } from 'vue'
 import { navigateTo } from '#app'
 
 const toast = useToast()
-const { logout, session } = useAuth() // récupère la session et logout
+const { logout, session, role: userRole } = useAuth()
 
-// Infos dynamiques de l'utilisateur connecté
-const userName = computed(() => session.value?.name || session.value?.email || 'Utilisateur')
-const userAvatar = computed(() => session.value?.image || 'https://github.com/benjamincanac.png')
+interface CustomEvent {
+  id: number
+  title: string
+  category: string
+  date: string
+  location: string
+  price: number | 'Free'
+  duration: string
+  description: string
+  image: string | null
+  organizer: {
+    name: string
+    contact: string
+  }
+  views: number
+  createdAt: string
+  updatedAt: string
+  status: string
+  role: 'admin' | 'organizer' | 'user'
+}
+
+const userName = computed(
+  () => session.value?.user.name || session.value?.user.email || 'Utilisateur'
+)
+const userAvatar = computed(
+  () => session.value?.user.image || 'https://github.com/benjamincanac.png'
+)
 
 // Dropdown dynamique
 const dropdownItems = ref<DropdownMenuItem[][]>([
@@ -27,19 +51,8 @@ const dropdownItems = ref<DropdownMenuItem[][]>([
       label: 'Profile',
       icon: 'i-lucide-user',
     },
-    {
-      label: 'Settings',
-      icon: 'i-lucide-cog',
-      kbds: [','],
-    },
   ],
-  [
-    {
-      label: 'Support',
-      icon: 'i-lucide-life-buoy',
-      to: '/docs/components/dropdown-menu',
-    },
-  ],
+
   [
     {
       label: 'Logout',
@@ -57,34 +70,42 @@ const dropdownItems = ref<DropdownMenuItem[][]>([
   ],
 ])
 
-const navItems: NavigationMenuItem[][] = [
-  [
-    { label: "Vue d'ensemble", icon: 'i-heroicons-squares-2x2', to: '/dashboard' },
+const navItems = computed<NavigationMenuItem[][]>(() => {
+  const mainMenu: NavigationMenuItem[] = [
+   // { label: "Vue d'ensemble", icon: 'i-heroicons-squares-2x2', to: '/dashboard' },
     {
       label: 'Événements',
       icon: 'i-heroicons-document-duplicate',
       to: '/dashboard/events',
       badge: '123',
     },
-    {
-      label: 'Analytiques',
-      icon: 'i-heroicons-document-duplicate',
-      to: '/dashboard/analytics',
-      badge: '123',
-    },
-    {
-      label: 'Organisateurs',
-      icon: 'i-heroicons-user-group',
-      to: '/dashboard/organizers',
-      badge: '123',
-    },
-    { label: 'Categories', icon: 'i-heroicons-chart-bar', to: '/dashboard/categorie', badge: '5' },
-  ],
-  [
+    //{
+    //  label: 'Analytiques',
+    //  icon: 'i-heroicons-document-duplicate',
+    //  to: '/dashboard/analytic',
+    //  badge: '123',
+   // },
+  ]
+
+  if (userRole.value === 'admin') {
+    mainMenu.push(
+      {
+        label: 'Organisateurs',
+        icon: 'i-heroicons-user-group',
+        to: '/dashboard/organizers',
+        badge: '123',
+      },
+      { label: 'Categories', icon: 'i-heroicons-chart-bar', to: '/dashboard/categorie', badge: '5' }
+    )
+  }
+
+  const bottomMenu: NavigationMenuItem[] = [
     { label: 'Paramètres', icon: 'i-heroicons-cog-8-tooth', to: '/dashboard/settings' },
     { label: 'Support', icon: 'i-heroicons-lifebuoy', to: '/dashboard/support' },
-  ],
-]
+  ]
+
+  return [mainMenu, bottomMenu]
+})
 </script>
 
 <template>
@@ -100,14 +121,16 @@ const navItems: NavigationMenuItem[][] = [
     <template #header="{ collapsed }">
       <div class="px-2 py-5">
         <div v-if="!collapsed" class="flex items-center gap-3">
-          <div>
-            <h2
-              class="font-bold text-2xl bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent"
-            >
-              Plan tɛ wɛ
-            </h2>
-            <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Dashboard Admin</p>
-          </div>
+          <NuxtLink to="/">
+            <div>
+              <h2
+                class="font-bold text-2xl bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent"
+              >
+                Plan tɛ wɛ
+              </h2>
+              <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Dashboard Admin</p>
+            </div>
+          </NuxtLink>
         </div>
         <div v-else class="flex justify-center">
           <div

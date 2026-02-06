@@ -4,42 +4,24 @@ import { hashPassword } from "better-auth/crypto";
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('Start seeding...')
+  console.log('Start seeding super admin...')
 
-  // 1. Create Roles
-  const roles = [
-    { id: 1, role: 'admin' },
-    { id: 2, role: 'moderator' },
-    { id: 3, role: 'user simple' },
-  ]
-
-  for (const r of roles) {
-    await prisma.role.upsert({
-      where: { role: r.role },
-      update: {},
-      create: r,
-    })
-  }
-
-  console.log('Roles seeded.')
-
-  // 2. Create Super User (Admin)
-  const adminEmail = 'admin@example.com'
-  const adminPassword = 'Password123!'
+  // Super Admin
+  const adminEmail = 'zakAmin@example.com'
+  const adminPassword = 'Password!'
 
   const existingAdmin = await prisma.user.findUnique({
     where: { email: adminEmail },
   })
 
   if (!existingAdmin) {
-    const hashedPassword = await hashPassword(adminPassword);
+    const hashedPassword = await hashPassword(adminPassword)
 
     const adminUser = await prisma.user.create({
       data: {
-        name: 'Super Admin',
+        name: 'Admin Zak',
         email: adminEmail,
-        password: hashedPassword, // Stored in User table
-        roleId: 1, // admin
+        roleId: 1, // Assure-toi que "1" correspond bien au rôle admin dans ta table Role
         status: 'active',
         emailVerified: true,
       },
@@ -54,7 +36,7 @@ async function main() {
       }
     })
 
-    console.log('Super user created: admin@example.com / Password123!')
+    console.log(`Super user created: ${adminEmail} / ${adminPassword}`)
   } else {
     console.log('Super user already exists.')
   }
@@ -63,9 +45,7 @@ async function main() {
 }
 
 main()
-  .then(async () => {
-    await prisma.$disconnect()
-  })
+  .then(async () => await prisma.$disconnect())
   .catch(async (e) => {
     console.error(e)
     await prisma.$disconnect()

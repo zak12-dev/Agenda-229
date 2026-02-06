@@ -33,6 +33,11 @@ export const auth = betterAuth({
         required: false,
         defaultValue: "active",
       },
+      organizerStatus: {
+        type: "string",
+        required: false,
+        defaultValue: "none",
+      },
     },
   },
 })

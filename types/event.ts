@@ -3,6 +3,7 @@ export interface Event {
     title: string
     category: string,
     date: string,
+     role: 'admin' | 'organizer' | 'user'
     location: string,
     price:  number | 'Free',
     duration: string,
@@ -13,5 +14,8 @@ export interface Event {
       contact: string
     },
     views: number
+    createdAt: string
+    updatedAt: string
+    status: string
   }
 export type { Event }

@@ -2,7 +2,7 @@
 import moderator from '../../../middleware/moderator'
 
 definePageMeta({
-  name: 'admin-events',
+  name: 'admin-analytics',
   layout: 'dashboard',
 middleware: [moderator] 
 
@@ -10,6 +10,5 @@ middleware: [moderator]
 </script>
 
 <template>
-  <EventTable />
-  <CreateEventModal />
+  <AppAnalytic />
 </template>

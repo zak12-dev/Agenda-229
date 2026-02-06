@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 
@@ -31,7 +30,7 @@ interface EventForm {
   startDate: string
   endDate: string
   villeId: string
-  categoryIds: string[]
+  categoryIds: string
   image: File | null
 }
 
@@ -43,8 +42,8 @@ const form = reactive<EventForm>({
   startDate: '',
   endDate: '',
   villeId: '',
-  categoryIds: [],
-  image: null
+  categoryIds: '',
+  image: null,
 })
 
 // Chargement des catégories
@@ -57,7 +56,7 @@ onMounted(async () => {
     categories.value = data.map((cat: any) => ({
       id: cat.id,
       name: cat.name,
-      icon: cat.icon || 'i-heroicons-tag'
+      icon: cat.icon || 'i-heroicons-tag',
     }))
   } catch (err) {
     console.error(err)
@@ -73,7 +72,7 @@ onMounted(async () => {
     const data = await res.json()
     villes.value = data.map((ville: any) => ({
       id: ville.id,
-      name: ville.nomVille
+      name: ville.nomVille,
     }))
   } catch (err) {
     console.error(err)
@@ -126,10 +125,9 @@ const submitting = ref(false)
 const submit = async () => {
   if (!isFormValid.value || submitting.value) return
   if (!currentUser) {
-    alert("Vous devez être connecté pour créer un événement");
-    return;
+    alert('Vous devez être connecté pour créer un événement')
+    return
   }
-
 
   submitting.value = true
 
@@ -142,7 +140,7 @@ const submit = async () => {
   formData.append('endDate', form.endDate || '')
   formData.append('villeId', form.villeId)
   formData.append('categoryIds', JSON.stringify(form.categoryIds))
-  
+
   if (form.image) {
     formData.append('image', form.image)
   }
@@ -151,12 +149,12 @@ const submit = async () => {
     const response = await fetch('/api/events', {
       method: 'POST',
       body: formData,
-       credentials: 'include'
+      credentials: 'include',
     })
 
     if (!response.ok) {
       const err = await response.json()
-      throw new Error(err.statusMessage || 'Erreur lors de la création de l\'événement')
+      throw new Error(err.statusMessage || "Erreur lors de la création de l'événement")
     }
 
     const data = await response.json()
@@ -172,7 +170,7 @@ const submit = async () => {
       endDate: '',
       villeId: '',
       categoryIds: [],
-      image: null
+      image: null,
     })
 
     // Fermer le modal
@@ -195,7 +193,7 @@ const formatDate = (date: string) => {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
-    year: 'numeric'
+    year: 'numeric',
   })
 }
 </script>
@@ -205,7 +203,7 @@ const formatDate = (date: string) => {
   <button
     @click="isOpen = true"
     size="lg"
-    class="ml-auto inline-flex items-center gap-2 px-4 py-2 m-3 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:via-indigo-700 hover:to-purple-800 text-white font-semibold max-w-[300px] rounded-xl shadow-md float-right shadow-purple-500/40 hover:shadow-md hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105"
+    class="ml-auto inline-flex items-center -mt-46 gap-2 px-4 py-2 m-3 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:via-indigo-700 hover:to-purple-800 text-white font-semibold max-w-[300px] rounded-xl shadow-md float-right shadow-purple-500/40 hover:shadow-md hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105"
   >
     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -220,29 +218,46 @@ const formatDate = (date: string) => {
     @click.self="isOpen = false"
   >
     <!-- CONTAINER MODAL -->
-    <div class="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border border-gray-200/60 dark:border-gray-800 animate-in fade-in zoom-in duration-300">
-      
+    <div
+      class="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border border-gray-200/60 dark:border-gray-800 animate-in fade-in zoom-in duration-300"
+    >
       <!-- HEADER -->
-      <div class="px-6 py-5 border-b border-gray-200/60 dark:border-gray-800 bg-gradient-to-r from-gray-50/50 via-purple-50/30 to-indigo-50/50 dark:from-gray-900/50 dark:via-purple-950/20 dark:to-indigo-950/20 rounded-t-2xl">
+      <div
+        class="px-6 py-5 border-b border-gray-200/60 dark:border-gray-800 bg-gradient-to-r from-gray-50/50 via-purple-50/30 to-indigo-50/50 dark:from-gray-900/50 dark:via-purple-950/20 dark:to-indigo-950/20 rounded-t-2xl"
+      >
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-700 flex items-center justify-center shadow-lg shadow-purple-500/30">
+            <div
+              class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-700 flex items-center justify-center shadow-lg shadow-purple-500/30"
+            >
               <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
               </svg>
             </div>
             <div>
               <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Créer un événement</h3>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Partagez votre événement avec votre communauté</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                Partagez votre événement avec votre communauté
+              </p>
             </div>
           </div>
-          
+
           <button
             @click="isOpen = false"
             class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
           >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -250,7 +265,6 @@ const formatDate = (date: string) => {
 
       <!-- BODY SCROLLABLE -->
       <div class="p-6 space-y-6 overflow-y-auto flex-1">
-        
         <!-- TITRE -->
         <div class="space-y-2">
           <div class="flex items-center justify-between">
@@ -274,7 +288,9 @@ const formatDate = (date: string) => {
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
               Description <span class="text-red-500">*</span>
             </label>
-            <span class="text-xs text-gray-400">{{ form.description.length }}/{{ descriptionMaxLength }}</span>
+            <span class="text-xs text-gray-400"
+              >{{ form.description.length }}/{{ descriptionMaxLength }}</span
+            >
           </div>
           <textarea
             v-model="form.description"
@@ -358,43 +374,25 @@ const formatDate = (date: string) => {
           </div>
         </div>
 
-        <!-- CATÉGORIES -->
+        <!-- CATÉGORIE -->
         <div class="space-y-2">
           <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Catégories <span class="text-red-500">*</span>
+            Catégorie <span class="text-red-500">*</span>
           </label>
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <button
-              v-for="cat in categories"
-              :key="cat.id"
-              type="button"
-              @click="toggleCategory(cat.id)"
-              :class="[
-                'group relative flex items-center gap-2 px-4 py-3 rounded-xl border-2 transition-all duration-200',
-                form.categoryIds.includes(cat.id)
-                  ? 'border-purple-600 dark:border-indigo-500 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-indigo-700 bg-white dark:bg-gray-900'
-              ]"
-            >
-              <div 
-                :class="[
-                  'w-5 h-5 rounded border-2 flex items-center justify-center transition-all',
-                  form.categoryIds.includes(cat.id)
-                    ? 'border-purple-600 bg-purple-600'
-                    : 'border-gray-300'
-                ]"
-              >
-                <svg v-if="form.categoryIds.includes(cat.id)" class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <span :class="['text-sm font-medium flex-1 text-left', form.categoryIds.includes(cat.id) ? 'text-purple-700 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300']">
-                {{ cat.name }}
-              </span>
-            </button>
-          </div>
-          <p v-if="form.categoryIds.length > 0" class="text-xs text-purple-600 dark:text-indigo-400 mt-2">
-            {{ form.categoryIds.length }} catégorie(s) sélectionnée(s)
+
+          <select
+            v-model="form.categoryIds"
+            class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+          >
+            <option disabled value="">Sélectionnez une catégorie</option>
+
+            <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+              {{ cat.name }}
+            </option>
+          </select>
+
+          <p v-if="form.categoryIds" class="text-xs text-purple-600 dark:text-indigo-400 mt-1">
+            Catégorie sélectionnée
           </p>
         </div>
 
@@ -403,31 +401,72 @@ const formatDate = (date: string) => {
           <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
             Image principale <span class="text-red-500">*</span>
           </label>
-          
+
           <label v-if="!form.image" class="group cursor-pointer block">
-            <div class="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 text-center hover:border-purple-400 dark:hover:border-indigo-600 hover:bg-purple-50/30 dark:hover:bg-indigo-950/20 transition-all duration-200">
-              <svg class="w-10 h-10 mx-auto text-gray-400 group-hover:text-purple-500 dark:group-hover:text-indigo-400 transition-colors mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <div
+              class="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 text-center hover:border-purple-400 dark:hover:border-indigo-600 hover:bg-purple-50/30 dark:hover:bg-indigo-950/20 transition-all duration-200"
+            >
+              <svg
+                class="w-10 h-10 mx-auto text-gray-400 group-hover:text-purple-500 dark:group-hover:text-indigo-400 transition-colors mb-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
               </svg>
-              <p class="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-purple-600 dark:group-hover:text-indigo-400">Cliquez pour télécharger une image</p>
+              <p
+                class="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-purple-600 dark:group-hover:text-indigo-400"
+              >
+                Cliquez pour télécharger une image
+              </p>
               <p class="text-xs text-gray-400 mt-1">PNG, JPG jusqu'à 10MB</p>
             </div>
             <input type="file" accept="image/*" @change="handleImageUpload" class="hidden" />
           </label>
 
           <div v-else class="relative group">
-            <div class="border-2 border-purple-300 dark:border-indigo-700 rounded-xl p-4 bg-purple-50/30 dark:bg-indigo-950/20">
+            <div
+              class="border-2 border-purple-300 dark:border-indigo-700 rounded-xl p-4 bg-purple-50/30 dark:bg-indigo-950/20"
+            >
               <div class="flex items-center gap-3">
-                <svg class="w-8 h-8 text-purple-500 dark:text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                <svg
+                  class="w-8 h-8 text-purple-500 dark:text-indigo-400 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
                 </svg>
                 <div class="flex-1">
-                  <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ form.image.name }}</p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ (form.image.size / 1024 / 1024).toFixed(2) }} MB</p>
+                  <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {{ form.image.name }}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ (form.image.size / 1024 / 1024).toFixed(2) }} MB
+                  </p>
                 </div>
-                <button @click="removeImage" type="button" class="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-all">
+                <button
+                  @click="removeImage"
+                  type="button"
+                  class="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-all"
+                >
                   <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
@@ -436,13 +475,29 @@ const formatDate = (date: string) => {
         </div>
 
         <!-- APERÇU DATE -->
-        <div v-if="form.eventDate" class="flex items-start gap-3 p-4 rounded-xl bg-gradient-to-br from-purple-50/50 to-indigo-50/50 dark:from-purple-950/20 dark:to-indigo-950/20 border border-purple-200/50 dark:border-indigo-800/50">
-          <svg class="w-5 h-5 text-purple-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        <div
+          v-if="form.eventDate"
+          class="flex items-start gap-3 p-4 rounded-xl bg-gradient-to-br from-purple-50/50 to-indigo-50/50 dark:from-purple-950/20 dark:to-indigo-950/20 border border-purple-200/50 dark:border-indigo-800/50"
+        >
+          <svg
+            class="w-5 h-5 text-purple-600 dark:text-indigo-400 flex-shrink-0 mt-0.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
           </svg>
           <div class="flex-1">
             <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Votre événement aura lieu le <span class="font-bold text-purple-600 dark:text-indigo-400">{{ formatDate(form.eventDate) }}</span>
+              Votre événement aura lieu le
+              <span class="font-bold text-purple-600 dark:text-indigo-400">{{
+                formatDate(form.eventDate)
+              }}</span>
             </p>
             <p v-if="form.startDate" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
               De {{ form.startDate }}<span v-if="form.endDate"> à {{ form.endDate }}</span>
@@ -452,32 +507,60 @@ const formatDate = (date: string) => {
       </div>
 
       <!-- FOOTER -->
-      <div class="px-6 py-4 border-t border-gray-200/60 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 rounded-b-2xl flex items-center justify-between">
+      <div
+        class="px-6 py-4 border-t border-gray-200/60 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 rounded-b-2xl flex items-center justify-between"
+      >
         <p class="text-xs text-gray-500 dark:text-gray-400">
           <span class="text-red-500">*</span> Champs obligatoires
         </p>
-        
+
         <div class="flex gap-3">
-          <button @click="isOpen = false" type="button" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg font-medium transition-all">
+          <button
+            @click="isOpen = false"
+            type="button"
+            class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg font-medium transition-all"
+          >
             Annuler
           </button>
-          <button 
-            @click="submit" 
+          <button
+            @click="submit"
             type="button"
-            :disabled="!isFormValid || submitting" 
+            :disabled="!isFormValid || submitting"
             :class="[
               'inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:via-indigo-700 hover:to-purple-800 text-white font-semibold rounded-lg shadow-lg shadow-purple-500/30 transition-all',
-              'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-purple-600 disabled:hover:via-indigo-600 disabled:hover:to-purple-700'
+              'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-purple-600 disabled:hover:via-indigo-600 disabled:hover:to-purple-700',
             ]"
           >
-            <svg v-if="!submitting" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            <svg
+              v-if="!submitting"
+              class="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 13l4 4L19 7"
+              />
             </svg>
             <svg v-else class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
             </svg>
-            {{ submitting ? 'Création...' : 'Créer l\'événement' }}
+            {{ submitting ? 'Création...' : "Créer l'événement" }}
           </button>
         </div>
       </div>

@@ -6,15 +6,19 @@ import { ref, computed } from "vue";
 // TYPES
 // =====================
 export interface CustomSession {
-  id: string;
-  name: string;
-  email: string;
-  emailVerified: boolean;
-  image: string | null;
-  roleId: number;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
+  user: {
+    id: string
+    name: string
+    email: string
+    emailVerified: boolean
+    image: string | null
+    roleId: number
+    status: string
+    createdAt: string
+    updatedAt: string
+  }
+
+  expires?: string
 }
 
 type Role = "user" | "organizer" | "admin";
@@ -109,10 +113,10 @@ export const useAuth = () => {
   ===================== */
   const role = computed<Role | null>(() => {
     if (!session.value) return null;
-    switch (session.value.roleId) {
-      case 1: return "user";
+    switch (session.value.user.roleId) {
+      case 1: return "admin";
       case 2: return "organizer";
-      case 3: return "admin";
+      case 3: return "user";
       default: return "user";
     }
   });

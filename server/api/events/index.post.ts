@@ -1,5 +1,5 @@
 import { prisma } from "~~/server/utils/prisma";
-import { requireAuth } from "~~/server/utils/protect";
+// import { requireAuth } from "~~/server/utils/protect";
 import { requireOrganizer } from "~~/server/utils/protect";
 import cloudinary from '../../utils/cloudinary'
 

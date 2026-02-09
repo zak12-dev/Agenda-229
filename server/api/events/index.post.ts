@@ -9,34 +9,38 @@ export default defineEventHandler(async (event) => {
   if (!formData) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'DonnÃ©es du formulaire manquantes',
+      statusMessage: 'Données du formulaire manquantes',
     })
   }
 
-  let title = ""
-  let description = ""
-  let location = ""
-  let eventDate = ""
-  let startDate = ""
-  let endDate = ""
-  let villeId = ""
-  let categoryId = ""
-  let imageFile: any = null
+
+  let title = "";
+  let description = "";
+  let location = "";
+  let eventDate = "";
+  let startDate = "";
+  let endDate = "";
+  let villeId = "";
+  let categoryId = "";
+  let imageFile: any = null;
+
 
   for (const field of formData) {
     if (!field.name) continue
 
     const value = field.data.toString()
 
-    if (field.name === "title") title = value
-    else if (field.name === "description") description = value
-    else if (field.name === "location") location = value
-    else if (field.name === "eventDate") eventDate = value
-    else if (field.name === "startDate") startDate = value
-    else if (field.name === "endDate") endDate = value
-    else if (field.name === "villeId") villeId = value
-    else if (field.name === "categoryId") categoryId = value
-    else if (field.name === "image") imageFile = field
+
+    if (field.name === "title") title = value;
+    else if (field.name === "description") description = value;
+    else if (field.name === "location") location = value;
+    else if (field.name === "eventDate") eventDate = value;
+    else if (field.name === "startDate") startDate = value;
+    else if (field.name === "endDate") endDate = value;
+    else if (field.name === "villeId") villeId = value;
+    else if (field.name === "categoryId") categoryId = value;
+    else if (field.name === "image") imageFile = field;
+
   }
 
   if (
@@ -51,11 +55,12 @@ export default defineEventHandler(async (event) => {
   ) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Tous les champs obligatoires doivent Ãªtre remplis',
+      statusMessage: 'Tous les champs obligatoires doivent être remplis',
     })
   }
 
   try {
+
     // Upload vers Cloudinary
     const timestamp = Date.now()
     const safeFilename = (imageFile.filename || 'image').replace(/\s+/g, '_')
@@ -76,6 +81,7 @@ export default defineEventHandler(async (event) => {
         description,
         location,
         eventDate: new Date(eventDate),
+
         startDate,
         endDate: endDate || null,
         image: imageUrl,
@@ -88,17 +94,18 @@ export default defineEventHandler(async (event) => {
         ville: true,
         user: true,
       },
-    })
+    });
 
     return {
-      message: "Ã‰vÃ©nement crÃ©Ã© avec succÃ¨s",
+      message: "Événement créé avec succès",
       event: newEvent,
-    }
+    };
+
   } catch (error) {
     console.error(error)
     throw createError({
       statusCode: 500,
-      statusMessage: "Erreur lors de la crÃ©ation de l'Ã©vÃ©nement",
+      statusMessage: "Erreur lors de la création de l'événement",
     })
   }
 })

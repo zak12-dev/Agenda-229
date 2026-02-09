@@ -1,7 +1,10 @@
 export interface Event {
     id: number
     title: string
-    category: string,
+    category:{
+      name: string,
+     
+    },
     date: string,
      role: 'admin' | 'organizer' | 'user'
     location: string,

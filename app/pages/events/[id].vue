@@ -3,7 +3,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { ref, computed, watchEffect } from 'vue'
 import type { Event } from '../../../types/event'
 
-
 const route = useRoute()
 const router = useRouter()
 const loading = ref(true)
@@ -15,15 +14,36 @@ const similarEvents = ref<Event[]>([])
 
 const id = computed(() => route.params.id as string) // l'id doit être string pour ton API
 
+
+
+const timeAgo = computed(() => {
+  if (!event.value?.createdAt) return ''
+
+  const now = new Date()
+  const published = new Date(event.value.createdAt)
+  const diffMs = now.getTime() - published.getTime()
+  const diffSec = Math.floor(diffMs / 1000)
+  const diffMin = Math.floor(diffSec / 60)
+  const diffHour = Math.floor(diffMin / 60)
+  const diffDay = Math.floor(diffHour / 24)
+  const diffMonth = Math.floor(diffDay / 30)
+  const diffYear = Math.floor(diffDay / 365)
+
+  if (diffYear > 0) return `Publié il y a ${diffYear} an${diffYear > 1 ? 's' : ''}`
+  if (diffMonth > 0) return `Publié il y a ${diffMonth} mois`
+  if (diffDay > 0) return `Publié il y a ${diffDay} jour${diffDay > 1 ? 's' : ''}`
+  if (diffHour > 0) return `Publié il y a ${diffHour} heure${diffHour > 1 ? 's' : ''}`
+  if (diffMin > 0) return `Publié il y a ${diffMin} minute${diffMin > 1 ? 's' : ''}`
+  return 'Publié à l’instant'
+})
+
 // Fonction pour récupérer l'événement depuis l'API
 const fetchEvent = async () => {
   loading.value = true
   error.value = null
 
   try {
-    const { data, error: fetchError } = await useFetch(`/api/events/${id.value}`, {
-      server: false,
-    })
+    const { data, error: fetchError } = await useFetch(`/api/events/${id.value}`, {})
 
     console.log('Retour API event :', data.value)
 
@@ -34,13 +54,14 @@ const fetchEvent = async () => {
     if (!data.value) {
       throw new Error('Aucune donnée reçue')
     }
- event.value = {
+    event.value = {
       ...data.value,
-      organizer: data.value.user?.name, // nom de l’organisateur
-      category: data.value.categories[0]?.category?.name || 'Autre', // première catégorie
+      organizer: data.value.user?.name,
+      category:
+        data.value.category && data.value.category.length > 0
+          ? data.value.category[0]?.category?.name
+          : 'Autre',
     }
-  
-
   } catch (err: any) {
     console.error('Erreur fetch event :', err)
     error.value = err.message || 'Impossible de récupérer l’événement'
@@ -101,7 +122,7 @@ watchEffect(() => {
                     {{ event.views }} vues
                   </span>
                   <span>•</span>
-                  <span>Publié il y a 2 jours</span>
+                  <span>{{ timeAgo }}</span>
                 </div>
               </div>
 
@@ -221,7 +242,7 @@ watchEffect(() => {
               <div>
                 <!-- Details Tab -->
                 <div v-if="activeTab === 'details'" class="prose prose-lg max-w-none">
-                  <div v-html="event.content"></div>
+                  <div v-html="event.description"></div>
                 </div>
 
                 <!-- Program Tab 
@@ -443,28 +464,28 @@ watchEffect(() => {
         </div>
       </div>
 
-      <!-- Similar Events -->
+      <!-- Similar Events 
       <div class="bg-gray-50 py-16">
         <div class="max-w-7xl mx-auto px-6 sm:px-12">
           <h2 class="text-3xl font-bold text-gray-900 mb-8">Événements similaires</h2>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Boucle sur similarEvents -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">-->
+            <!-- Boucle sur similarEvents 
             <div
               v-for="event in similarEvents"
               :key="event.id"
               class="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all"
-            >
-              <!-- Image -->
+            >-->
+              <!-- Image 
               <div class="relative h-48 overflow-hidden">
                 <NuxtImg
                   :src="event.image"
                   :alt="event.title"
                   class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
-              </div>
+              </div>-->
 
-              <!-- Contenu -->
+              <!-- Contenu 
               <div class="p-5">
                 <span class="text-xs font-semibold text-purple-600 mb-2 block">
                   {{ event.category }}
@@ -486,7 +507,7 @@ watchEffect(() => {
             </div>
           </div>
         </div>
-      </div>
+      </div>-->
     </div>
 
     <!-- Error State -->

@@ -5,6 +5,13 @@ import { useAuth } from '../../../composables/useAuth'
 import { navigateTo, useRoute } from '#app'
 import { log } from 'node:console'
 
+const sessionLoaded = ref(false)
+
+onMounted(async () => {
+  await fetchSession()
+  sessionLoaded.value = true
+})
+
 // ====== AUTH ======
 const { session, logout, fetchSession } = useAuth()
 const isLoggedIn = computed(() => !!session.value?.user)
@@ -45,46 +52,55 @@ function goToSignUp() {
 }
 
 // ====== NAV ITEMS ======
-const navitems = computed<NavigationMenuItem[]>(() =>{
-  
+const navitems = computed<NavigationMenuItem[]>(() => {
+  // Tout le monde voit "Evènements"
+  const items: NavigationMenuItem[] = [
+    { label: 'Evènements', to: '/events', active: route.path.startsWith('/events') },
+  ]
 
-if (isLoggedIn.value) {
-    return [
-       { label: 'Evènement', to: '/events', active: route.path.startsWith('/events') },
-     
-    ]
-  } else {
-    return [
-      [
-        {
-          label: 'Favoris',
-          to: '/favorites',
-          active: route.path === '/favorites',
-          icon: 'i-lucide-heart',
-        },
-      ],
-    ]
+  // Si l'utilisateur est connecté, ajouter "Favoris"
+  if (isLoggedIn.value) {
+    items.push({
+      label: 'Favoris',
+      to: '/favorites',
+      active: route.path === '/favorites',
+      icon: 'i-lucide-heart',
+    })
   }
+
+  return items
 })
 
 // ====== DROPDOWN ITEMS ======
 const dropdownitems = computed<DropdownMenuItem[][]>(() => {
   if (isLoggedIn.value) {
-    return [
-      [
-        { label: 'Mon profil', icon: 'i-lucide-user', onClick: () => navigateTo('/profile') },
-        {
-          label: 'Déconnexion',
-          icon: 'i-lucide-log-out',
-          onClick: async () => {
-            await logout()
-            navigateTo('/')
-          },
-        },
-      ],
-      [{ label: "Centre d'aide", icon: 'i-lucide-help-circle' }],
+    // Section principale
+    const mainItems: DropdownMenuItem[] = [
+      { label: 'Mon profil', icon: 'i-lucide-user', onClick: () => navigateTo('/profile') },
     ]
+
+    // Si admin ou organisateur, ajouter "Dashboard"
+    if (session.value?.user?.roleId === 1 || session.value?.user?.roleId === 2) {
+      mainItems.push({
+        label: 'Dashboard',
+        icon: 'i-lucide-layout',
+        onClick: () => navigateTo('/dashboard/events'),
+      })
+    }
+
+    // Ajouter déconnexion
+    mainItems.push({
+      label: 'Déconnexion',
+      icon: 'i-lucide-log-out',
+      onClick: async () => {
+        await logout()
+        navigateTo('/')
+      },
+    })
+
+    return [mainItems, [{ label: "Centre d'aide", icon: 'i-lucide-help-circle' }]]
   } else {
+    // Utilisateur non connecté
     return [
       [
         { label: 'Connexion', icon: 'i-lucide-log-in', onClick: goToLogin },
@@ -164,7 +180,6 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
             @click="mobileMenuOpen = !mobileMenuOpen"
             :class="[
               'md:hidden p-2 rounded-lg transition-all duration-300 bg-white/10 backdrop-blur-sm text-black border border-white/10',
-              
             ]"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -228,19 +243,22 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
             {{ item.label }}
           </NuxtLink>
         </nav>
+        <<!-- Mobile actions -->
         <div class="px-4 py-4 border-t border-gray-100 space-y-2">
-          <button
-            @click="goToLogin"
-            class="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-medium rounded-xl"
-          >
-            Connexion
-          </button>
-          <button
-            @click="goToSignUp"
-            class="w-full py-2.5 border border-purple-600 text-purple-600 text-sm font-medium rounded-xl"
-          >
-            Inscription
-          </button>
+          <template v-if="!isLoggedIn">
+            <button
+              @click="goToLogin"
+              class="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-medium rounded-xl"
+            >
+              Connexion
+            </button>
+            <button
+              @click="goToSignUp"
+              class="w-full py-2.5 border border-purple-600 text-purple-600 text-sm font-medium rounded-xl"
+            >
+              Inscription
+            </button>
+          </template>
         </div>
       </div>
     </Transition>

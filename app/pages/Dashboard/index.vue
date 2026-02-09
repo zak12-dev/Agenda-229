@@ -19,6 +19,5 @@ console.log('Dashboard user:', user?.user);
 
 <template>
   <div class="p-6">hello world</div>
-  {{ session }}
-  {{ user }}
+ 
 </template>

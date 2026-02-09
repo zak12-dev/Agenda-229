@@ -13,6 +13,6 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
 
   // Vérifie que le user est admin (roleId = 1 par exemple)
   if (session.value.user.roleId !== 1) {
-    return navigateTo("/dashboard")
+    return navigateTo("/")
   }
 })

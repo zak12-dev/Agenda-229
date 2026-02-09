@@ -30,7 +30,7 @@ const updateCategory = async () => {
 
   try {
     await $fetch(`/api/categories/${selectedCategory.value.id}`, {
-      method: 'PUT',
+      method: 'patch',
       body: { name: selectedCategory.value.name },
     })
 

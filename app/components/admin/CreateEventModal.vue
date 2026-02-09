@@ -333,6 +333,7 @@ const formatDate = (date: string) => {
             <input
               type="date"
               v-model="form.eventDate"
+          
               class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:focus:border-indigo-500 transition-all"
             />
           </div>

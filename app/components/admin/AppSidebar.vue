@@ -70,9 +70,10 @@ const dropdownItems = ref<DropdownMenuItem[][]>([
   ],
 ])
 
+
 const navItems = computed<NavigationMenuItem[][]>(() => {
   const mainMenu: NavigationMenuItem[] = [
-   // { label: "Vue d'ensemble", icon: 'i-heroicons-squares-2x2', to: '/dashboard' },
+   
     {
       label: 'Événements',
       icon: 'i-heroicons-document-duplicate',
@@ -89,6 +90,7 @@ const navItems = computed<NavigationMenuItem[][]>(() => {
 
   if (userRole.value === 'admin') {
     mainMenu.push(
+      { label: "Vue d'ensemble", icon: 'i-heroicons-squares-2x2', to: '/dashboard' },
       {
         label: 'Organisateurs',
         icon: 'i-heroicons-user-group',

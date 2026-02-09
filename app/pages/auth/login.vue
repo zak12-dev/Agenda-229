@@ -78,7 +78,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       color: 'green',
     });
 
-    await navigateTo('/dashboard');
+    await navigateTo('/dashboard/events');
 
   } catch (error: any) {
 

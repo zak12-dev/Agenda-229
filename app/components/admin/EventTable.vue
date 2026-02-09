@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useAuth } from '../../../composables/useAuth'
+
 
 interface CustomEvent {
   id: number
   title: string
-  category: string
+  categoryId:string
   date: string
   location: string
   price: number | 'Free'
@@ -19,8 +21,17 @@ interface CustomEvent {
   createdAt: string
   updatedAt: string
   status: string
+  category:{
+    name: string
+    id: string
+  }
 }
 
+
+
+const { session } = useAuth()
+
+const isAdmin = computed(() => session.value?.user.roleId === 1)
 const events = ref<CustomEvent[]>([])
 const loading = ref(true)
 const error = ref('')
@@ -53,7 +64,7 @@ const fetchEvents = async () => {
     events.value = data.map((event) => ({
       id: event.id,
       title: event.title,
-      category: event.category || 'Sans catégorie',
+      categoryId: event.categoryId || 'Sans catégorie',
       date: new Date(event.createdAt).toISOString(),
       status: event.status || 'Publié',
       views: event.views || 0,
@@ -65,7 +76,9 @@ const fetchEvents = async () => {
       organizer: event.organizer || { name: 'Inconnu', contact: 'Non spécifié' },
       createdAt: event.createdAt,
       updatedAt: event.updatedAt || event.createdAt,
+      category:event.category
     }))
+    console.log('Event:', events.value)
   } catch (err: any) {
     console.error('Erreur lors de la récupération des événements:', err)
     error.value = 'Impossible de récupérer les événements.'
@@ -104,7 +117,7 @@ const updateEvent = async () => {
 
   try {
     await $fetch(`/api/events/${selectedEvent.value.id}`, {
-      method: 'PUT',
+      method: 'patch',
       body: payload,
     })
 
@@ -377,12 +390,14 @@ const formatDate = (date: string) => {
               <div class="flex-1 min-w-0">
                 <h3 class="font-semibold text-gray-900">{{ event.title }}</h3>
                 <p class="text-sm text-gray-600">
-                  {{ event.category }} • {{ formatDate(event.createdAt) }}
+                  {{ event.category.name }} • {{ formatDate(event.createdAt) }}
                 </p>
               </div>
 
               <div class="flex items-center gap-3">
                 <span
+                v-if="!isAdmin"
+
                   :class="[
                     'px-2 py-1 rounded-full text-xs font-semibold',
                     event.status === 'Publié'
@@ -405,6 +420,8 @@ const formatDate = (date: string) => {
                     <UIcon name="i-heroicons-eye" class="w-4 h-4" />
                   </button>
                   <button
+                  v-if="!isAdmin"
+
                     @click="
                       loadEventById(event.id);
                       isEditModalOpen = true
@@ -540,7 +557,7 @@ const formatDate = (date: string) => {
                         <UIcon name="i-heroicons-tag" class="w-4 h-4" />
                         <span class="text-xs font-semibold uppercase tracking-wide">Catégorie</span>
                       </div>
-                      <p class="text-gray-900 font-semibold">{{ selectedEvent.category }}</p>
+                      <p class="text-gray-900 font-semibold">{{ selectedEvent.category.name }}</p>
                     </div>
 
                     <div class="bg-gray-50 rounded-xl p-4">
@@ -685,7 +702,7 @@ const formatDate = (date: string) => {
                   >Catégorie <span class="text-red-500">*</span></label
                 >
                 <input
-                  v-model="selectedEvent.category"
+                  v-model="selectedEvent.categoryId"
                   type="text"
                   placeholder="Ex: Concert, Sport, Théâtre..."
                   class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"

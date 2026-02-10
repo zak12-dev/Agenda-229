@@ -4,7 +4,7 @@ import { requireAdmin } from "~~/server/utils/protect";
 export default defineEventHandler(async (event) => {
   requireAdmin(event);
 
-  // Récupérer toutes les demandes en attente
+  // Récupération de toutes les demandes en attente
   const requests = await prisma.organizerRequest.findMany({
     where: {
       status: "pending",

@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
   const newStatus = isApproved ? "approved" : "rejected";
 
   await prisma.$transaction([
-    // Mettre à jour le statut de l'utilisateur
+    // mise à jour le statut de l'utilisateur
     prisma.user.update({
       where: { id: userId },
       data: {
@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
         organizerStatus: newStatus,
       },
     }),
-    // Mettre à jour la demande dans la table OrganizerRequest
+    // mise à jour la demande dans la table OrganizerRequest
     prisma.organizerRequest.updateMany({
       where: {
         userId: userId,

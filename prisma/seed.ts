@@ -9,9 +9,8 @@ async function main() {
   // 1. Create Roles
   const roles = [
     { id: 1, role: 'admin' },
-    { id: 2, role: 'moderator' },
+    { id: 2, role: 'organizer' },
     { id: 3, role: 'user simple' },
-    { id: 4, role: 'organizer' },
   ]
 
   for (const r of roles) {

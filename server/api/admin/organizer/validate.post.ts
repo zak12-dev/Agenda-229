@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
     prisma.user.update({
       where: { id: userId },
       data: {
-        roleId: isApproved ? 4 : 3, // 4 = organizer, 3 = user simple
+        roleId: isApproved ? 2 : 3, // 2 = organizer, 3 = user simple
         organizerStatus: newStatus,
       },
     }),

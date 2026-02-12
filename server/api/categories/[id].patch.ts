@@ -1,9 +1,9 @@
 import { prisma } from "~~/server/utils/prisma";
-import { requireModerator } from "~~/server/utils/protect";
+import { requireAdmin } from "~~/server/utils/protect";
 
 export default defineEventHandler(async (event) => {
-  // Protection: au moins modérateur
-  requireModerator(event);
+  // Protection: admin
+  requireAdmin(event);
 
   const id = getRouterParam(event, 'id');
   const body = await readBody(event);

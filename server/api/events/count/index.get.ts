@@ -3,7 +3,7 @@ import { prisma } from "~~/server/utils/prisma";
 export default defineEventHandler(async () => {
   try {
     const organizers = await prisma.user.findMany({
-      where: { roleId: 4 },
+      where: { roleId: 2 }, // 2 = organizer
       include: {
         _count: { select: { events: true } },
         organizerProfile: true,

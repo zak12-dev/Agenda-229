@@ -5,6 +5,12 @@ export default defineEventHandler(async (event) => {
   const user = requireAuth(event);
 
   // Vérifier si une demande est déjà en cours pour cet utilisateur
+  if (user.roleId === 2) { // 2 = organizer
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Vous êtes déjà un organisateur.",
+    });
+  }
   const existingRequest = await prisma.organizerRequest.findFirst({
     where: {
       userId: user.id,

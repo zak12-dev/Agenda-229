@@ -67,7 +67,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
+  <div class="min-h-screen bg-gradient-to-br from-orange-50 via-white to-indigo-50">
     <AppHeader />
     
     <div class="max-w-5xl mx-auto mt-10 px-4 sm:px-6 lg:px-8 py-12 sm:py-20">
@@ -76,7 +76,7 @@ const handleSubmit = async () => {
       <div class="text-center mb-12">
         
         <h1 class="text-4xl sm:text-5xl font-light text-gray-900 mb-4">
-          Devenez <span class="text-transparent font-semibold bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">Organisateur</span>
+          Devenez <span class="text-transparent font-semibold bg-clip-text bg-gradient-to-r from-orange-600 to-indigo-600">Organisateur</span>
         </h1>
         <p class="text-lg text-gray-600 max-w-2xl mx-auto">
           Créez des événements d'exception et développez votre communauté
@@ -89,15 +89,15 @@ const handleSubmit = async () => {
         <div class="lg:col-span-1 space-y-6">
           <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
             <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
               </svg>
               Vos avantages
             </h2>
             <div class="space-y-4">
               <div class="flex items-start gap-3">
-                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center mt-0.5">
-                  <svg class="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center mt-0.5">
+                  <svg class="w-4 h-4 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                   </svg>
                 </div>
@@ -108,8 +108,8 @@ const handleSubmit = async () => {
               </div>
 
               <div class="flex items-start gap-3">
-                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center mt-0.5">
-                  <svg class="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center mt-0.5">
+                  <svg class="w-4 h-4 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                   </svg>
                 </div>
@@ -122,8 +122,8 @@ const handleSubmit = async () => {
               
 
               <div class="flex items-start gap-3">
-                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center mt-0.5">
-                  <svg class="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center mt-0.5">
+                  <svg class="w-4 h-4 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                   </svg>
                 </div>
@@ -134,8 +134,8 @@ const handleSubmit = async () => {
               </div>
 
               <div class="flex items-start gap-3">
-                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center mt-0.5">
-                  <svg class="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center mt-0.5">
+                  <svg class="w-4 h-4 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                   </svg>
                 </div>
@@ -148,12 +148,12 @@ const handleSubmit = async () => {
           </div>
 
           <!-- Info Box -->
-          <div class="bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl p-6 text-white">
+          <div class="bg-gradient-to-br from-orange-600 to-indigo-600 rounded-2xl p-6 text-white">
             <svg class="w-10 h-10 mb-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <h3 class="font-bold text-lg mb-2">Validation sous 24-48h</h3>
-            <p class="text-sm text-purple-100">
+            <p class="text-sm text-orange-100">
               Un administrateur examinera votre demande et vous contactera rapidement
             </p>
           </div>
@@ -175,7 +175,7 @@ const handleSubmit = async () => {
                   type="text"
                   placeholder="Ex: EventPro Bénin"
                   required
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 />
                 <p class="text-xs text-gray-500 mt-1.5">Ce nom apparaîtra sur tous vos événements</p>
               </div>
@@ -190,7 +190,7 @@ const handleSubmit = async () => {
                   v-model="description"
                   rows="4"
                   placeholder="Présentez votre organisation, votre mission, vos valeurs..."
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all resize-none"
                 ></textarea>
               </div>
 
@@ -210,7 +210,7 @@ const handleSubmit = async () => {
                     v-model="website"
                     type="url"
                     placeholder="https://votre-site.com"
-                    class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                    class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                   />
                 </div>
               </div>
@@ -231,7 +231,7 @@ const handleSubmit = async () => {
                     v-model="phone"
                     type="tel"
                     placeholder="+229 XX XX XX XX"
-                    class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                    class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                   />
                 </div>
               </div>
@@ -252,7 +252,7 @@ const handleSubmit = async () => {
               <button
                 type="submit"
                 :disabled="isSubmitting"
-                class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-xl transition-all duration-300 shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-purple-600 disabled:hover:to-indigo-600"
+                class="w-full bg-gradient-to-r from-orange-600 to-indigo-600 hover:from-orange-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-xl transition-all duration-300 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-orange-600 disabled:hover:to-indigo-600"
               >
                 <span v-if="!isSubmitting" class="flex items-center justify-center gap-2">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -272,7 +272,7 @@ const handleSubmit = async () => {
               <!-- Terms -->
               <p class="text-xs text-gray-500 text-center">
                 En créant un compte organisateur, vous acceptez nos
-                <NuxtLink to="/terms" class="text-purple-600 hover:text-purple-700 underline font-medium">
+                <NuxtLink to="/terms" class="text-orange-600 hover:text-orange-700 underline font-medium">
                   conditions d'utilisation
                 </NuxtLink>
               </p>

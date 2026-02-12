@@ -68,14 +68,13 @@ onMounted(fetchCategories)
       <div class="border-b border-gray-200 pb-3">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h1 class="text-3xl font-bold text-gray-900">Catégories</h1>
-            <p class="text-gray-600 mt-1">{{ categories.length }} catégorie(s)</p>
+            <p class="text-gray-600 mt-1">Vous aviez {{ categories.length }} catégorie(s)</p>
           </div>
         </div>
       </div>
 
       <!-- List -->
-      <div class="space-y-2 max-h-[280px] overflow-y-auto">
+      <div class="space-y-2 max-h-[320px] overflow-y-auto">
         <div
           v-if="!loading"
           v-for="category in categories"
@@ -84,19 +83,18 @@ onMounted(fetchCategories)
         >
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <UIcon name="i-heroicons-tag" class="w-5 h-5 text-purple-600" />
+              <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                <UIcon name="i-heroicons-tag" class="w-5 h-5 text-orange-600" />
               </div>
               <div>
                 <h3 class="font-semibold text-gray-900">{{ category.name }}</h3>
-                <p class="text-sm text-gray-500">ID: {{ category.id }}</p>
               </div>
             </div>
 
             <div class="flex items-center gap-2">
               <button
                 @click="openEditModal(category)"
-                class="p-2 hover:bg-purple-50 rounded-lg text-purple-600 transition-all"
+                class="p-2 hover:bg-orange-50 rounded-lg text-orange-600 transition-all"
               >
                 <UIcon name="i-heroicons-pencil-square" class="w-4 h-4" />
               </button>
@@ -148,7 +146,7 @@ onMounted(fetchCategories)
         @click.self="isEditModalOpen = false"
       >
         <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
-          <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-5 sticky top-0 z-10">
+          <div class="bg-gradient-to-r from-orange-600 to-indigo-600 px-6 py-5 sticky top-0 z-10">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
                 <div
@@ -158,7 +156,7 @@ onMounted(fetchCategories)
                 </div>
                 <div>
                   <h3 class="text-xl font-bold text-white">Modifier la catégorie</h3>
-                  <p class="text-sm text-purple-100">Mettez à jour les informations</p>
+                  <p class="text-sm text-orange-100">Mettez à jour les informations</p>
                 </div>
               </div>
               <button
@@ -176,7 +174,7 @@ onMounted(fetchCategories)
             <input
               v-model="selectedCategory.name"
               type="text"
-              class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
               @keyup.enter="updateCategory"
             />
           </div>
@@ -189,7 +187,7 @@ onMounted(fetchCategories)
             </button>
             <button
               @click="updateCategory"
-              class="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-purple-500/30 flex items-center gap-2"
+              class="px-6 py-2.5 bg-gradient-to-r from-orange-600 to-indigo-600 hover:from-orange-700 hover:to-indigo-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-orange-500/30 flex items-center gap-2"
             >
              <UIcon name="i-heroicons-check" class="w-4 h-4" />
               Enregistrer

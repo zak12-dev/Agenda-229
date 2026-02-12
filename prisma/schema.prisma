@@ -26,6 +26,8 @@ model User {
   accounts         Account[]
   organizerProfile Organizer_profile?
   events           Event[]
+  organizerRequests OrganizerRequest[]
+  reviewedRequests  OrganizerRequest[] @relation("OrganizerRequestReviewer")
 }
 
 model Role {
@@ -132,4 +134,27 @@ model Newsletter {
   email       String @unique
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+//table pour reconnaitre les organisateurs ont effectués de demande
+model OrganizerRequest {
+  id          String                  @id @default(cuid())
+  userId      String
+  status      OrganizerRequestStatus  @default(pending)
+  comment     String?
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  user        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer    User?                   @relation("OrganizerRequestReviewer", fields: [reviewedBy], references: [id])
+
+  @@map("organizer_requests")
+}
+
+enum OrganizerRequestStatus {
+  pending
+  approved
+  rejected
 }

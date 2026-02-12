@@ -14,8 +14,6 @@ const similarEvents = ref<Event[]>([])
 
 const id = computed(() => route.params.id as string) // l'id doit être string pour ton API
 
-
-
 const timeAgo = computed(() => {
   if (!event.value?.createdAt) return ''
 
@@ -54,13 +52,13 @@ const fetchEvent = async () => {
     if (!data.value) {
       throw new Error('Aucune donnée reçue')
     }
-    event.value = {
-      ...data.value,
-      organizer: data.value.user?.name,
-      category:
-        data.value.category && data.value.category.length > 0
-          ? data.value.category[0]?.category?.name
-          : 'Autre',
+
+    if (data.value && !Array.isArray(data.value)) {
+      event.value = {
+        ...data.value,
+        organizer: data.value.user?.name ?? 'Inconnu',
+        category: data.value.category?.name ?? 'Autre',
+      }
     }
   } catch (err: any) {
     console.error('Erreur fetch event :', err)
@@ -74,21 +72,72 @@ const fetchEvent = async () => {
 watchEffect(() => {
   if (id.value) fetchEvent()
 })
+
+const share = (platform: string) => {
+  const url = encodeURIComponent(window.location.href)
+  const text = encodeURIComponent(event.value?.title || 'Événement à découvrir')
+
+  let shareUrl = ''
+
+  switch (platform) {
+    case 'facebook':
+      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`
+      break
+    case 'instagram':
+      // Copier le lien de l'événement pour que l'utilisateur le colle dans Instagram
+      navigator.clipboard.writeText(window.location.href)
+      alert('Lien copié ! Collez-le dans votre story ou message Instagram.')
+      break
+
+    case 'whatsapp':
+      shareUrl = `https://wa.me/?text=${text}%20${url}`
+      break
+  }
+
+  window.open(shareUrl, '_blank')
+}
+
+useHead(() => ({
+  title: event.value?.title,
+
+  meta: [
+    {
+      property: 'og:title',
+      content: event.value?.title,
+    },
+    {
+      property: 'og:description',
+      content: event.value?.description,
+    },
+    {
+      property: 'og:image',
+      content: event.value?.image,
+    },
+    {
+      property: 'og:url',
+      content: window.location.href,
+    },
+    {
+      property: 'og:type',
+      content: 'article',
+    },
+  ],
+}))
 </script>
 
 <template>
   <div class="min-h-screen">
     <AppHeader />
 
-    <div v-if="event" class="bg-gradient-to-br from-purple-200 via-white to-indigo-200">
+    <div v-if="event" class="bg-gradient-to-br from-orange-200 via-white to-indigo-200">
       <!-- Hero Magazine Style -->
       <div class="relative pt-16 sm:pt-20">
         <div class="max-w-7xl mx-auto px-6 sm:px-12 py-12">
           <!-- Breadcrumb -->
           <nav class="flex items-center gap-2 text-sm text-gray-500 mb-8">
-            <NuxtLink to="/" class="hover:text-purple-600">Accueil</NuxtLink>
+            <NuxtLink to="/" class="hover:text-orange-600">Accueil</NuxtLink>
             <span>/</span>
-            <NuxtLink to="/events" class="hover:text-purple-600">Événements</NuxtLink>
+            <NuxtLink to="/events" class="hover:text-orange-600">Événements</NuxtLink>
             <span>/</span>
             <span class="text-gray-900">{{ event.title }}</span>
           </nav>
@@ -99,7 +148,7 @@ watchEffect(() => {
               <!-- Category & Meta -->
               <div class="flex items-center gap-4 mb-6">
                 <span
-                  class="px-4 py-2 bg-purple-100 text-purple-700 text-sm font-semibold rounded-lg"
+                  class="px-4 py-2 bg-orange-100 text-orange-700 text-sm font-semibold rounded-lg"
                 >
                   {{ event.category }}
                 </span>
@@ -152,8 +201,9 @@ watchEffect(() => {
                         d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
                       />
                     </svg>
-                    <span class="text-sm font-medium">Sauvegarder</span>
+                    <span class="text-sm font-medium">Favoris</span>
                   </button>
+                  <!-- 
                   <button
                     class="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                   >
@@ -165,26 +215,40 @@ watchEffect(() => {
                         d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
                       />
                     </svg>
-                  </button>
+                  </button>-->
                 </div>
 
                 <div class="flex items-center gap-2">
                   <span class="text-sm text-gray-600">Partager :</span>
-                  <button class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                  <button
+                    @click="share('facebook')"
+                    class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
                     <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
                       <path
                         d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
                       />
                     </svg>
                   </button>
-                  <button class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                    <svg class="w-5 h-5 text-sky-500" fill="currentColor" viewBox="0 0 24 24">
+                  <button
+                    @click="share('instagram')"
+                    class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <svg
+                      class="w-5 h-5 text-pink-500"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
                       <path
-                        d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"
+                        d="M12 2.163c3.204 0 3.584.012 4.85.07 1.366.062 2.633.33 3.608 1.304.974.975 1.242 2.242 1.304 3.608.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.062 1.366-.33 2.633-1.304 3.608-.975.974-2.242 1.242-3.608 1.304-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.366-.062-2.633-.33-3.608-1.304-.974-.975-1.242-2.242-1.304-3.608C2.175 15.747 2.163 15.367 2.163 12s.012-3.584.07-4.85c.062-1.366.33-2.633 1.304-3.608C4.512 2.493 5.78 2.225 7.146 2.163 8.412 2.105 8.792 2.163 12 2.163zm0-2.163C8.735 0 8.332.012 7.052.07 5.781.127 4.584.415 3.515 1.484 2.446 2.553 2.158 3.751 2.101 5.022.043 8.332 0 8.735 0 12c0 3.265.043 3.668.101 4.948.057 1.271.345 2.469 1.414 3.538 1.069 1.069 2.267 1.357 3.538 1.414C8.332 23.957 8.735 24 12 24s3.668-.043 4.948-.101c1.271-.057 2.469-.345 3.538-1.414 1.069-1.069 1.357-2.267 1.414-3.538.058-1.28.101-1.683.101-4.948s-.043-3.668-.101-4.948c-.057-1.271-.345-2.469-1.414-3.538-1.069-1.069-2.267-1.357-3.538-1.414C15.668.043 15.265 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zm0 10.162a3.999 3.999 0 1 1 0-7.998 3.999 3.999 0 0 1 0 7.998zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"
                       />
                     </svg>
                   </button>
-                  <button class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                  <button
+                    @click="share('whatsapp')"
+                    class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
                     <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
                       <path
                         d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"
@@ -207,7 +271,7 @@ watchEffect(() => {
                     :class="[
                       'pb-4 text-sm font-semibold border-b-2 transition-colors',
                       activeTab === 'details'
-                        ? 'border-purple-600 text-purple-600'
+                        ? 'border-orange-600 text-orange-600'
                         : 'border-transparent text-gray-600 hover:text-gray-900',
                     ]"
                   >
@@ -218,7 +282,7 @@ watchEffect(() => {
                     :class="[
                       'pb-4 text-sm font-semibold border-b-2 transition-colors',
                       activeTab === 'program'
-                        ? 'border-purple-600 text-purple-600'
+                        ? 'border-orange-600 text-orange-600'
                         : 'border-transparent text-gray-600 hover:text-gray-900'
                     ]"
                   >
@@ -229,7 +293,7 @@ watchEffect(() => {
                     :class="[
                       'pb-4 text-sm font-semibold border-b-2 transition-colors',
                       activeTab === 'location'
-                        ? 'border-purple-600 text-purple-600'
+                        ? 'border-orange-600 text-orange-600'
                         : 'border-transparent text-gray-600 hover:text-gray-900',
                     ]"
                   >
@@ -248,28 +312,28 @@ watchEffect(() => {
                 <!-- Program Tab 
                 <div v-if="activeTab === 'program'" class="space-y-6">
                   <div class="flex gap-6 pb-6 border-b border-gray-100">
-                    <div class="text-sm font-semibold text-purple-600 w-20">20:00</div>
+                    <div class="text-sm font-semibold text-orange-600 w-20">20:00</div>
                     <div class="flex-1">
                       <h4 class="font-semibold text-gray-900 mb-2">Ouverture des portes</h4>
                       <p class="text-gray-600">Accueil et cocktail de bienvenue</p>
                     </div>
                   </div>
                   <div class="flex gap-6 pb-6 border-b border-gray-100">
-                    <div class="text-sm font-semibold text-purple-600 w-20">21:00</div>
+                    <div class="text-sm font-semibold text-orange-600 w-20">21:00</div>
                     <div class="flex-1">
                       <h4 class="font-semibold text-gray-900 mb-2">Premier artiste</h4>
                       <p class="text-gray-600">Femi Kuti & The Positive Force</p>
                     </div>
                   </div>
                   <div class="flex gap-6 pb-6 border-b border-gray-100">
-                    <div class="text-sm font-semibold text-purple-600 w-20">22:30</div>
+                    <div class="text-sm font-semibold text-orange-600 w-20">22:30</div>
                     <div class="flex-1">
                       <h4 class="font-semibold text-gray-900 mb-2">Entracte</h4>
                       <p class="text-gray-600">DJ set afrobeat</p>
                     </div>
                   </div>
                   <div class="flex gap-6 pb-6">
-                    <div class="text-sm font-semibold text-purple-600 w-20">23:00</div>
+                    <div class="text-sm font-semibold text-orange-600 w-20">23:00</div>
                     <div class="flex-1">
                       <h4 class="font-semibold text-gray-900 mb-2">Headliner</h4>
                       <p class="text-gray-600">Tony Allen Experience</p>
@@ -282,7 +346,7 @@ watchEffect(() => {
                   <div class="bg-gray-50 rounded-xl p-6 mb-6">
                     <div class="flex items-start gap-4 mb-6">
                       <svg
-                        class="w-6 h-6 text-purple-600 flex-shrink-0 mt-1"
+                        class="w-6 h-6 text-orange-600 flex-shrink-0 mt-1"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -302,7 +366,7 @@ watchEffect(() => {
                     <div class="grid sm:grid-cols-2 gap-4">
                       <div class="flex items-center gap-3 p-4 bg-white rounded-lg">
                         <svg
-                          class="w-5 h-5 text-purple-600"
+                          class="w-5 h-5 text-orange-600"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -321,7 +385,7 @@ watchEffect(() => {
                       </div>
                       <div class="flex items-center gap-3 p-4 bg-white rounded-lg">
                         <svg
-                          class="w-5 h-5 text-purple-600"
+                          class="w-5 h-5 text-orange-600"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -357,7 +421,7 @@ watchEffect(() => {
                   <span
                     v-for="tag in event.tags"
                     :key="tag"
-                    class="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-purple-100 hover:text-purple-700 transition-colors cursor-pointer"
+                    class="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-orange-100 hover:text-orange-700 transition-colors cursor-pointer"
                   >
                     #{{ tag }}
                   </span>
@@ -368,62 +432,105 @@ watchEffect(() => {
             <!-- Sidebar -->
             <div class="lg:col-span-4">
               <div class="sticky top-24 space-y-6">
-                <!-- Booking Card 
+                <!-- Booking Card -->
                 <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-lg">
                   <div class="mb-6">
                     <div class="flex items-baseline gap-2 mb-2">
-                      <span class="text-4xl font-bold text-gray-900">{{ event.price }}€</span>
-                      <span class="text-gray-600">/ pers</span>
+                      <span class="text-2xl font-bold text-black">
+                    <template v-if="event?.price && Number(event.price) > 0">
+                      {{ event.price }}Fcfa
+                    </template>
+                    <template v-else> Gratuit </template>
+                  </span>
+                  <span
+                    v-if="event?.price && Number(event.price) > 0"
+                    class="text-sm text-black"
+                  >
+                    / pers
+                  </span>
                     </div>
-                    <p class="text-sm text-gray-600">TVA incluse</p>
                   </div>
 
                   <div class="space-y-3 mb-6">
                     <div class="flex items-center gap-3 text-sm">
-                      <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      <svg
+                        class="w-5 h-5 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
                       </svg>
-                      <span class="text-gray-700">10 février 2026</span>
+                      <span class="text-gray-700">{{
+                        new Date(event.eventDate).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'long',
+                        })
+                      }}</span>
                     </div>
+
                     <div class="flex items-center gap-3 text-sm">
-                      <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span class="text-gray-700">{{ event.duration }}</span>
-                    </div>
-                    <div class="flex items-center gap-3 text-sm">
-                      <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <svg
+                        class="w-5 h-5 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                        />
                       </svg>
                       <span class="text-gray-700">{{ event.location }}</span>
                     </div>
                   </div>
 
-                  <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+                  <!--    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
                     <div class="flex items-center gap-2 mb-2">
-                      <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        class="w-5 h-5 text-orange-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                       <span class="text-sm font-semibold text-orange-900">Places limitées</span>
                     </div>
-                    <p class="text-sm text-orange-700">Plus que {{ event.remainingPlaces }} places disponibles</p>
-                  </div>
+                    <p class="text-sm text-orange-700">
+                      Plus que {{ event.remainingPlaces }} places disponibles
+                    </p>
+                  </div>-->
 
-                  <button class="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300 hover:scale-[1.02] active:scale-95 mb-3">
+                  <!-- <button
+                    class="w-full py-4 bg-gradient-to-r from-orange-600 to-indigo-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-orange-500/30 transition-all duration-300 hover:scale-[1.02] active:scale-95 mb-3"
+                  >
                     Réserver maintenant
                   </button>
 
                   <p class="text-xs text-gray-500 text-center">
                     Paiement sécurisé • Annulation gratuite
-                  </p>
-                </div>-->
+                  </p>-->
+                </div>
 
                 <!-- Organizer -->
                 <div class="bg-gray-50 rounded-xl p-6">
                   <h3 class="font-semibold text-gray-900 mb-4">Organisateur</h3>
                   <div class="flex items-start gap-3 mb-4">
                     <div
-                      class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-bold flex-shrink-0"
+                      class="w-12 h-12 rounded-full bg-gradient-to-br from-orange-600 to-indigo-600 flex items-center justify-center text-white font-bold flex-shrink-0"
                     >
                       {{ event.organizer?.charAt(0) }}
                     </div>
@@ -449,11 +556,12 @@ watchEffect(() => {
                 </div>
 
                 <!-- Need Help -->
-                <div class="bg-purple-50 border border-gray-300 rounded-xl p-6">
+                <div class="bg-orange-50 border border-gray-300 rounded-xl p-6">
                   <h3 class="font-semibold text-gray-900 mb-2">Besoin d'aide ?</h3>
                   <p class="text-sm text-gray-600 mb-4">Notre équipe est là pour vous assister</p>
                   <button
-                    class="w-full py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                    @click="navigateTo('/contact')"
+                    class="w-full py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
                   >
                     Nous contacter
                   </button>
@@ -470,13 +578,13 @@ watchEffect(() => {
           <h2 class="text-3xl font-bold text-gray-900 mb-8">Événements similaires</h2>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">-->
-            <!-- Boucle sur similarEvents 
+      <!-- Boucle sur similarEvents 
             <div
               v-for="event in similarEvents"
               :key="event.id"
               class="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all"
             >-->
-              <!-- Image 
+      <!-- Image 
               <div class="relative h-48 overflow-hidden">
                 <NuxtImg
                   :src="event.image"
@@ -485,9 +593,9 @@ watchEffect(() => {
                 />
               </div>-->
 
-              <!-- Contenu 
+      <!-- Contenu 
               <div class="p-5">
-                <span class="text-xs font-semibold text-purple-600 mb-2 block">
+                <span class="text-xs font-semibold text-orange-600 mb-2 block">
                   {{ event.category }}
                 </span>
                 <h3 class="font-bold text-gray-900 mb-2 line-clamp-2">
@@ -534,7 +642,7 @@ watchEffect(() => {
         <p class="text-gray-600 mb-6">Cet événement n'existe pas ou a été supprimé.</p>
         <NuxtLink
           to="/events"
-          class="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white font-medium rounded-xl hover:bg-purple-700 transition-colors"
+          class="inline-flex items-center gap-2 px-6 py-3 bg-orange-600 text-white font-medium rounded-xl hover:bg-orange-700 transition-colors"
         >
           Retour aux événements
         </NuxtLink>

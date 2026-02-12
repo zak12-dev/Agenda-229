@@ -2,7 +2,7 @@ import { useAuth } from '../composables/useAuth'
 
 export default defineNuxtRouteMiddleware(async (to, from) => {
   const { session, fetchSession } = useAuth()
-
+if (process.server) return;
   if (!session.value) {
     await fetchSession()
   }

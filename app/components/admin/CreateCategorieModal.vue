@@ -58,7 +58,7 @@ const submit = async () => {
   <!-- BOUTON OUVRIR LE MODAL -->
   <button
     @click="isOpen = true"
-    class="ml-auto inline-flex items-center -mt-44 ml-10 gap-2 px-4 py-2 m-3 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:via-indigo-700 hover:to-purple-800 text-white font-semibold max-w-[300px] rounded-xl shadow-md float-right shadow-purple-500/40 hover:shadow-md hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105"
+    class="ml-auto inline-flex items-center -mt-44 ml-10 gap-2 px-4 py-2 m-3 bg-gradient-to-r from-orange-600 via-indigo-600 to-orange-700 hover:from-orange-700 hover:via-indigo-700 hover:to-orange-800 text-white font-semibold max-w-[300px] rounded-xl shadow-md float-right shadow-orange-500/40 hover:shadow-md hover:shadow-orange-500/50 transition-all duration-300 hover:scale-105"
   >
     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -95,7 +95,7 @@ const submit = async () => {
           <div class="px-6 py-4 border-b border-gray-200">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-600 to-indigo-600 flex items-center justify-center">
                   <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                   </svg>
@@ -138,7 +138,7 @@ const submit = async () => {
                 v-model="form.name"
                 :maxlength="nameMaxLength"
                 placeholder="Ex: Technologie, Sport, Culture..."
-                class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 @keyup.enter="submit"
                 autofocus
               />
@@ -146,13 +146,13 @@ const submit = async () => {
             </div>
 
             <!-- PREVIEW -->
-            <div class="p-4 rounded-xl bg-purple-50 border border-purple-200">
+            <div class="p-4 rounded-xl bg-orange-50 border border-orange-200">
               <p class="text-xs font-semibold text-gray-600 mb-3">Aperçu :</p>
-              <div class="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-lg border-2 border-purple-300">
-                <svg class="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div class="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-lg border-2 border-orange-300">
+                <svg class="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                 </svg>
-                <span class="font-semibold text-purple-600">
+                <span class="font-semibold text-orange-600">
                   {{ form.name || 'Nom de la catégorie' }}
                 </span>
               </div>
@@ -171,7 +171,7 @@ const submit = async () => {
             <button 
               @click="submit" 
               :disabled="!isFormValid || loading" 
-              class="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              class="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-orange-600 to-indigo-600 hover:from-orange-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg v-if="!loading" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />

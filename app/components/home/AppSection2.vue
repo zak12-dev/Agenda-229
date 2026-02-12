@@ -1,72 +1,90 @@
 <script setup lang="ts">
 import AppHeader from './AppHeader.vue'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { navigateTo } from '#app'
 
-const props = defineProps({
-  todayEvents: {
-    type: Array,
-    default: () => [
-      { 
-        id: 1, 
-        time: '19:00', 
-        title: 'Concert Piano Solo',
-        category: 'Gastronomie',
-        date: '15 Mars ',
-        location: 'Lyon',
-        availability: 'Quelques places'
-      },
-      { 
-        id: 1, 
-        time: '19:00', 
-        title: 'Concert Piano Solo',
-        category: 'Gastronomie',
-        date: '17 Mars ',
-        location: 'Lyon',
-        availability: 'Quelques places'
-      },
-     { 
-        id: 1, 
-        time: '19:00', 
-        title: 'Concert Piano Solo',
-        category: 'Gastronomie',
-        date: '25 Mars ',
-        location: 'Lyon',
-        availability: 'Quelques places'
-      }, { 
-        id: 1, 
-        time: '19:00', 
-        title: 'Concert Piano Solo',
-        category: 'Gastronomie',
-        date: '25 Mars ',
-        location: 'Lyon',
-        availability: 'Quelques places'
-      }
-    ]
-  }
+/* Tous les événements venant de l'API */
+const todayEvents = ref<any[]>([])
+
+/* Date actuelle */
+const now = new Date()
+
+/* Fetch API avec filtrage des dates invalides */
+onMounted(async () => {
+  const { data } = await useFetch('/api/events/index.front')
+  todayEvents.value = (data.value || []).filter(
+    (e) => e.eventDate && !isNaN(new Date(e.eventDate).getTime())
+  )
+  console.log('EVENTS API =', todayEvents.value)
 })
 
+function goToEvent(id: number | string) {
+  navigateTo(`api/events/${id}`)
+}
 
+/* Fonction pour récupérer les événements d'un mois donné */
+function getEventsByMonth(date: Date) {
+  return todayEvents.value
+    .filter((e) => {
+      const d = new Date(e.eventDate)
+      return d >= now && d.getMonth() === date.getMonth() && d.getFullYear() === date.getFullYear()
+    })
+    .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())
+}
 
+/* Événements à afficher : mois courant ou prochain mois si < 2 événements */
+const displayedEvents = computed(() => {
+  let current = new Date(now.getFullYear(), now.getMonth(), 1)
+  let events = getEventsByMonth(current)
+
+  // Passer au mois suivant si moins de 2 événements
+  while (events.length < 2) {
+    current = new Date(current.getFullYear(), current.getMonth() + 1, 1)
+    events = getEventsByMonth(current)
+    // Stop si aucun événement dans les prochains mois
+    if (events.length === 0 && current.getFullYear() - now.getFullYear() > 1) break
+  }
+
+  return events
+})
+
+/* Affichage du mois pour la timeline */
+const displayMonth = computed(() => {
+  if (!displayedEvents.value.length) return ''
+  const firstEvent = new Date(displayedEvents.value[0].eventDate)
+  return firstEvent.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+})
+
+/* Animation */
+const isReady = ref(false)
+setTimeout(() => {
+  isReady.value = true
+}, 100)
+
+/* Navigation */
 const activeFilter = ref('today')
-
 function applyFilter(filterId: string) {
   activeFilter.value = filterId
   navigateTo(`/events?filter=${filterId}`)
 }
 
-// Date d'aujourd'hui
+/* Date affichée */
 const today = computed(() => {
   const date = new Date()
   return {
     day: date.toLocaleDateString('fr-FR', { weekday: 'long' }),
-    date: date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+    date: date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
   }
 })
-
-// Animation
-const isReady = ref(false)
-setTimeout(() => { isReady.value = true }, 100)
+const monthEvents = computed(() => {
+  if (!todayEvents.value) return []
+  return todayEvents.value
+    .filter((e) => e.eventDate && !isNaN(new Date(e.eventDate).getTime()))
+    .filter((e) => {
+      const d = new Date(e.eventDate)
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+    })
+})
 </script>
 
 <template>
@@ -81,24 +99,25 @@ setTimeout(() => { isReady.value = true }, 100)
               <div class="date-day">{{ today.day }}</div>
               <div class="date-full">{{ today.date }}</div>
             </div>
-            
+
             <h1 class="hero-title">
               Que faire
               <span class="title-accent">ce mois-ci</span> ?
             </h1>
-            
-            <p class="hero-subtitle">
-              Découvrez les événements près de chez vous en un coup d'œil
-            </p>
+
+            <p class="hero-subtitle">Découvrez les événements près de chez vous en un coup d'œil</p>
           </div>
 
-         
-         
           <!-- CTA Principal -->
           <button @click="navigateTo('/events')" class="cta-explore">
             <span>Explorer tous les événements de ce mois</span>
             <svg class="cta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 8l4 4m0 0l-4 4m4-4H3"
+              />
             </svg>
           </button>
         </div>
@@ -108,55 +127,47 @@ setTimeout(() => { isReady.value = true }, 100)
           <div class="timeline-card">
             <div class="timeline-header">
               <h3 class="timeline-title">{{ today.date }}</h3>
-              <div class="timeline-badge">
-                {{ todayEvents.length }} événements
-              </div>
+              <div class="timeline-badge">{{ monthEvents?.length ?? 0 }} événements</div>
             </div>
 
             <div class="timeline-list">
               <div
-               v-for="(event, index) in todayEvents.slice(0, 3)"
+                v-for="(event, index) in displayedEvents"
                 :key="event.id"
                 class="timeline-item"
                 :style="{ transitionDelay: `${index * 100}ms` }"
               >
-                <!-- Temps -->
-                <div class="timeline-time ">
-                  <div class="time-value ml-5">{{ event.date }} </div>
+                <div class="timeline-time">
+                  <div class="time-value ml-5">
+                    {{
+                      new Date(event.eventDate).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'long',
+                      })
+                    }}
+                  </div>
                   <div class="timeline-dot"></div>
-                  <div class="timeline-line" v-if="index < todayEvents.length - 1"></div>
+                  <div class="timeline-line" v-if="index < displayedEvents.length - 1"></div>
                 </div>
 
-                <!-- Contenu événement -->
                 <div class="timeline-content">
-                  <div class="event-type">{{ event.category }}</div>
+                  <div class="event-type">{{ event.category.name }}</div>
                   <h4 class="event-title-timeline">{{ event.title }}</h4>
-                  <div class="event-venue">
-                    <svg class="venue-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    </svg>
-                    {{ event.location }}
-                  </div>
-                  
-                  <button class="event-quick-action">
-                    Voir les détails
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
+                  <div class="event-venue">{{ event.location }}</div>
+                  <NuxtLink :to="`/events/${event.id}`" custom v-slot="{ navigate }">
+                    <button class="event-quick-action" @click="navigate">Voir les détails</button>
+                  </NuxtLink>
                 </div>
               </div>
             </div>
 
             <!-- Footer timeline -->
-            <div class="timeline-footer -mt-15">
-              <button @click="navigateTo('/events?filter=today')" class="timeline-see-all">
+            <div class="timeline-footer -mt-10">
+              <!--<button @click="navigateTo('/events?filter=today')" class="timeline-see-all">
                 Voir tous les événements d'aujourd'hui
-              </button>
+              </button>-->
             </div>
           </div>
-
-          
         </div>
       </div>
     </div>
@@ -230,7 +241,7 @@ setTimeout(() => { isReady.value = true }, 100)
 }
 
 .title-accent {
-  background: linear-gradient(135deg, #daaa44 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #fb8c00 0%, #3949ab 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

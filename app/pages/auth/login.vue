@@ -5,6 +5,8 @@ import { useAuth } from '../../../composables/useAuth'
 import { onMounted, ref } from 'vue'
 import { useToast } from '#imports'
 
+const showPassword = ref(false)
+
 const toast = useToast()
 const loadingProvider = ref<string | null>(null) // null ou le label du provider en cours
 const loading = ref(false)
@@ -62,33 +64,26 @@ const providers = [
 ]
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
-  loading.value = true;
+  loading.value = true
 
   try {
-    await loginWithEmail(
-      event.data.email,
-      event.data.password,
-      event.data.remember
-    );
+    await loginWithEmail(event.data.email, event.data.password, event.data.remember)
 
-    await fetchSession();
+    await fetchSession()
 
     toast.add({
       title: 'Connexion réussie',
       color: 'green',
-    });
+    })
 
-    await navigateTo('/dashboard/events');
-
+    await navigateTo('/dashboard/events')
   } catch (error: any) {
-
     toast.add({
       title: error.message || 'Erreur de connexion',
       color: 'red',
-    });
-
+    })
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
@@ -99,12 +94,12 @@ onMounted(() => fetchSession())
   <div class="min-h-screen relative flex items-center justify-center p-4 overflow-hidden">
     <!-- Animated Background -->
     <div
-      class="absolute inset-0 bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50 dark:from-slate-950 dark:via-purple-950 dark:to-indigo-950"
+      class="absolute inset-0 bg-gradient-to-br from-slate-50 via-orange-50 to-indigo-50 dark:from-slate-950 dark:via-orange-950 dark:to-indigo-950"
     ></div>
 
     <!-- Animated Blobs -->
     <div
-      class="absolute top-0 left-0 w-96 h-96 bg-purple-400/30 rounded-full blur-3xl animate-blob"
+      class="absolute top-0 left-0 w-96 h-96 bg-orange-400/30 rounded-full blur-3xl animate-blob"
     ></div>
     <div
       class="absolute top-0 right-0 w-96 h-96 bg-indigo-400/30 rounded-full blur-3xl animate-blob animation-delay-2000"
@@ -121,7 +116,7 @@ onMounted(() => fetchSession())
         <!-- Logo -->
         <div class="text-center mb-8 -mt-5">
           <h1
-            class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2"
+            class="text-3xl font-bold bg-gradient-to-r from-orange-600 to-indigo-600 bg-clip-text text-transparent mb-2"
           >
             Bienvenue
           </h1>
@@ -157,9 +152,9 @@ onMounted(() => fetchSession())
         </div>
 
         <!-- Form -->
-        <UForm :schema="schema" :state="state" @submit="onSubmit" class="space-y-5">
+        <UForm :schema="schema" :state="state" validate-on="input" @submit="onSubmit">
           <div class="grid gap-4">
-            <UFormGroup label="Email" name="email" required class=" " aria-required="true">
+            <UFormField label="Email " name="email" required class=" " aria-required="true">
               <UInput
                 v-model="state.email"
                 type="email"
@@ -167,27 +162,41 @@ onMounted(() => fetchSession())
                 icon="i-heroicons-at-symbol"
                 size="xl"
                 :ui="{ icon: { trailing: { pointer: '' } } }"
-                class="w-full border border-gray-100 dark:border-gray-700 rounded-full focus:ring-2 focus:ring-purple-500 dark:focus:ring-indigo-400"
+                class="w-full border border-gray-100 dark:border-gray-700 rounded-full focus:ring-2 focus:ring-orange-500 dark:focus:ring-indigo-400"
                 autocomplete="email"
                 :disabled="loading"
                 aria-label="Email"
                 autofocus
               />
-            </UFormGroup>
+            </UFormField>
 
-            <UFormGroup label="Mot de passe" name="password" required aria-required="true">
-              <UInput
+            <UFormField label="Mot de passe" name="password" required>
+              <UInput  
                 v-model="state.password"
-                type="password"
-                placeholder="Mot de passe"
+                :type="showPassword ? 'text' : 'password'"
+                class="w-full mb-4"
+                 placeholder="Mot de passe"
                 icon="i-heroicons-key"
                 size="lg"
-                class="w-full mb-4"
-                autocomplete="current-password"
-                :disabled="loading"
-                aria-label="Mot de passe"
-              />
-            </UFormGroup>
+                :ui="{ icon: { trailing: { pointer: '' } } }"
+               >
+                <!-- Icône à droite -->
+                <template #trailing>
+                  <button
+                    type="button"
+                    @click="showPassword = !showPassword"
+                    class="text-gray-500 hover:text-orange-600"
+                  >
+                    <UIcon
+                      :name="showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                      class="w-5 h-5"
+                    />
+                  </button>
+                </template>
+              </UInput>
+            </UFormField>
+
+            
           </div>
           <div class="flex items-center justify-between">
             <UCheckbox v-model="state.remember">
@@ -197,7 +206,7 @@ onMounted(() => fetchSession())
             </UCheckbox>
             <NuxtLink
               to="/forgot"
-              class="text-sm font-medium text-purple-600 dark:text-indigo-400 hover:underline"
+              class="text-sm font-medium text-orange-600 dark:text-indigo-400 hover:underline"
             >
               Mot de passe oublié ?
             </NuxtLink>
@@ -209,7 +218,7 @@ onMounted(() => fetchSession())
             size="lg"
             block
             :loading="loading"
-            class="font-semibold shadow-lg shadow-purple-500/40"
+            class="font-semibold shadow-lg shadow-orange-500/40 mt-5"
           >
             <span v-if="!loading">Se connecter</span>
             <span v-else>Connexion...</span>
@@ -222,7 +231,7 @@ onMounted(() => fetchSession())
             Nouveau ici ?
             <NuxtLink
               to="/auth/signup"
-              class="font-semibold text-purple-600 dark:text-indigo-400 hover:underline"
+              class="font-semibold text-orange-600 dark:text-indigo-400 hover:underline"
             >
               Créer un compte
             </NuxtLink>
@@ -235,15 +244,15 @@ onMounted(() => fetchSession())
         <div
           class="flex items-center justify-center gap-4 text-sm text-gray-600 dark:text-gray-400"
         >
-          <NuxtLink to="/privacy" class="hover:text-purple-600 dark:hover:text-indigo-400">
+          <NuxtLink to="/privacy" class="hover:text-orange-600 dark:hover:text-indigo-400">
             Confidentialité
           </NuxtLink>
           <span>•</span>
-          <NuxtLink to="/terms" class="hover:text-purple-600 dark:hover:text-indigo-400">
+          <NuxtLink to="/terms" class="hover:text-orange-600 dark:hover:text-indigo-400">
             Conditions
           </NuxtLink>
           <span>•</span>
-          <NuxtLink to="/help" class="hover:text-purple-600 dark:hover:text-indigo-400">
+          <NuxtLink to="/help" class="hover:text-orange-600 dark:hover:text-indigo-400">
             Aide
           </NuxtLink>
         </div>

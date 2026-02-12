@@ -22,7 +22,7 @@
         type="text"
         name="q"
         :placeholder="isMobile ? 'Rechercher...' : 'Rechercher un événement, un lieu, une catégorie...'"
-        v-model="query"
+        v-model="searchQuery"
         class="w-full pl-10 sm:pl-12 pr-20 sm:pr-24 py-3 sm:py-4 text-sm sm:text-base text-gray-900 placeholder-gray-400 bg-white border border-gray-200 rounded-xl sm:rounded-full shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:shadow-md hover:border-gray-300 h-11"
         @input="onInput"
         @focus="handleFocus"
@@ -35,7 +35,7 @@
 
       <!-- Bouton effacer -->
       <button
-        v-if="query"
+        v-if="searchQuery"
         type="button"
         @click="clearSearch"
         class="absolute right-12 sm:right-16 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1 touch-manipulation"
@@ -116,9 +116,9 @@
         <div class="sm:hidden border-t border-gray-100 px-3 py-2 bg-gray-50">
           <button
             @click="handleSubmit"
-            class="w-full text-center text-sm text-purple-600 font-medium py-2"
+            class="w-full text-center text-sm text-orange-600 font-medium py-2"
           >
-            Voir tous les résultats pour "{{ query }}"
+            Voir tous les résultats pour "{{  searchQuery}}"
           </button>
         </div>
       </div>
@@ -145,7 +145,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 
-const query = ref('')
+const searchQuery = ref('')
 const showSuggestions = ref(false)
 const selectedIndex = ref(-1)
 const searchInput = ref(null)
@@ -170,29 +170,38 @@ onUnmounted(() => {
 })
 
 // Liste de suggestions enrichie
-const suggestions = [
-  'Concerts et musique',
-  'Théâtre et spectacles',
-  'Expositions et musées',
-  'Conférences et formations',
-  'Sport et fitness',
-  'Festivals',
-  'Événements gastronomiques',
-  'Sorties en famille'
-]
+const suggestions = ref([])
 
-// Filtrer les suggestions
+const fetchSuggestions = async () => {
+  if (!searchQuery.value || searchQuery.value.length < 2) {
+    suggestions.value = []
+    return
+  }
+
+  const res = await fetch(`/api/events?q=${encodeURIComponent(searchQuery.value)}`)
+  const data = await res.json()
+  suggestions.value = data // déjà filtré côté serveur
+}
+
+onMounted(fetchSuggestions)
+
+
+
 const filteredSuggestions = computed(() => {
-  if (!query.value || query.value.length < 2) return []
-  return suggestions.filter((item) => 
-    item.toLowerCase().includes(query.value.toLowerCase())
-  ).slice(0, isMobile.value ? 5 : 6) // Moins de résultats sur mobile
+  if (!searchQuery.value || searchQuery.value.length < 2) return []
+  return suggestions.value.filter(event =>
+    event.titre?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+    event.description?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+    event.ville?.name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+    event.category?.name?.toLowerCase().includes(searchQuery.value.toLowerCase())
+  ).slice(0, isMobile.value ? 5 : 6)
 })
+
 
 // Highlight du texte correspondant
 const highlightMatch = (text) => {
-  if (!query.value) return text
-  const regex = new RegExp(`(${query.value})`, 'gi')
+  if (!searchQuery.value) return text
+  const regex = new RegExp(`(${searchQuery.value})`, 'gi')
   return text.replace(regex, '<strong class="font-semibold">$1</strong>')
 }
 
@@ -217,13 +226,13 @@ const handleFocus = () => {
 }
 
 const selectSuggestion = (item) => {
-  query.value = item
+  searchQuery.value = item
   closeSuggestions()
   handleSubmit()
 }
 
 const clearSearch = () => {
-  query.value = ''
+  searchQuery.value = ''
   selectedIndex.value = -1
   searchInput.value?.focus()
 }
@@ -246,18 +255,19 @@ const navigateSuggestions = (direction) => {
 const selectCurrentSuggestion = () => {
   if (selectedIndex.value >= 0 && filteredSuggestions.value[selectedIndex.value]) {
     selectSuggestion(filteredSuggestions.value[selectedIndex.value])
-  } else if (query.value.trim()) {
+  } else if (searchQuery.value.trim()) {
     handleSubmit()
   }
 }
 
 const handleSubmit = () => {
-  if (!query.value.trim()) return
-  
+  if (!searchQuery.value.trim()) return
+
   closeSuggestions()
-  // Navigation ou soumission du formulaire
-  window.location.href = `/fr/search?q=${encodeURIComponent(query.value)}`
+  // Redirection vers la page événements avec la query
+  window.location.href = `/events?q=${encodeURIComponent(searchQuery.value)}`
 }
+
 
 // Fermer les suggestions quand on clique ailleurs
 if (process.client) {

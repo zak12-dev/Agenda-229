@@ -81,7 +81,7 @@ const handleNavigation = async (link: { to: string; requiresAuth?: boolean }) =>
 </script>
 
 <template>
-  <footer class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
+  <footer class="bg-gradient-to-br from-slate-900 via-orange-900 to-slate-900 text-white">
     <!-- Vague décorative -->
     <div class="relative h-16">
       <svg
@@ -104,14 +104,14 @@ const handleNavigation = async (link: { to: string; requiresAuth?: boolean }) =>
           <div class="flex items-center gap-3">
             <NuxtLink to="/" class="flex items-center gap-2 sm:gap-3 z-50">
               <div
-                class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-xs sm:text-sm font-semibold transition-all duration-500 bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20"
+                class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-xs sm:text-sm font-semibold transition-all duration-500 bg-gradient-to-br from-orange-600 to-indigo-600 text-white shadow-lg shadow-orange-500/20"
               >
-                L&E
+                WxLE
               </div>
               <span
                 class="hidden sm:block text-base lg:text-3xl font-bold tracking-tight transition-all duration-500 text-transparent bg-clip-text bg-white"
               >
-                Plan tɛ wɛ
+                WeLoveEvent
               </span>
             </NuxtLink>
           </div>
@@ -138,8 +138,8 @@ const handleNavigation = async (link: { to: string; requiresAuth?: boolean }) =>
         <!-- Newsletter -->
         <div class="bg-white bg-opacity-5 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
           <div class="flex items-center gap-2 mb-4">
-            <UIcon name="i-heroicons-envelope" class="w-6 h-6 text-purple-600" />
-            <h3 class="text-xl font-bold text-purple-600">
+            <UIcon name="i-heroicons-envelope" class="w-6 h-6 text-orange-600" />
+            <h3 class="text-xl font-bold text-orange-600">
               Restez informé des meilleurs événements
             </h3>
           </div>
@@ -154,7 +154,7 @@ const handleNavigation = async (link: { to: string; requiresAuth?: boolean }) =>
                 type="email"
                 placeholder="votre@email.com"
                 required
-                class="flex-1 px-4 py-3 bg-white/10 border border-gray-300 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent rounded-full"
+                class="flex-1 px-4 py-3 bg-white/10 border border-gray-300 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent rounded-full"
               />
               <UButton
                 type="submit"
@@ -175,7 +175,7 @@ const handleNavigation = async (link: { to: string; requiresAuth?: boolean }) =>
       <!-- Navigation Links -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
         <div v-for="(section, name) in navigation" :key="name">
-          <h4 class="font-semibold text-lg mb-4 text-purple-300">{{ name }}</h4>
+          <h4 class="font-semibold text-lg mb-4 text-orange-300">{{ name }}</h4>
           <ul class="space-y-3">
             <li v-for="link in section" :key="link.to">
               <button

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from '#imports'
+import { stat } from 'node:fs'
 
 definePageMeta({
   layout: 'dashboard' as const,
@@ -135,9 +136,15 @@ const getRelativeTime = (date: string) => {
 </script>
 
 <template>
-<div class="min-h-screen bg-white p-4 sm:p-6 lg:p-8 overflow-auto flex flex-col">    
+<div class="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-6 overflow-auto flex flex-col">    
     <!-- Header -->
-    <div class="max-w-6xl  ">
+    <div class="max-w-6xl   ">
+
+      <div class="flex items-center justify-between mb-6">
+          <div>
+            <p class="text-gray-600 mt-1">Vous aviez {{ stats.total }} demandes</p>
+          </div>
+        </div>  
       <!-- Filters -->
       <div class="flex flex-col sm:flex-row gap-4 mb-6">
         <div class="flex-1 relative">
@@ -198,7 +205,7 @@ const getRelativeTime = (date: string) => {
               
               <!-- Left: Avatar & Info -->
               <div class="flex items-start gap-4 flex-1">
-                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-orange-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                   {{ req.name.charAt(0).toUpperCase() }}
                 </div>
 
@@ -320,7 +327,7 @@ const getRelativeTime = (date: string) => {
         @click.self="showModal = false"
       >
         <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-          <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-6">
+          <div class="bg-gradient-to-r from-orange-600 to-indigo-600 p-6">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-4">
                 <div class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
@@ -328,7 +335,7 @@ const getRelativeTime = (date: string) => {
                 </div>
                 <div>
                   <h2 class="text-2xl font-bold text-white">{{ selectedRequest.name }}</h2>
-                  <p class="text-purple-100">{{ selectedRequest.email }}</p>
+                  <p class="text-orange-100">{{ selectedRequest.email }}</p>
                 </div>
               </div>
               <button
@@ -361,7 +368,7 @@ const getRelativeTime = (date: string) => {
 
               <div v-if="selectedRequest.website">
                 <h3 class="text-sm font-semibold text-gray-600 mb-2">Site web</h3>
-                <a :href="selectedRequest.website" target="_blank" class="text-purple-600 hover:text-purple-700 font-medium">
+                <a :href="selectedRequest.website" target="_blank" class="text-orange-600 hover:text-orange-700 font-medium">
                   {{ selectedRequest.website }}
                 </a>
               </div>

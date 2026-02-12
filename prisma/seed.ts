@@ -7,7 +7,7 @@ async function main() {
   console.log('Start seeding super admin...')
 
   // Super Admin
-  const adminEmail = 'zakAmin@example.com'
+  const adminEmail = 'zakAdmin@example.com'
   const adminPassword = 'Password!'
 
   const existingAdmin = await prisma.user.findUnique({

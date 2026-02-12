@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full bg-gradient-to-br from-purple-200 via-white to-indigo-200 py-12 sm:py-16 lg:py-20 mt-10"
+    class="w-full bg-gradient-to-br from-orange-200 via-white to-indigo-200 py-12 sm:py-16 lg:py-20 mt-10"
   >
     <AppHeader />
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -9,7 +9,7 @@
         <h2 class="text-3xl sm:text-4xl lg:text-5xl font-light text-gray-900 mb-3">
           Trouvez votre
           <span
-            class="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600"
+            class="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-indigo-600"
             >événement idéal</span
           >
         </h2>
@@ -20,7 +20,7 @@
 
       <!-- Conteneur principal de recherche -->
       <div
-        class="bg-white rounded-3xl shadow-2xl shadow-purple-100/50 p-4 sm:p-6 lg:p-8 border border-gray-200"
+        class="bg-white rounded-3xl shadow-2xl shadow-orange-100/50 p-4 sm:p-6 lg:p-8 border border-gray-200"
       >
         <!-- Barre de recherche principale -->
         <div class="relative mb-4 sm:mb-6">
@@ -44,7 +44,7 @@
             v-model="searchQuery"
             type="text"
             placeholder="Rechercher un événement, un artiste, un lieu..."
-            class="w-full pl-14 sm:pl-16 pr-4 py-4 sm:py-5 lg:py-6 text-base sm:text-lg text-gray-900 placeholder-gray-400 bg-gray-50 border-2 border-gray-300 rounded-2xl transition-all duration-300 focus:outline-none focus:bg-white focus:border-purple-300 focus:shadow-lg"
+            class="w-full pl-14 sm:pl-16 pr-4 py-4 sm:py-5 lg:py-6 text-base sm:text-lg text-gray-900 placeholder-gray-400 bg-gray-50 border-2 border-gray-300 rounded-2xl transition-all duration-300 focus:outline-none focus:bg-white focus:border-orange-300 focus:shadow-lg"
             @focus="showSuggestions = true"
           />
 
@@ -74,7 +74,7 @@
               :class="[
                 'w-full flex items-center justify-between px-4 py-3 sm:py-3.5 rounded-xl border-2 transition-all',
                 activeDropdown === 'category' || selectedCategory
-                  ? 'border-purple-300 bg-purple-50 text-purple-700'
+                  ? 'border-orange-300 bg-orange-50 text-orange-700'
                   : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300',
               ]"
             >
@@ -123,16 +123,16 @@
                 <div class="p-2 max-h-64 overflow-y-auto">
                   <button
                     v-for="cat in categories"
-                    :key="cat"
-                    @click="selectCategory(cat)"
+                    :key="cat.id"
+                    @click="selectCategory(cat.name)"
                     :class="[
                       'w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors',
-                      selectedCategory === cat
-                        ? 'bg-purple-50 text-purple-700 font-medium'
+                      selectedCategory === cat.name
+                        ? 'bg-orange-50 text-orange-700 font-medium'
                         : 'text-gray-700 hover:bg-gray-50',
                     ]"
                   >
-                    {{ cat }}
+                    {{ cat.name }}
                   </button>
                 </div>
               </div>
@@ -146,7 +146,7 @@
               :class="[
                 'w-full flex items-center justify-between px-4 py-3 sm:py-3.5 rounded-xl border-2 transition-all',
                 activeDropdown === 'date' || selectedDate
-                  ? 'border-purple-300 bg-purple-50 text-purple-700'
+                  ? 'border-orange-300 bg-orange-50 text-orange-700'
                   : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300',
               ]"
             >
@@ -200,7 +200,7 @@
                     :class="[
                       'w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors',
                       selectedDate === date
-                        ? 'bg-purple-50 text-purple-700 font-medium'
+                        ? 'bg-orange-50 text-orange-700 font-medium'
                         : 'text-gray-700 hover:bg-gray-50',
                     ]"
                   >
@@ -218,7 +218,7 @@
               :class="[
                 'w-full flex items-center justify-between px-4 py-3 sm:py-3.5 rounded-xl border-2 transition-all',
                 activeDropdown === 'location' || selectedLocation
-                  ? 'border-purple-300 bg-purple-50 text-purple-700'
+                  ? 'border-orange-300 bg-orange-50 text-orange-700'
                   : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300',
               ]"
             >
@@ -272,17 +272,17 @@
               >
                 <div class="p-2 max-h-64 overflow-y-auto">
                   <button
-                    v-for="loc in locations"
-                    :key="loc"
-                    @click="selectLocation(loc)"
+                    v-for="city in cities"
+                    :key="city.id"
+                    @click="selectLocation(city.nomVille)"
                     :class="[
                       'w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors',
-                      selectedLocation === loc
-                        ? 'bg-purple-50 text-purple-700 font-medium'
+                      selectedLocation === city.nomVille
+                        ? 'bg-orange-50 text-orange-700 font-medium'
                         : 'text-gray-700 hover:bg-gray-50',
                     ]"
                   >
-                    {{ loc }}
+                    {{ city.nomVille }}
                   </button>
                 </div>
               </div>
@@ -296,7 +296,7 @@
               :class="[
                 'w-full flex items-center justify-between px-4 py-3 sm:py-3.5 rounded-xl border-2 transition-all',
                 activeDropdown === 'price' || selectedPrice
-                  ? 'border-purple-300 bg-purple-50 text-purple-700'
+                  ? 'border-orange-300 bg-orange-50 text-orange-700'
                   : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
               ]"
             >
@@ -334,7 +334,7 @@
                     :class="[
                       'w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors',
                       selectedPrice === price
-                        ? 'bg-purple-50 text-purple-700 font-medium'
+                        ? 'bg-orange-50 text-orange-700 font-medium'
                         : 'text-gray-700 hover:bg-gray-50'
                     ]"
                   >
@@ -352,10 +352,10 @@
           <div class="flex-1 flex flex-wrap gap-2">
             <span
               v-if="selectedCategory"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full"
             >
               {{ selectedCategory }}
-              <button @click="selectedCategory = null" class="hover:text-purple-900">
+              <button @click="selectedCategory = null" class="hover:text-orange-900">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     stroke-linecap="round"
@@ -369,10 +369,10 @@
 
             <span
               v-if="selectedDate"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full"
             >
               {{ selectedDate }}
-              <button @click="selectedDate = null" class="hover:text-purple-900">
+              <button @click="selectedDate = null" class="hover:text-orange-900">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     stroke-linecap="round"
@@ -386,10 +386,10 @@
 
             <span
               v-if="selectedLocation"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full"
             >
               {{ selectedLocation }}
-              <button @click="selectedLocation = null" class="hover:text-purple-900">
+              <button @click="selectedLocation = null" class="hover:text-orange-900">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     stroke-linecap="round"
@@ -403,10 +403,10 @@
 
             <span
               v-if="selectedPrice"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full"
             >
               {{ selectedPrice }}
-              <button @click="selectedPrice = null" class="hover:text-purple-900">
+              <button @click="selectedPrice = null" class="hover:text-orange-900">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     stroke-linecap="round"
@@ -430,7 +430,7 @@
           <!-- Bouton rechercher -->
           <button
             @click="handleSearch"
-            class="sm:w-auto px-8 py-3 sm:py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105 active:scale-95"
+            class="sm:w-auto px-8 py-3 sm:py-3.5 bg-gradient-to-r from-orange-600 to-indigo-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all duration-300 hover:scale-105 active:scale-95"
           >
             <span class="flex items-center justify-center gap-2">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -455,7 +455,7 @@
             v-for="tag in popularTags"
             :key="tag"
             @click="searchQuery = tag"
-            class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm rounded-full hover:border-purple-300 hover:text-purple-600 hover:bg-purple-50 transition-all"
+            class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm rounded-full hover:border-orange-300 hover:text-orange-600 hover:bg-orange-50 transition-all"
           >
             {{ tag }}
           </button>
@@ -505,7 +505,7 @@
         <article
           v-for="event in displayedEvents"
           :key="event.id"
-          class="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:border-purple-300"
+          class="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:border-orange-300"
         >
           <NuxtLink :to="`/events/${event.id}`">
             <!-- Image avec overlay -->
@@ -538,7 +538,7 @@
               <!-- Date Badge -->
               <div class="absolute top-4 right-4">
                 <div class="flex flex-col items-center px-3 py-2 rounded-xl bg-white shadow-lg">
-                  <span class="text-2xl font-bold text-purple-600">{{
+                  <span class="text-2xl font-bold text-orange-600">{{
                     formatDay(event.eventDate)
                   }}</span>
                   <span class="text-xs font-medium text-gray-600 uppercase">{{
@@ -547,20 +547,30 @@
                 </div>
               </div>
 
-              <!-- Prix en bas 
-            <div class="absolute bottom-4 left-4">
-              <div class="flex items-baseline gap-1">
-                <span class="text-2xl font-bold text-white">{{ event.price }}€</span>
-                <span class="text-sm text-white/80">/ pers</span>
+              <!-- Prix en bas -->
+              <div class="absolute bottom-4 left-4">
+                <div class="flex items-baseline gap-1">
+                  <span class="text-2xl font-bold text-white">
+                    <template v-if="event?.price && Number(event.price) > 0">
+                      {{ event.price }}Fcfa
+                    </template>
+                    <template v-else> Gratuit </template>
+                  </span>
+                  <span
+                    v-if="event?.price && Number(event.price) > 0"
+                    class="text-sm text-white/80"
+                  >
+                    / pers
+                  </span>
+                </div>
               </div>
-            </div>-->
             </div>
 
             <!-- Content -->
             <div class="p-6">
               <!-- Titre -->
               <h3
-                class="text-xl font-bold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors line-clamp-2"
+                class="text-xl font-bold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors line-clamp-2"
               >
                 {{ event.title }}
               </h3>
@@ -606,10 +616,10 @@
 
                 <!-- CTA Arrow -->
                 <div
-                  class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center group-hover:bg-gradient-to-r group-hover:from-purple-600 group-hover:to-indigo-600 transition-all"
+                  class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center group-hover:bg-gradient-to-r group-hover:from-orange-600 group-hover:to-indigo-600 transition-all"
                 >
                   <svg
-                    class="w-5 h-5 text-purple-600 group-hover:text-white group-hover:translate-x-0.5 transition-all"
+                    class="w-5 h-5 text-orange-600 group-hover:text-white group-hover:translate-x-0.5 transition-all"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -631,10 +641,10 @@
       <!-- Empty State -->
       <div v-else class="text-center py-16">
         <div
-          class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center"
+          class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-orange-100 to-indigo-100 flex items-center justify-center"
         >
           <svg
-            class="w-12 h-12 text-purple-600"
+            class="w-12 h-12 text-orange-600"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -651,7 +661,7 @@
         <p class="text-gray-600 mb-6">Aucun événement ne correspond à vos critères de recherche</p>
         <button
           @click="clearAllFilters"
-          class="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white font-medium rounded-xl hover:bg-purple-700 transition-colors"
+          class="inline-flex items-center gap-2 px-6 py-3 bg-orange-600 text-white font-medium rounded-xl hover:bg-orange-700 transition-colors"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -671,7 +681,7 @@
         <button
           v-if="hasMoreEvents"
           @click="showMore"
-          class="px-8 py-4 flex items-center gap-2 bg-white border-2 border-purple-600 text-purple-600 font-semibold rounded-xl hover:bg-purple-600 hover:text-white transition-all shadow-lg"
+          class="px-8 py-4 flex items-center gap-2 bg-white border-2 border-orange-600 text-orange-600 font-semibold rounded-xl hover:bg-orange-600 hover:text-white transition-all shadow-lg"
         >
           <span>Voir tous les événements</span>
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -688,7 +698,7 @@
         <button
           v-if="!hasMoreEvents && canShowLess"
           @click="showLess"
-          class="px-8 py-4 flex items-center gap-2 bg-white border-2 border-purple-600 text-purple-600 font-semibold rounded-xl hover:bg-purple-600 hover:text-white transition-all shadow-lg"
+          class="px-8 py-4 flex items-center gap-2 bg-white border-2 border-orange-600 text-orange-600 font-semibold rounded-xl hover:bg-orange-600 hover:text-white transition-all shadow-lg"
         >
           <span>Voir moins </span>
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -708,10 +718,14 @@
   <AppFooter />
 </template>
 
-<script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
-import type { Event } from '../../../types/event'
-import Events from '../Dashboard/events.vue'
+<script setup>
+import { useNuxtApp, navigateTo } from '#app'
+import { NuxtImg } from '#components'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const router = useRouter()
 const searchQuery = ref('')
 const showSuggestions = ref(false)
 const activeDropdown = ref(null)
@@ -720,68 +734,62 @@ const selectedCategory = ref(null)
 const selectedDate = ref(null)
 const selectedLocation = ref(null)
 const selectedPrice = ref(null)
-interface CustomEvent {
-  id: number
-  title: string
-  categoryId: string
-  date: string
-  location: string
-  price: number | 'Free'
-  duration: string
-  description: string
-  image: string | null
-  organizer: {
-    name: string
-    contact: string
-  }
-  views: number
-  createdAt: string
-  updatedAt: string
-  status: string
-  category: {
-    name: string
-    id: string
+function goToEvents() {
+  navigateTo('/events')
+}
+const categories = ref([])
+const cities = ref([])
+
+const loadingCategories = ref(false)
+const loadingCities = ref(false)
+
+const fetchCategories = async () => {
+  loadingCategories.value = true
+
+  try {
+    const data = await $fetch('/api/categories')
+    categories.value = data
+  } catch (error) {
+    console.error('Erreur catégories:', error)
+  } finally {
+    loadingCategories.value = false
   }
 }
 
-const categories = [
-  'Concerts & Musique',
-  'Théâtre & Spectacles',
-  'Expositions & Musées',
-  'Conférences',
-  'Sport & Fitness',
-  'Festivals',
-  'Gastronomie',
-  'Sorties en famille',
-]
+const fetchCities = async () => {
+  loadingCities.value = true
+
+  try {
+    const data = await $fetch('/api/villes')
+    console.log('Villes récupérées :', data)
+    cities.value = data
+  } catch (error) {
+    console.error('Erreur villes:', error)
+  } finally {
+    loadingCities.value = false
+  }
+}
 
 const dates = ["Aujourd'hui", 'Ce week-end', 'Cette semaine', 'Ce mois-ci', 'Prochainement']
-
-const locations = [
-  'Paris',
-  'Lyon',
-  'Marseille',
-  'Toulouse',
-  'Bordeaux',
-  'Nantes',
-  'Strasbourg',
-  'Lille',
-]
 
 const prices = ['Gratuit', 'Moins de 20€', '20€ - 50€', '50€ - 100€', 'Plus de 100€']
 
 const popularTags = ['Concert jazz', 'Exposition art', 'Festival été', 'Théâtre Paris']
 
-//API Fetching
-
-const events = ref<CustomEvent[]>([])
+// Données fictives (Mock events)
+const events = ref([])
 const loading = ref(true)
-const error = ref<any>(null)
+const error = ref(null)
 
 onMounted(async () => {
   try {
+    loading.value = true
+
+    await Promise.all([fetchCategories(), fetchCities()])
+
     const data = await $fetch('/api/events/index.front', {
       method: 'GET',
+      params: { q: searchQuery.value },
     })
 
     console.log('Retour API :', data)
@@ -800,56 +808,107 @@ onMounted(async () => {
   }
 })
 
+searchQuery.value = route.query.q || ''
+
 // Filtrage des événements
 const filteredEvents = computed(() => {
-  return events.value.filter((event) => {
-    const matchQuery =
-      !searchQuery.value ||
-      event.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchQuery.value.toLowerCase())
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
 
-    const matchCategory = !selectedCategory.value || event.category.name === selectedCategory.value
+  return events.value
+    .filter((event) => {
+      if (!event.eventDate) return false
 
-    const matchLocation = !selectedLocation.value || event.location === selectedLocation.value
+      const eventDate = new Date(event.eventDate)
 
-    const matchPrice =
-      !selectedPrice.value ||
-      (selectedPrice.value === 'Gratuit' && event.price === 0) ||
-      (selectedPrice.value === 'Moins de 20€' && event.price < 20) ||
-      (selectedPrice.value === '20€ - 50€' && event.price >= 20 && event.price <= 50) ||
-      (selectedPrice.value === '50€ - 100€' && event.price > 50 && event.price <= 100) ||
-      (selectedPrice.value === 'Plus de 100€' && event.price > 100)
+      // Supprimer les événements passés
+      if (eventDate < today) return false
 
-    return matchQuery && matchCategory && matchLocation && matchPrice
-  })
+      /* Recherche texte */
+      const matchQuery =
+        !searchQuery.value ||
+        event.title?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        event.description?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        event.ville?.name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        event.category?.name?.toLowerCase().includes(searchQuery.value.toLowerCase())
+
+      /* Catégorie */
+      const matchCategory =
+        !selectedCategory.value || event.category?.name === selectedCategory.value
+
+      /* Lieu */
+      const matchLocation =
+        !selectedLocation.value ||
+        event.ville?.nomVille.toLowerCase() === selectedLocation.value.toLowerCase()
+
+      /* Prix */
+      const matchPrice =
+        !selectedPrice.value ||
+        (selectedPrice.value === 'Gratuit' && event.price === 0) ||
+        (selectedPrice.value === 'Moins de 20€' && event.price < 20) ||
+        (selectedPrice.value === '20€ - 50€' && event.price >= 20 && event.price <= 50) ||
+        (selectedPrice.value === '50€ - 100€' && event.price > 50 && event.price <= 100) ||
+        (selectedPrice.value === 'Plus de 100€' && event.price > 100)
+
+      /* Date */
+      let matchDate = true
+
+      if (selectedDate.value) {
+        const now = new Date()
+
+        if (selectedDate.value === "Aujourd'hui") {
+          matchDate = eventDate.toDateString() === now.toDateString()
+        }
+
+        if (selectedDate.value === 'Ce week-end') {
+          const saturday = new Date(now)
+          saturday.setDate(now.getDate() + (6 - now.getDay()))
+
+          const sunday = new Date(saturday)
+          sunday.setDate(saturday.getDate() + 1)
+
+          matchDate = eventDate >= saturday && eventDate <= sunday
+        }
+
+        if (selectedDate.value === 'Cette semaine') {
+          const endWeek = new Date(now)
+          endWeek.setDate(now.getDate() + 7)
+
+          matchDate = eventDate <= endWeek
+        }
+
+        if (selectedDate.value === 'Ce mois-ci') {
+          matchDate =
+            eventDate.getMonth() === now.getMonth() && eventDate.getFullYear() === now.getFullYear()
+        }
+      }
+
+      return matchQuery && matchCategory && matchLocation && matchPrice && matchDate
+    })
+    .sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate))
 })
 
-// Nombre affiché au début
-const visibleCount = ref(6)
-
-// Combien on ajoute à chaque clic
-const STEP = 6
-
-// Est-ce qu'il reste encore des événements à afficher ?
-const hasMoreEvents = computed(() => {
-  return visibleCount.value < filteredEvents.value.length
-})
-
-// Est-ce qu'on peut réduire ?
-const canShowLess = computed(() => {
-  return visibleCount.value > STEP
-})
+const eventsPerPage = 6
+const displayedCount = ref(eventsPerPage)
 
 const displayedEvents = computed(() => {
-  return filteredEvents.value.slice(0, visibleCount.value)
+  return filteredEvents.value.slice(0, displayedCount.value)
 })
 
-const showMore = () => {
-  visibleCount.value += STEP
+const hasMoreEvents = computed(() => {
+  return displayedCount.value < filteredEvents.value.length
+})
+
+const canShowLess = computed(() => {
+  return displayedCount.value > eventsPerPage
+})
+
+function showMore() {
+  displayedCount.value += eventsPerPage
 }
 
-const showLess = () => {
-  visibleCount.value = STEP
+function showLess() {
+  displayedCount.value = eventsPerPage
 }
 
 // Formatage date
@@ -873,8 +932,8 @@ const toggleDropdown = (dropdown) => {
   activeDropdown.value = activeDropdown.value === dropdown ? null : dropdown
 }
 
-const selectCategory = (cat) => {
-  selectedCategory.value = cat
+const selectCategory = (catName) => {
+  selectedCategory.value = catName
   activeDropdown.value = null
 }
 
@@ -883,8 +942,8 @@ const selectDate = (date) => {
   activeDropdown.value = null
 }
 
-const selectLocation = (loc) => {
-  selectedLocation.value = loc
+const selectLocation = (cityName) => {
+  selectedLocation.value = cityName
   activeDropdown.value = null
 }
 
@@ -898,6 +957,7 @@ const clearAllFilters = () => {
   selectedDate.value = null
   selectedLocation.value = null
   selectedPrice.value = null
+  currentPage.value = 1
 }
 
 const handleSearch = () => {
@@ -910,7 +970,9 @@ const handleSearch = () => {
   })
   // Implémenter la logique de recherche
 }
-
+watch([searchQuery, selectedCategory, selectedDate, selectedLocation, selectedPrice], () => {
+  currentPage.value = 1
+})
 // Fermer les dropdowns au clic extérieur
 if (process.client) {
   document.addEventListener('click', (e) => {

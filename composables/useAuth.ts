@@ -90,7 +90,7 @@ export const useAuth = () => {
   const logout = async () => {
     await authClient.signOut();
     session.value = null;
-    await navigateTo("/auth/login");
+    await navigateTo("/auth/signup");
   };
 
   /* =====================

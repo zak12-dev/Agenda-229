@@ -193,7 +193,7 @@ const formatDate = (date: string) => {
   <button
     @click="isOpen = true"
     size="lg"
-    class="ml-auto inline-flex items-center -mt-46 gap-2 px-4 py-2 m-3 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:via-indigo-700 hover:to-purple-800 text-white font-semibold max-w-[300px] rounded-xl shadow-md float-right shadow-purple-500/40 hover:shadow-md hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105"
+    class="ml-auto inline-flex items-center -mt-46 gap-2 px-4 py-2 m-3 bg-gradient-to-r from-orange-600 via-indigo-600 to-orange-700 hover:from-orange-700 hover:via-indigo-700 hover:to-orange-800 text-white font-semibold max-w-[300px] rounded-xl shadow-md float-right shadow-orange-500/40 hover:shadow-md hover:shadow-orange-500/50 transition-all duration-300 hover:scale-105"
   >
     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -213,12 +213,12 @@ const formatDate = (date: string) => {
     >
       <!-- HEADER -->
       <div
-        class="px-6 py-5 border-b border-gray-200/60 dark:border-gray-800 bg-gradient-to-r from-gray-50/50 via-purple-50/30 to-indigo-50/50 dark:from-gray-900/50 dark:via-purple-950/20 dark:to-indigo-950/20 rounded-t-2xl"
+        class="px-6 py-5 border-b border-gray-200/60 dark:border-gray-800 bg-gradient-to-r from-gray-50/50 via-orange-50/30 to-indigo-50/50 dark:from-gray-900/50 dark:via-orange-950/20 dark:to-indigo-950/20 rounded-t-2xl"
       >
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div
-              class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-700 flex items-center justify-center shadow-lg shadow-purple-500/30"
+              class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-600 via-indigo-600 to-orange-700 flex items-center justify-center shadow-lg shadow-orange-500/30"
             >
               <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -268,7 +268,7 @@ const formatDate = (date: string) => {
             v-model="form.title"
             :maxlength="titleMaxLength"
             placeholder="Ex: Concert Jazz au clair de lune"
-            class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:focus:border-indigo-500 transition-all"
+            class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 dark:focus:border-indigo-500 transition-all"
           />
         </div>
 
@@ -286,7 +286,7 @@ const formatDate = (date: string) => {
             v-model="form.description"
             :maxlength="descriptionMaxLength"
             placeholder="Décrivez votre événement en quelques mots..."
-            class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:focus:border-indigo-500 transition-all resize-none"
+            class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 dark:focus:border-indigo-500 transition-all resize-none"
             rows="3"
           ></textarea>
         </div>
@@ -302,7 +302,7 @@ const formatDate = (date: string) => {
               type="text"
               v-model="form.location"
               placeholder="Ex: Salle Pleyel"
-              class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:focus:border-indigo-500 transition-all"
+              class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 dark:focus:border-indigo-500 transition-all"
             />
           </div>
 
@@ -313,7 +313,7 @@ const formatDate = (date: string) => {
             </label>
             <select
               v-model="form.villeId"
-              class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:focus:border-indigo-500 transition-all"
+              class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 dark:focus:border-indigo-500 transition-all"
             >
               <option value="" disabled>Sélectionnez une ville</option>
               <option v-for="ville in villes" :key="ville.id" :value="ville.id">
@@ -334,7 +334,7 @@ const formatDate = (date: string) => {
               type="date"
               v-model="form.eventDate"
           
-              class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:focus:border-indigo-500 transition-all"
+              class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 dark:focus:border-indigo-500 transition-all"
             />
           </div>
 
@@ -347,7 +347,7 @@ const formatDate = (date: string) => {
               type="time"
               v-model="form.startDate"
               placeholder="Ex: 20:00"
-              class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:focus:border-indigo-500 transition-all"
+              class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 dark:focus:border-indigo-500 transition-all"
             />
           </div>
 
@@ -360,7 +360,7 @@ const formatDate = (date: string) => {
               type="time"
               v-model="form.endDate"
               placeholder="Ex: 23:00"
-              class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:focus:border-indigo-500 transition-all"
+              class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 dark:focus:border-indigo-500 transition-all"
             />
           </div>
         </div>
@@ -373,7 +373,7 @@ const formatDate = (date: string) => {
 
           <select
             v-model="form.categoryId"
-            class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+            class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
           >
             <option disabled value="">Sélectionnez une catégorie</option>
 
@@ -382,7 +382,7 @@ const formatDate = (date: string) => {
             </option>
           </select>
 
-          <p v-if="form.categoryId" class="text-xs text-purple-600 dark:text-indigo-400 mt-1">
+          <p v-if="form.categoryId" class="text-xs text-orange-600 dark:text-indigo-400 mt-1">
             Catégorie sélectionnée
           </p>
         </div>
@@ -395,10 +395,10 @@ const formatDate = (date: string) => {
 
           <label v-if="!form.image" class="group cursor-pointer block">
             <div
-              class="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 text-center hover:border-purple-400 dark:hover:border-indigo-600 hover:bg-purple-50/30 dark:hover:bg-indigo-950/20 transition-all duration-200"
+              class="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 text-center hover:border-orange-400 dark:hover:border-indigo-600 hover:bg-orange-50/30 dark:hover:bg-indigo-950/20 transition-all duration-200"
             >
               <svg
-                class="w-10 h-10 mx-auto text-gray-400 group-hover:text-purple-500 dark:group-hover:text-indigo-400 transition-colors mb-2"
+                class="w-10 h-10 mx-auto text-gray-400 group-hover:text-orange-500 dark:group-hover:text-indigo-400 transition-colors mb-2"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -411,7 +411,7 @@ const formatDate = (date: string) => {
                 />
               </svg>
               <p
-                class="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-purple-600 dark:group-hover:text-indigo-400"
+                class="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-orange-600 dark:group-hover:text-indigo-400"
               >
                 Cliquez pour télécharger une image
               </p>
@@ -422,11 +422,11 @@ const formatDate = (date: string) => {
 
           <div v-else class="relative group">
             <div
-              class="border-2 border-purple-300 dark:border-indigo-700 rounded-xl p-4 bg-purple-50/30 dark:bg-indigo-950/20"
+              class="border-2 border-orange-300 dark:border-indigo-700 rounded-xl p-4 bg-orange-50/30 dark:bg-indigo-950/20"
             >
               <div class="flex items-center gap-3">
                 <svg
-                  class="w-8 h-8 text-purple-500 dark:text-indigo-400 flex-shrink-0"
+                  class="w-8 h-8 text-orange-500 dark:text-indigo-400 flex-shrink-0"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -468,10 +468,10 @@ const formatDate = (date: string) => {
         <!-- APERÇU DATE -->
         <div
           v-if="form.eventDate"
-          class="flex items-start gap-3 p-4 rounded-xl bg-gradient-to-br from-purple-50/50 to-indigo-50/50 dark:from-purple-950/20 dark:to-indigo-950/20 border border-purple-200/50 dark:border-indigo-800/50"
+          class="flex items-start gap-3 p-4 rounded-xl bg-gradient-to-br from-orange-50/50 to-indigo-50/50 dark:from-orange-950/20 dark:to-indigo-950/20 border border-orange-200/50 dark:border-indigo-800/50"
         >
           <svg
-            class="w-5 h-5 text-purple-600 dark:text-indigo-400 flex-shrink-0 mt-0.5"
+            class="w-5 h-5 text-orange-600 dark:text-indigo-400 flex-shrink-0 mt-0.5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -486,7 +486,7 @@ const formatDate = (date: string) => {
           <div class="flex-1">
             <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
               Votre événement aura lieu le
-              <span class="font-bold text-purple-600 dark:text-indigo-400">{{
+              <span class="font-bold text-orange-600 dark:text-indigo-400">{{
                 formatDate(form.eventDate)
               }}</span>
             </p>
@@ -518,8 +518,8 @@ const formatDate = (date: string) => {
             type="button"
             :disabled="!isFormValid || submitting"
             :class="[
-              'inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:via-indigo-700 hover:to-purple-800 text-white font-semibold rounded-lg shadow-lg shadow-purple-500/30 transition-all',
-              'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-purple-600 disabled:hover:via-indigo-600 disabled:hover:to-purple-700',
+              'inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-orange-600 via-indigo-600 to-orange-700 hover:from-orange-700 hover:via-indigo-700 hover:to-orange-800 text-white font-semibold rounded-lg shadow-lg shadow-orange-500/30 transition-all',
+              'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-orange-600 disabled:hover:via-indigo-600 disabled:hover:to-orange-700',
             ]"
           >
             <svg

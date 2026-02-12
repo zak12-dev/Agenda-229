@@ -148,7 +148,7 @@ const stats = computed(() => [
     label: 'Total',
     value: events.value.length,
     icon: 'i-heroicons-calendar-days',
-    color: 'purple',
+    color: 'orange',
   },
   {
     label: 'Publiés',
@@ -162,12 +162,7 @@ const stats = computed(() => [
     icon: 'i-heroicons-document-text',
     color: 'amber',
   },
-  {
-    label: 'Vues',
-    value: events.value.reduce((sum, a) => sum + (a.views || 0), 0).toLocaleString(),
-    icon: 'i-heroicons-eye',
-    color: 'blue',
-  },
+ 
 ])
 
 const formatDate = (date: string) => {
@@ -185,17 +180,16 @@ const formatDate = (date: string) => {
       <!-- Header -->
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">Gérez vos événements</h1>
           <p class="text-gray-600 mt-1">Gérez vos événements</p>
         </div>
         <div class="flex items-center gap-3">
-          <div class="flex bg-white border border-gray-200 rounded-lg p-1">
+          <!--<div class="flex bg-white border border-gray-200 rounded-lg p-1">
             <button
               @click="viewMode = 'grid'"
               :class="[
                 'px-3 py-1.5 rounded text-sm font-medium transition-all',
                 viewMode === 'grid'
-                  ? 'bg-purple-600 text-white'
+                  ? 'bg-orange-600 text-white'
                   : 'text-gray-600 hover:text-gray-900',
               ]"
             >
@@ -206,24 +200,24 @@ const formatDate = (date: string) => {
               :class="[
                 'px-3 py-1.5 rounded text-sm font-medium transition-all',
                 viewMode === 'list'
-                  ? 'bg-purple-600 text-white'
+                  ? 'bg-orange-600 text-white'
                   : 'text-gray-600 hover:text-gray-900',
               ]"
             >
               <UIcon name="i-heroicons-list-bullet" class="w-4 h-4" />
             </button>
-          </div>
+          </div> -->
           <button
             @click="fetchEvents"
             class="px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-all"
           >
             <UIcon name="i-heroicons-arrow-path" class="w-4 h-4" />
-          </button>
-        </div>
+          </button> 
+      </div>
       </div>
 
       <!-- Stats Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div
           v-for="(stat, index) in stats"
           :key="index"
@@ -234,8 +228,8 @@ const formatDate = (date: string) => {
             <div
               :class="[
                 'w-10 h-10 rounded-lg flex items-center justify-center',
-                stat.color === 'purple'
-                  ? 'bg-purple-100'
+                stat.color === 'orange'
+                  ? 'bg-orange-100'
                   : stat.color === 'green'
                     ? 'bg-green-100'
                     : stat.color === 'amber'
@@ -247,8 +241,8 @@ const formatDate = (date: string) => {
                 :name="stat.icon"
                 :class="[
                   'w-5 h-5',
-                  stat.color === 'purple'
-                    ? 'text-purple-600'
+                  stat.color === 'orange'
+                    ? 'text-orange-600'
                     : stat.color === 'green'
                       ? 'text-green-600'
                       : stat.color === 'amber'
@@ -289,7 +283,7 @@ const formatDate = (date: string) => {
             class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all group"
           >
             <div
-              class="h-40 bg-gradient-to-br from-purple-400 to-indigo-400 relative overflow-hidden"
+              class="h-40 bg-gradient-to-br from-orange-400 to-indigo-400 relative overflow-hidden"
             >
               <div class="absolute inset-0 bg-black/20"></div>
               <div class="absolute top-3 right-3">
@@ -336,7 +330,7 @@ const formatDate = (date: string) => {
                       loadEventById(event.id);
                       isEditModalOpen = true
                     "
-                    class="p-1.5 hover:bg-purple-50 rounded text-purple-600 transition-all"
+                    class="p-1.5 hover:bg-orange-50 rounded text-orange-600 transition-all"
                     title="Modifier"
                   >
                     <UIcon name="i-heroicons-pencil-square" class="w-4 h-4" />
@@ -382,9 +376,9 @@ const formatDate = (date: string) => {
           >
             <div class="flex items-center gap-4">
               <div
-                class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0"
+                class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0"
               >
-                <UIcon name="i-heroicons-calendar" class="w-6 h-6 text-purple-600" />
+                <UIcon name="i-heroicons-calendar" class="w-6 h-6 text-orange-600" />
               </div>
 
               <div class="flex-1 min-w-0">
@@ -426,7 +420,7 @@ const formatDate = (date: string) => {
                       loadEventById(event.id);
                       isEditModalOpen = true
                     "
-                    class="p-2 hover:bg-purple-50 rounded text-purple-600 transition-all"
+                    class="p-2 hover:bg-orange-50 rounded text-orange-600 transition-all"
                     title="Modifier"
                   >
                     <UIcon name="i-heroicons-pencil-square" class="w-4 h-4" />
@@ -479,7 +473,7 @@ const formatDate = (date: string) => {
             class="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl"
           >
             <!-- Header -->
-            <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-5 sticky top-0 z-10">
+            <div class="bg-gradient-to-r from-orange-600 to-indigo-600 px-6 py-5 sticky top-0 z-10">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <div
@@ -489,7 +483,7 @@ const formatDate = (date: string) => {
                   </div>
                   <div>
                     <h3 class="text-xl font-bold text-white">Aperçu de l'événement</h3>
-                    <p class="text-sm text-purple-100">Détails complets</p>
+                    <p class="text-sm text-orange-100">Détails complets</p>
                   </div>
                 </div>
                 <button
@@ -632,7 +626,7 @@ const formatDate = (date: string) => {
             class="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl"
           >
             <!-- Header -->
-            <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-5 sticky top-0 z-10">
+            <div class="bg-gradient-to-r from-orange-600 to-indigo-600 px-6 py-5 sticky top-0 z-10">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <div
@@ -642,7 +636,7 @@ const formatDate = (date: string) => {
                   </div>
                   <div>
                     <h3 class="text-xl font-bold text-white">Modifier l'événement</h3>
-                    <p class="text-sm text-purple-100">Mettez à jour les informations</p>
+                    <p class="text-sm text-orange-100">Mettez à jour les informations</p>
                   </div>
                 </div>
                 <button
@@ -664,7 +658,7 @@ const formatDate = (date: string) => {
                   v-model="selectedEvent.title"
                   type="text"
                   placeholder="Ex: Concert Live Afrobeat"
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 />
               </div>
 
@@ -676,7 +670,7 @@ const formatDate = (date: string) => {
                   v-model="selectedEvent.description"
                   rows="5"
                   placeholder="Décrivez votre événement..."
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all resize-none"
                 ></textarea>
                 <p class="text-xs text-gray-500 mt-1">
                   {{ selectedEvent!.description.length }} caractères
@@ -689,7 +683,7 @@ const formatDate = (date: string) => {
                 </label>
                 <select
                   v-model="selectedEvent.status"
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 >
                   <option value="Publié">Publié</option>
                   <option value="Brouillon">Brouillon</option>
@@ -705,7 +699,7 @@ const formatDate = (date: string) => {
                   v-model="selectedEvent.categoryId"
                   type="text"
                   placeholder="Ex: Concert, Sport, Théâtre..."
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 />
               </div>
 
@@ -717,7 +711,7 @@ const formatDate = (date: string) => {
                 <input
                   v-model="selectedEvent.date"
                   type="date"
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 />
               </div>
               <!-- Image -->
@@ -729,10 +723,10 @@ const formatDate = (date: string) => {
                 <!-- Si aucune image sélectionnée -->
                 <label v-if="!selectedEvent.image" class="group cursor-pointer block">
                   <div
-                    class="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 text-center hover:border-purple-400 dark:hover:border-indigo-600 hover:bg-purple-50/30 dark:hover:bg-indigo-950/20 transition-all duration-200"
+                    class="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 text-center hover:border-orange-400 dark:hover:border-indigo-600 hover:bg-orange-50/30 dark:hover:bg-indigo-950/20 transition-all duration-200"
                   >
                     <svg
-                      class="w-10 h-10 mx-auto text-gray-400 group-hover:text-purple-500 dark:group-hover:text-indigo-400 transition-colors mb-2"
+                      class="w-10 h-10 mx-auto text-gray-400 group-hover:text-orange-500 dark:group-hover:text-indigo-400 transition-colors mb-2"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -745,7 +739,7 @@ const formatDate = (date: string) => {
                       />
                     </svg>
                     <p
-                      class="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-purple-600 dark:group-hover:text-indigo-400"
+                      class="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-orange-600 dark:group-hover:text-indigo-400"
                     >
                       Cliquez pour choisir une image
                     </p>
@@ -765,11 +759,11 @@ const formatDate = (date: string) => {
                 <!-- Si une image est sélectionnée -->
                 <div v-else class="relative group">
                   <div
-                    class="border-2 border-purple-300 dark:border-indigo-700 rounded-xl p-4 bg-purple-50/30 dark:bg-indigo-950/20"
+                    class="border-2 border-orange-300 dark:border-indigo-700 rounded-xl p-4 bg-orange-50/30 dark:bg-indigo-950/20"
                   >
                     <div class="flex items-center gap-3">
                       <svg
-                        class="w-8 h-8 text-purple-500 dark:text-indigo-400 flex-shrink-0"
+                        class="w-8 h-8 text-orange-500 dark:text-indigo-400 flex-shrink-0"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -822,7 +816,7 @@ const formatDate = (date: string) => {
                   type="file"
                   accept="image/*"
                   @change="handleImageUpload"
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 />-->
 
               <!-- Aperçu de l'image sélectionnée 
@@ -844,7 +838,7 @@ const formatDate = (date: string) => {
                   v-model="selectedEvent.location"
                   type="text"
                   placeholder="Ex: Palais des Congrès, Cotonou..."
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 />
               </div>
 
@@ -857,7 +851,7 @@ const formatDate = (date: string) => {
                   v-model="selectedEvent.date"
                   type="text"
                   placeholder="Ex: 2 heures, 1 journée..."
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 />
               </div>
 
@@ -868,7 +862,7 @@ const formatDate = (date: string) => {
                   v-model="selectedEvent.price"
                   type="text"
                   placeholder="Ex: 5000, Free..."
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 />
               </div>-->
 
@@ -900,7 +894,7 @@ const formatDate = (date: string) => {
 
               <button
                 @click="updateEvent"
-                class="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-purple-500/30 flex items-center gap-2"
+                class="px-6 py-2.5 bg-gradient-to-r from-orange-600 to-indigo-600 hover:from-orange-700 hover:to-indigo-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-orange-500/30 flex items-center gap-2"
               >
                 <UIcon name="i-heroicons-check" class="w-4 h-4" />
                 Enregistrer les modifications

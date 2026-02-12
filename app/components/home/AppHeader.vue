@@ -80,13 +80,15 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
     ]
 
     // Si admin ou organisateur, ajouter "Dashboard"
-    if (session.value?.user?.roleId === 1 || session.value?.user?.roleId === 2) {
+    if (session.value?.user?.roleId === 1 || session.value?.user?.roleId === 2)
+ {
       mainItems.push({
-        label: 'Dashboard',
+        label: 'Mon dashboard',
         icon: 'i-lucide-layout',
         onClick: () => navigateTo('/dashboard/events'),
       })
     }
+    
 
     // Ajouter déconnexion
     mainItems.push({
@@ -121,7 +123,7 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
         <!-- Logo -->
         <NuxtLink to="/" class="flex items-center gap-2 sm:gap-3 z-50">
           <div
-            class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-xs sm:text-sm font-semibold transition-all duration-500 bg-gradient-to-br from-orange-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20"
+            class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-xs sm:text-sm font-semibold transition-all duration-500 bg-gradient-to-br from-orange-600 to-indigo-600 text-white shadow-lg shadow-orange-500/20"
           >
             WLE
           </div>
@@ -139,7 +141,7 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
             v-for="item in navitems"
             :key="item.to"
             :to="item.to"
-            class="px-4 lg:px-5 py-2 text-xs lg:text-sm font-medium rounded-full transition-all duration-300 bg-white text-purple-600 shadow-sm text-gray-600 hover:text-purple-600"
+            class="px-4 lg:px-5 py-2 text-xs lg:text-sm font-medium rounded-full transition-all duration-300 bg-white text-orange-600 shadow-sm text-gray-600 hover:text-orange-600"
           >
             {{ item.label }}
           </NuxtLink>
@@ -152,7 +154,7 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
           <div class="hidden md:block">
             <UDropdownMenu :items="dropdownitems" :ui="{ content: 'w-56' }">
               <button
-                class="flex items-center gap-2 px-4 py-2 text-sm font-medium tracking-wide transition-all duration-500 bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20 rounded-full"
+                class="flex items-center gap-2 px-4 py-2 text-sm font-medium tracking-wide transition-all duration-500 bg-gradient-to-r from-orange-600 to-indigo-600 text-white shadow-lg shadow-orange-500/20 rounded-full"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -238,7 +240,7 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
             :key="item.to"
             :to="item.to"
             class="block px-4 py-3 rounded-xl text-sm font-medium transition-all"
-            :class="item.active ? 'bg-purple-50 text-purple-600' : 'text-gray-700 hover:bg-gray-50'"
+            :class="item.active ? 'bg-orange-50 text-orange-600' : 'text-gray-700 hover:bg-gray-50'"
           >
             {{ item.label }}
           </NuxtLink>
@@ -248,13 +250,13 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
           <template v-if="!isLoggedIn">
             <button
               @click="goToLogin"
-              class="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-medium rounded-xl"
+              class="w-full py-2.5 bg-gradient-to-r from-orange-600 to-indigo-600 text-white text-sm font-medium rounded-xl"
             >
               Connexion
             </button>
             <button
               @click="goToSignUp"
-              class="w-full py-2.5 border border-purple-600 text-purple-600 text-sm font-medium rounded-xl"
+              class="w-full py-2.5 border border-orange-600 text-orange-600 text-sm font-medium rounded-xl"
             >
               Inscription
             </button>

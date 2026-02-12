@@ -1,3 +1,4 @@
+
 import { prisma } from '~~/server/utils/prisma'
 import { requireAuth } from '~~/server/utils/protect'
 import cloudinary from '../../utils/cloudinary'
@@ -5,6 +6,7 @@ import cloudinary from '../../utils/cloudinary'
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
   const formData = await readMultipartFormData(event)
+
 
   if (!formData) {
     throw createError({
@@ -61,6 +63,7 @@ export default defineEventHandler(async (event) => {
 
   try {
 
+
     // Upload vers Cloudinary
     const timestamp = Date.now()
     const safeFilename = (imageFile.filename || 'image').replace(/\s+/g, '_')
@@ -109,3 +112,4 @@ export default defineEventHandler(async (event) => {
     })
   }
 })
+

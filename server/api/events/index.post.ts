@@ -58,7 +58,6 @@ export default defineEventHandler(async (event) => {
     !location ||
     !eventDate ||
     !startDate ||
-    imageFiles.length === 0 ||
     !villeId ||
     !categoryId
   ) {
@@ -68,6 +67,19 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  if (imageFiles.length === 0) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Au moins une image est requise",
+    });
+  }
+
+  if (imageFiles.length > 3) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Le nombre d'images maximum est de 3",
+    });
+  }
   try {
     // Sauvegarde des images
     const imagesUrls: string[] = [];

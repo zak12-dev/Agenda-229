@@ -74,6 +74,13 @@ export default defineEventHandler(async (event) => {
       status,
     } = data;
 
+    if (imageFiles.length > 3) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "Le nombre d'images maximum est de 3",
+      });
+    }
+
     let imagePath = image;
     const imageUrls: string [] = [];
 
@@ -106,6 +113,7 @@ export default defineEventHandler(async (event) => {
         endDate: endDate ?? undefined,
         image: imagePath,
         images: imageUrls.length > 0 ? {
+          deleteMany: {},
           create: imageUrls.map(url => ({ url }))
         } : undefined,
         villeId,

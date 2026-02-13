@@ -6,6 +6,7 @@ export default defineEventHandler(async (event) => {
       include: {
         ville: true,
         category: true,
+        images: true,
         user: {
           select: {
             id: true,
@@ -19,6 +20,7 @@ export default defineEventHandler(async (event) => {
         createdAt: 'desc'
       }
     });
+    //  console.log("EVENTS:", events);
     return events;
   } catch (error) {
     throw createError({

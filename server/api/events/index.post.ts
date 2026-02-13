@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
   let price = "";
   let priceType = "FREE";
   let status = "DRAFT";
-  let imageFile: any = null;
+  let imageFiles: any[] = [];
 
   for (const field of formData) {
     if (!field.name) continue;
@@ -45,7 +45,11 @@ export default defineEventHandler(async (event) => {
     else if (field.name === "price") price = value;
     else if (field.name === "priceType") priceType = value;
     else if (field.name === "status") status = value;
-    else if (field.name === "image") imageFile = field;
+    else if (field.name === "image" || field.name === "images") {
+      if (field.filename) {
+        imageFiles.push(field);
+      }
+    }
   }
 
   if (
@@ -54,7 +58,7 @@ export default defineEventHandler(async (event) => {
     !location ||
     !eventDate ||
     !startDate ||
-    !imageFile ||
+    imageFiles.length === 0 ||
     !villeId ||
     !categoryId
   ) {
@@ -65,19 +69,22 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // Sauvegarde de l'image
-    const timestamp = Date.now()
-        const safeFilename = (imageFile.filename || 'image').replace(/\s+/g, '_')
-        const uniqueSuffix = `${timestamp}-${Math.round(Math.random() * 1E9)}`
-        const uploadResult = await cloudinary.uploader.upload(
-          `data:${imageFile.type};base64,${imageFile.data.toString('base64')}`,
-          {
-            folder: 'blog_posts',
-            public_id: `post-${uniqueSuffix}-${safeFilename}`,
+    // Sauvegarde des images
+    const imagesUrls: string[] = [];
+
+    for (const imageFile of imageFiles){
+      const timestamp = Date.now();
+      const safeFilename = (imageFile.filename || 'image').replace(/\s+/g, '_');
+      const uniqueSuffix = `${timestamp}-${Math.round(Math.random() * 1E9)}`;
+      const uploadResult = await cloudinary.uploader.upload(
+        `data:${imageFile.type};base64,${imageFile.data.toString('base64')}`,
+        {
+          folder: 'blog_posts',
+          public_id: `post-${uniqueSuffix}-${safeFilename}`,
           }
-        )
-    
-        const imageUrl = uploadResult.secure_url
+        );
+       imagesUrls.push(uploadResult.secure_url);
+    }
     
         const newEvent = await prisma.event.create({
           data: {
@@ -88,10 +95,13 @@ export default defineEventHandler(async (event) => {
             eventDate: new Date(eventDate),
             startDate,
             endDate: endDate || null,
-            image: imageUrl,
+            image: imagesUrls[0],
+            images: {
+              create: imagesUrls.map(url => ({ url }))
+            },
             price: price ? parseFloat(price) : null,
-            priceType,
-            status,
+            priceType: priceType as any,
+            status: status as any,
             userId: user.id,
             villeId,
             categoryId,
@@ -100,6 +110,7 @@ export default defineEventHandler(async (event) => {
             category: true,
             ville: true,
             user: true,
+            images: true,
           },
         })
     

@@ -34,7 +34,7 @@ export default defineEventHandler(async (event) => {
 
     const contentType = getHeader(event, "content-type") || "";
     let data: any = {};
-    let imageFile: any = null;
+    let imageFiles: any = [];
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await readMultipartFormData(event);
@@ -45,8 +45,10 @@ export default defineEventHandler(async (event) => {
 
           if (field.name === "categoryId") {
             data.categoryId = value;
-          } else if (field.name === "image") {
-            imageFile = field;
+          } else if (field.name === "image" || field.name === "images") {
+            if (field.filename) {
+              imageFiles.push(field);
+            }
           } else {
             data[field.name] = value;
           }
@@ -73,8 +75,11 @@ export default defineEventHandler(async (event) => {
     } = data;
 
     let imagePath = image;
-    if (imageFile && imageFile.data) {
-      const timestamp = Date.now()
+    const imageUrls: string [] = [];
+
+    if (imageFiles.length > 0) {
+      for (const imageFile of imageFiles) {
+        const timestamp = Date.now()
       const safeFilename = (imageFile.filename || 'image').replace(/\s+/g, '_')
       const uniqueSuffix = `${timestamp}-${Math.round(Math.random() * 1E9)}`
       const uploadResult = await cloudinary.uploader.upload(
@@ -84,7 +89,9 @@ export default defineEventHandler(async (event) => {
           public_id: `event-${uniqueSuffix}-${safeFilename}`,
         }
       )
-      imagePath = uploadResult.secure_url
+    imageUrls.push(uploadResult.secure_url)
+      }
+      imagePath = imageUrls[0];
     }
 
     const updatedEvent = await prisma.event.update({
@@ -98,6 +105,9 @@ export default defineEventHandler(async (event) => {
         startDate: startDate ?? undefined,
         endDate: endDate ?? undefined,
         image: imagePath,
+        images: imageUrls.length > 0 ? {
+          create: imageUrls.map(url => ({ url }))
+        } : undefined,
         villeId,
         categoryId: categoryId ?? undefined,
         price: price !== undefined ? (price ? parseFloat(price) : null) : undefined,
@@ -107,6 +117,7 @@ export default defineEventHandler(async (event) => {
       include: {
         category: true,
         ville: true,
+        images: true,
       },
     });
 

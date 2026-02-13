@@ -121,6 +121,14 @@ model Event {
   user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   ville      Ville            @relation(fields: [villeId], references: [id], onDelete: Cascade)
   category   Categorie        @relation(fields: [categoryId], references:[id], onDelete: Cascade)
+  images      EventImage[]
+}
+
+model EventImage {
+  id          String @id @default(cuid())
+  url         String
+  eventId     String
+  Event       Event  @relation(fields: [eventId], references:[id], onDelete: Cascade)
 }
 
 model Categorie {

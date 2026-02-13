@@ -11,8 +11,13 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const eventData = await prisma.event.findUnique({
+    const eventData = await prisma.event.update({
       where: { id },
+      data: {
+        views: {
+          increment:1,
+        }
+      },
       include: {
         ville: true,
         category: true,

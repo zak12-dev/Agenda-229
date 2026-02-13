@@ -1,5 +1,6 @@
 import { prisma } from "~~/server/utils/prisma";
 import { requireAuth } from "~~/server/utils/protect";
+import cloudinary from '../../utils/cloudinary';
 
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event);
@@ -58,6 +59,7 @@ export default defineEventHandler(async (event) => {
     const {
       title,
       description,
+      details,
       location,
       eventDate,
       startDate,
@@ -65,13 +67,24 @@ export default defineEventHandler(async (event) => {
       image,
       villeId,
       categoryId,
+      price,
+      priceType,
+      status,
     } = data;
 
     let imagePath = image;
-    if (imageFile && imageFile.filename) {
-      const fileName = `${Date.now()}-${imageFile.filename}`;
-      await useStorage("uploads").setItemRaw(fileName, imageFile.data);
-      imagePath = `/uploads/${fileName}`;
+    if (imageFile && imageFile.data) {
+      const timestamp = Date.now()
+      const safeFilename = (imageFile.filename || 'image').replace(/\s+/g, '_')
+      const uniqueSuffix = `${timestamp}-${Math.round(Math.random() * 1E9)}`
+      const uploadResult = await cloudinary.uploader.upload(
+        `data:${imageFile.type};base64,${imageFile.data.toString('base64')}`,
+        {
+          folder: 'events',
+          public_id: `event-${uniqueSuffix}-${safeFilename}`,
+        }
+      )
+      imagePath = uploadResult.secure_url
     }
 
     const updatedEvent = await prisma.event.update({
@@ -79,6 +92,7 @@ export default defineEventHandler(async (event) => {
       data: {
         title,
         description,
+        details: details !== undefined ? details : undefined,
         location,
         eventDate: eventDate ? new Date(eventDate) : undefined,
         startDate: startDate ?? undefined,
@@ -86,6 +100,9 @@ export default defineEventHandler(async (event) => {
         image: imagePath,
         villeId,
         categoryId: categoryId ?? undefined,
+        price: price !== undefined ? (price ? parseFloat(price) : null) : undefined,
+        priceType: priceType ?? undefined,
+        status: status ?? undefined,
       },
       include: {
         category: true,

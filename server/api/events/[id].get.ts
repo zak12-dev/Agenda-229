@@ -11,8 +11,13 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const eventData = await prisma.event.findUnique({
+    const eventData = await prisma.event.update({
       where: { id },
+      data: {
+        views: {
+          increment: 1,
+        },
+      },
       include: {
         ville: true,
         category: true,
@@ -26,16 +31,14 @@ export default defineEventHandler(async (event) => {
         },
       },
     });
-
-    if (!eventData) {
+    return eventData;
+  } catch (error: any) {
+    if (error.code === "P2025") {
       throw createError({
         statusCode: 404,
         statusMessage: "Événement non trouvé",
       });
     }
-
-    return eventData;
-  } catch (error) {
     throw createError({
       statusCode: 500,
       statusMessage: "Erreur lors de la récupération de l'événement",

@@ -112,7 +112,13 @@ const navItems = computed<NavigationMenuItem[][]>(() => {
         icon: 'i-heroicons-user-group',
         to: '/dashboard/demandes',
         //badge: '123',
-      }
+      },
+      {
+        label: 'Historique',
+        icon: 'i-heroicons-chart-bar',
+        to: '/dashboard/historiques',
+        // badge: '5',
+      },
     )
   }
 

@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
 
   const organizers = await prisma.user.findMany({
     where: {
-      roleId: 4, // 4 = organizer
+      roleId: 2, // 2 = organizer
     },
     include: {
       role: true,

@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuth } from '../../../composables/useAuth'
-
+import admin from '~~/middleware/admin'
+import { watch } from 'vue'
 
 interface CustomEvent {
   id: number
   title: string
-  categoryId:string
+  categoryId: string
   date: string
   location: string
   price: number | 'Free'
@@ -21,16 +22,15 @@ interface CustomEvent {
   createdAt: string
   updatedAt: string
   status: string
-  category:{
+  category: {
     name: string
     id: string
   }
 }
 
-
-
 const { session } = useAuth()
-
+const searchQuery = ref('')
+const filterStatus = ref<'all' | 'Publié' | 'Brouillon' | 'Recherche'>('all')
 const isAdmin = computed(() => session.value?.user.roleId === 1)
 const events = ref<CustomEvent[]>([])
 const loading = ref(true)
@@ -40,6 +40,16 @@ const isPreviewModalOpen = ref(false)
 const selectedEvent = ref<CustomEvent | null>(null)
 const modalLoading = ref(false)
 const viewMode = ref<'grid' | 'list'>('list')
+
+const filteredEvents = computed(() => {
+  const query = searchQuery.value.toLowerCase()
+
+  return events.value.filter((event) => {
+    const matchesQuery = event.title.toLowerCase().includes(query)
+    const matchesStatus = filterStatus.value === 'all' || event.status === filterStatus.value
+    return matchesQuery && matchesStatus
+  })
+})
 
 const handleImageUpload = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -76,7 +86,7 @@ const fetchEvents = async () => {
       organizer: event.organizer || { name: 'Inconnu', contact: 'Non spécifié' },
       createdAt: event.createdAt,
       updatedAt: event.updatedAt || event.createdAt,
-      category:event.category
+      category: event.category,
     }))
     console.log('Event:', events.value)
   } catch (err: any) {
@@ -88,7 +98,22 @@ const fetchEvents = async () => {
   }
 }
 
-onMounted(fetchEvents)
+onMounted(() => {
+  fetchEvents() // fetch initial
+
+  const interval = setInterval(fetchEvents, 30000) // toutes les 30 secondes
+  onUnmounted(() => clearInterval(interval)) // nettoyage
+})
+
+let timeout: ReturnType<typeof setTimeout>
+
+watch([searchQuery, filterStatus], () => {
+  clearTimeout(timeout)
+
+  timeout = setTimeout(() => {
+    fetchEvents()
+  }, 500)
+})
 
 const deleteEvent = async (id: number) => {
   try {
@@ -162,7 +187,6 @@ const stats = computed(() => [
     icon: 'i-heroicons-document-text',
     color: 'amber',
   },
- 
 ])
 
 const formatDate = (date: string) => {
@@ -179,9 +203,6 @@ const formatDate = (date: string) => {
     <div class="max-w-7xl mx-auto space-y-6">
       <!-- Header -->
       <div class="flex items-center justify-between">
-        <div>
-          <p class="text-gray-600 mt-1">Gérez vos événements</p>
-        </div>
         <div class="flex items-center gap-3">
           <!--<div class="flex bg-white border border-gray-200 rounded-lg p-1">
             <button
@@ -206,14 +227,14 @@ const formatDate = (date: string) => {
             >
               <UIcon name="i-heroicons-list-bullet" class="w-4 h-4" />
             </button>
-          </div> -->
+          </div> 
           <button
             @click="fetchEvents"
             class="px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-all"
           >
             <UIcon name="i-heroicons-arrow-path" class="w-4 h-4" />
-          </button> 
-      </div>
+          </button>-->
+        </div>
       </div>
 
       <!-- Stats Grid -->
@@ -256,8 +277,82 @@ const formatDate = (date: string) => {
         </div>
       </div>
 
+      <!-- Search & Filter -->
+      <div class="flex flex-col sm:flex-row gap-4">
+        <!-- Search -->
+        <div class="flex-1 relative">
+          <UIcon
+            name="i-heroicons-magnifying-glass"
+            class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+          />
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Rechercher par nom d'évènements"
+            class="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          />
+        </div>
+
+        <!-- Filters -->
+        <!-- Filters -->
+        <div class="flex gap-2 overflow-x-auto">
+          <!-- Si admin, on affiche seulement le bouton Recherche -->
+          <button
+            v-if="isAdmin"
+            @click="filterStatus = 'Recherche'"
+            :class="[
+              'px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all',
+              filterStatus === 'Recherche'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 border border-gray-200 hover:border-blue-300',
+            ]"
+          >
+            Recherche
+          </button>
+
+          <!-- Si pas admin, on affiche les autres boutons -->
+          <template v-else>
+            <button
+              @click="filterStatus = 'all'"
+              :class="[
+                'px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all',
+                filterStatus === 'all'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:border-purple-300',
+              ]"
+            >
+              Tous
+            </button>
+
+            <button
+              @click="filterStatus = 'Publié'"
+              :class="[
+                'px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all',
+                filterStatus === 'Publié'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:border-green-300',
+              ]"
+            >
+              Publié
+            </button>
+
+            <button
+              @click="filterStatus = 'Brouillon'"
+              :class="[
+                'px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all',
+                filterStatus === 'Brouillon'
+                  ? 'bg-amber-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:border-amber-300',
+              ]"
+            >
+              Brouillon
+            </button>
+          </template>
+        </div>
+      </div>
+
       <!-- Events Grid/List -->
-      <div class="max-h-[200px] overflow-y-auto">
+      <div class="max-h-[500px] overflow-y-auto">
         <!-- Grid View -->
         <div
           v-if="viewMode === 'grid'"
@@ -278,7 +373,7 @@ const formatDate = (date: string) => {
           <!-- Cards -->
           <div
             v-else
-            v-for="event in events"
+            v-for="event in filteredEvents"
             :key="event.id"
             class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all group"
           >
@@ -328,7 +423,7 @@ const formatDate = (date: string) => {
                   <button
                     @click="
                       loadEventById(event.id);
-                      isEditModalOpen = true
+                      isPreviewModalOpen = true
                     "
                     class="p-1.5 hover:bg-orange-50 rounded text-orange-600 transition-all"
                     title="Modifier"
@@ -370,7 +465,7 @@ const formatDate = (date: string) => {
           <!-- List Items -->
           <div
             v-else
-            v-for="event in events"
+            v-for="event in filteredEvents"
             :key="event.id"
             class="p-5 hover:bg-gray-50 transition-colors"
           >
@@ -390,8 +485,7 @@ const formatDate = (date: string) => {
 
               <div class="flex items-center gap-3">
                 <span
-                v-if="!isAdmin"
-
+                  v-if="!isAdmin"
                   :class="[
                     'px-2 py-1 rounded-full text-xs font-semibold',
                     event.status === 'Publié'
@@ -414,8 +508,7 @@ const formatDate = (date: string) => {
                     <UIcon name="i-heroicons-eye" class="w-4 h-4" />
                   </button>
                   <button
-                  v-if="!isAdmin"
-
+                    v-if="!isAdmin"
                     @click="
                       loadEventById(event.id);
                       isEditModalOpen = true
@@ -751,10 +844,7 @@ const formatDate = (date: string) => {
                     @change="selectedEvent.image = $event.target.files[0]"
                     class="hidden"
                   />
-                  
                 </label>
-
-                
 
                 <!-- Si une image est sélectionnée -->
                 <div v-else class="relative group">
@@ -802,7 +892,6 @@ const formatDate = (date: string) => {
                       </button>
                     </div>
                   </div>
-                  
                 </div>
               </div>
 

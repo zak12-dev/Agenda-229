@@ -7,6 +7,5 @@ import AppSearchBar from '../components/home/AppSection1.vue'
     <AppHero />
     <AppSearchBar />   
     <AppSection2 />
-    <AppFooter />
 
 </template>

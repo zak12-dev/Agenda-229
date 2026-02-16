@@ -6,9 +6,32 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('Start seeding super admin...')
 
+<<<<<<< HEAD
   // Super Admin
   const adminEmail = 'zakAdmin@example.com'
   const adminPassword = 'Password!'
+=======
+  // 1. Create Roles
+  const roles = [
+    { id: 1, role: 'admin' },
+    { id: 2, role: 'organizer' },
+    { id: 3, role: 'user simple' },
+  ]
+
+  for (const r of roles) {
+    await prisma.role.upsert({
+      where: { role: r.role },
+      update: {},
+      create: r,
+    })
+  }
+
+  console.log('Roles seeded.')
+
+  // 2. Create Super User (Admin)
+  const adminEmail = 'admin@example.com'
+  const adminPassword = 'Password123!'
+>>>>>>> origin/fred
 
   const existingAdmin = await prisma.user.findUnique({
     where: { email: adminEmail },

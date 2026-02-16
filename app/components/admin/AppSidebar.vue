@@ -97,8 +97,8 @@ const navItems = computed<NavigationMenuItem[][]>(() => {
       //{ label: "Vue d'ensemble", icon: 'i-heroicons-squares-2x2', to: '/dashboard' },
       {
         label: 'Categories',
-        icon: 'i-heroicons-chart-bar',
-        to: '/dashboard/categorie',
+        icon: 'i-heroicons-tag',
+        to: '/dashboard/categories',
         //badge: '5',
       },
       {

@@ -12,6 +12,7 @@ const now = new Date()
 /* Fetch API avec filtrage des dates invalides */
 onMounted(async () => {
   const { data } = await useFetch('/api/events/index.front')
+  console.log('DATA',data.value)
   todayEvents.value = (data.value || []).filter(
     (e) => e.eventDate && !isNaN(new Date(e.eventDate).getTime())
   )

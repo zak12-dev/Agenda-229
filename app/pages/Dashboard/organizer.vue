@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import admin from '../../../middleware/admin'
 definePageMeta({
-  name:'list-organizer',
+  name:'admin-organizer',
   layout: 'dashboard',
   middleware: [admin]
 })

@@ -127,7 +127,7 @@ useHead(() => ({
 
 <template>
   <div class="min-h-screen">
-    <AppHeader />
+  
 
     <div v-if="event" class="bg-gradient-to-br from-orange-200 via-white to-indigo-200">
       <!-- Hero Magazine Style -->
@@ -649,5 +649,4 @@ useHead(() => ({
       </div>
     </div>
   </div>
-  <AppFooter />
 </template>

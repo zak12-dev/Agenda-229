@@ -228,7 +228,7 @@ onMounted(async () => {
 
 <template>
   <div class="min-h-screen bg-gray-50 p-6 -mt-2 overflow-auto h-[100px]">
-    <div class="max-w-6xl mx-auto space-y-6 ">
+    <div class="max-w-7xl mx-auto space-y-6 ">
       
       <!-- Header -->
       <div class="flex items-center justify-between">

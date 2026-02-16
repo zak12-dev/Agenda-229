@@ -1,17 +1,25 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { computed } from 'vue'
 
 interface Category {
   id: number
   name: string
 }
-
+const searchQuery = ref('')
 const categories = ref<Category[]>([])
 const loading = ref(true)
 const isCreateModalOpen = ref(false)
 const isEditModalOpen = ref(false)
 const selectedCategory = ref<Category | null>(null)
 const newCategoryName = ref('')
+
+const filteredCategories = computed(() => {
+  if (!searchQuery.value) return categories.value
+  return categories.value.filter((category) =>
+    category.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+  )
+})
 
 const fetchCategories = async () => {
   loading.value = true
@@ -72,12 +80,57 @@ onMounted(fetchCategories)
           </div>
         </div>
       </div>
+      <!-- Search & Sort -->
+      <div class="flex flex-col sm:flex-row gap-4 mb-6">
+        <!-- Search Bar -->
+        <div class="flex-1 relative">
+          <UIcon
+            name="i-heroicons-magnifying-glass"
+            class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+          />
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Rechercher par nom ou description..."
+            class="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+          />
+          <button
+            v-if="searchQuery"
+            @click="searchQuery = ''"
+            class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            <UIcon name="i-heroicons-x-mark" class="w-5 h-5" />
+          </button>
+        </div>
+
+        <!-- Sort -->
+        <div class="flex gap-2 bg-white rounded-xl border-2 border-gray-200 p-1">
+          <button
+            @click="sortBy = 'count'"
+            :class="[
+              'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+              sortBy === 'count' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-50',
+            ]"
+          >
+            Plus actifs
+          </button>
+          <button
+            @click="sortBy = 'name'"
+            :class="[
+              'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+              sortBy === 'name' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-50',
+            ]"
+          >
+            Alphabétique
+          </button>
+        </div>
+      </div>
 
       <!-- List -->
-      <div class="space-y-2 max-h-[320px] overflow-y-auto">
+      <div class="space-y-2 max-h-[500px] overflow-y-auto">
         <div
           v-if="!loading"
-          v-for="category in categories"
+          v-for="category in filteredCategories"
           :key="category.id"
           class="border border-gray-200 rounded-xl p-4 hover:border-gray-300 hover:shadow-sm transition-all"
         >
@@ -94,7 +147,7 @@ onMounted(fetchCategories)
             <div class="flex items-center gap-2">
               <button
                 @click="openEditModal(category)"
-                class="p-2 hover:bg-orange-50 rounded-lg text-orange-600 transition-all"
+                class="p-2 hover:bg-orange-50 rounded-lg text-green-600 transition-all"
               >
                 <UIcon name="i-heroicons-pencil-square" class="w-4 h-4" />
               </button>
@@ -189,7 +242,7 @@ onMounted(fetchCategories)
               @click="updateCategory"
               class="px-6 py-2.5 bg-gradient-to-r from-orange-600 to-indigo-600 hover:from-orange-700 hover:to-indigo-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-orange-500/30 flex items-center gap-2"
             >
-             <UIcon name="i-heroicons-check" class="w-4 h-4" />
+              <UIcon name="i-heroicons-check" class="w-4 h-4" />
               Enregistrer
             </button>
           </div>

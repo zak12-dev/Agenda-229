@@ -25,8 +25,8 @@ const navigation = {
   ],
   Support: [
     { label: "Centre d'aide", to: '/guides' },
-    { label: 'Contact', to: '/inspiration' },
-    { label: 'FAQ', to: '/faq' },
+    { label: 'Contact', to: '/contact' },
+    { label: 'FAQ', to: '/helps/faq' },
     { label: 'Blog', to: '/blog' },
   ],
   Société: [
@@ -173,7 +173,7 @@ const handleNavigation = async (link: { to: string; requiresAuth?: boolean }) =>
       </div>
 
       <!-- Navigation Links -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-  ">
         <div v-for="(section, name) in navigation" :key="name">
           <h4 class="font-semibold text-lg mb-4 text-orange-300">{{ name }}</h4>
           <ul class="space-y-3">

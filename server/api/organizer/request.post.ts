@@ -1,31 +1,39 @@
-import { prisma } from "~~/server/utils/prisma";
-import { requireAuth } from "~~/server/utils/protect";
+import { prisma } from '~~/server/utils/prisma'
+import { requireAuth } from '~~/server/utils/protect'
 
 export default defineEventHandler(async (event) => {
-  const user = requireAuth(event);
+  const user = requireAuth(event)
 
-  const { name, description, website, phone } = await readBody(event);
+  const { name, description, website, phone } = await readBody(event)
 
   if (!name) {
     throw createError({
       statusCode: 400,
       statusMessage: "Le nom de l'organisation est requis",
-    });
+    })
   }
 
   // ✅ Vérifier si une demande est déjà en attente
+  // Vérifier si une demande est déjà en cours pour cet utilisateur
+  if (user.roleId === 2) {
+    // 2 = organizer
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Vous êtes déjà un organisateur.',
+    })
+  }
   const existingRequest = await prisma.organizerRequest.findFirst({
     where: {
       userId: user.id,
-      status: "pending",
+      status: 'pending',
     },
-  });
+  })
 
   if (existingRequest) {
     throw createError({
       statusCode: 400,
-      statusMessage: "Vous avez déjà une demande en attente.",
-    });
+      statusMessage: 'Vous avez déjà une demande en attente.',
+    })
   }
 
   // ✅ Transaction sécurisée
@@ -33,7 +41,7 @@ export default defineEventHandler(async (event) => {
     prisma.user.update({
       where: { id: user.id },
       data: {
-        organizerStatus: "pending",
+        organizerStatus: 'pending',
         organizerProfile: {
           upsert: {
             create: {
@@ -53,14 +61,13 @@ export default defineEventHandler(async (event) => {
       },
     }),
 
-   prisma.organizerRequest.create({
+    prisma.organizerRequest.create({
       data: {
         userId: user.id,
-        status: "pending",
+        status: 'pending',
       },
     }),
-  ]);
+  ])
 
-  return { success: true };
-});
- 
+  return { success: true }
+})

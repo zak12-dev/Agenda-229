@@ -22,13 +22,23 @@ const pagesConfig: Record<string, { title: string; icon: string; description?: s
   },
   'admin-categories': {
     title: 'Catégories',
-    icon: 'i-heroicons-folder',
+    icon: 'i-heroicons-tag',
     description: 'Organisez votre contenu par thématiques'
+  },
+  'admin-historique': {
+    title: 'Historique',
+    icon: 'i-heroicons-folder',
+    description: 'Toutes les demandes d\'organisateur'
   },
   'admin-organizer': {
     title: 'Organisateur',
     icon: 'i-heroicons-user-group',
     description: 'Gérez les organisateur'
+  },
+  'admin-demande': {
+    title: 'Demandes',
+    icon: 'i-heroicons-user-group',
+    description: 'Listes de tout vos demandes '
   },
   'admin-analytics': {
     title: 'Analytiques',

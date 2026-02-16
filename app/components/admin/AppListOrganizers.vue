@@ -55,8 +55,8 @@ onMounted(fetchOrganizers)
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
-    <div class="max-w-6xl mx-auto">
+  <div class="min-h-screen bg-gray-50 p-6 w-auto">
+    <div class="max-w-7xl mx-auto">
       <!-- Header -->
       <div class="mb-6">
         <p class="text-gray-600">Vous aviez {{ organizers.length }} organisateur(s)</p>
@@ -119,7 +119,7 @@ onMounted(fetchOrganizers)
       </div>
 
       <!-- Table -->
-      <div class="bg-white rounded-xl border border-gray-200 overflow-y-auto h-[320px]">
+      <div class="bg-white rounded-xl border border-gray-200 overflow-y-auto w-auto">
         <div class="overflow-y-auto max-h-[500px]">
           <table class="w-full">
             <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">

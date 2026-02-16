@@ -138,7 +138,7 @@ const getRelativeTime = (date: string) => {
 <template>
 <div class="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-6 overflow-auto flex flex-col">    
     <!-- Header -->
-    <div class="max-w-6xl   ">
+    <div class="max-w-7xl   ">
 
       <div class="flex items-center justify-between mb-6">
           <div>

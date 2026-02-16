@@ -29,8 +29,7 @@ const submitForm = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-white">
-    <AppHeader />
+  <div class="min-h-screen mt-10 bg-gradient-to-br from-orange-200 via-white to-indigo-200">
     
     <div class="max-w-4xl mx-auto px-6 py-20">
       

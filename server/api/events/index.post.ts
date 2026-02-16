@@ -26,6 +26,7 @@ export default defineEventHandler(async (event) => {
   let price = "";
   let priceType = "FREE";
   let status = "DRAFT";
+  let entryMode = "PUBLIC";
   let imageFiles: any[] = [];
 
   for (const field of formData) {
@@ -45,6 +46,7 @@ export default defineEventHandler(async (event) => {
     else if (field.name === "price") price = value;
     else if (field.name === "priceType") priceType = value;
     else if (field.name === "status") status = value;
+    else if (field.name === "entryMode") entryMode = value;
     else if (field.name === "image" || field.name === "images") {
       if (field.filename) {
         imageFiles.push(field);
@@ -56,6 +58,7 @@ export default defineEventHandler(async (event) => {
     !title ||
     !description ||
     !location ||
+    !details ||
     !eventDate ||
     !startDate ||
     !villeId ||
@@ -79,6 +82,34 @@ export default defineEventHandler(async (event) => {
       statusCode: 400,
       statusMessage: "Le nombre d'images maximum est de 3",
     });
+  }
+  let parsedPrice: number | null = null;
+
+  if (price && price.trim() !== "") {
+    const numericPrice = parseFloat(price);
+
+    if (!isNaN(numericPrice) && numericPrice >= 0) {
+      parsedPrice = numericPrice;
+    } else {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "Le prix doit être un nombre positif",
+      });
+    }
+  }
+  // Sécurisation status
+  if (!["DRAFT", "PUBLISHED"].includes(status)) {
+    status = "DRAFT";
+  }
+
+  // Sécurisation entryMode
+  if (!["PUBLIC", "PRIVATE"].includes(entryMode)) {
+    entryMode = "PUBLIC";
+  }
+
+  // Sécurisation priceType
+  if (!["FREE", "PAID"].includes(priceType)) {
+    priceType = "FREE";
   }
   try {
     // Sauvegarde des images
@@ -111,9 +142,10 @@ export default defineEventHandler(async (event) => {
             images: {
               create: imagesUrls.map(url => ({ url }))
             },
-            price: price ? parseFloat(price) : null,
+            price: parsedPrice,
             priceType: priceType as any,
             status: status as any,
+            entryMode: entryMode as any,
             userId: user.id,
             villeId,
             categoryId,

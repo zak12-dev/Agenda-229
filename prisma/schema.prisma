@@ -106,7 +106,7 @@ model Event {
   categoryId  String
   title       String
   description String   @db.Text
-  details     String?  @db.Text
+  details     String   @db.Text
   location    String
   eventDate   DateTime
   startDate   String
@@ -115,6 +115,7 @@ model Event {
   price       Decimal?  @db.Decimal(10,2)
   priceType   PriceType @default(FREE)
   status      EventStatus @default(DRAFT)
+  entryMode EntryMode @default(PUBLIC)
   views       Int       @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -176,4 +177,9 @@ enum EventStatus {
 enum PriceType {
   FREE
   PAID
+}
+
+enum EntryMode {
+  PUBLIC
+  PRIVATE
 }

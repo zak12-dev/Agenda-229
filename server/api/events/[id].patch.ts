@@ -72,7 +72,16 @@ export default defineEventHandler(async (event) => {
       price,
       priceType,
       status,
+      entryMode,
     } = data;
+
+    const validStatus = ["DRAFT", "PUBLISHED"];
+    const validPriceType = ["FREE", "PAID"];
+    const validEntryMode = ["PUBLIC", "PRIVATE"];
+
+    const safeStatus = validStatus.includes(status) ? status : "DRAFT";
+    const safePriceType = validPriceType.includes(priceType) ? priceType : "FREE";
+    const safeEntryMode = validEntryMode.includes(entryMode) ? entryMode : "PUBLIC";
 
     if (imageFiles.length > 3) {
       throw createError({
@@ -119,8 +128,9 @@ export default defineEventHandler(async (event) => {
         villeId,
         categoryId: categoryId ?? undefined,
         price: price !== undefined ? (price ? parseFloat(price) : null) : undefined,
-        priceType: priceType ?? undefined,
-        status: status ?? undefined,
+        priceType: safePriceType,
+        status: safeStatus,
+        entryMode: safeEntryMode,
       },
       include: {
         category: true,

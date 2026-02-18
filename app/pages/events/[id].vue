@@ -12,6 +12,34 @@ const activeTab = ref('details')
 const event = ref<any>(null)
 const similarEvents = ref<Event[]>([])
 
+const isFavorite = ref(false)
+const favoriteLoading = ref(false)
+
+const toggleFavorite = async () => {
+  if (!event.value) return
+
+  favoriteLoading.value = true
+
+  try {
+    const response: any = await $fetch('/api/favorites', {
+      method: 'POST',
+      body: {
+        eventId: event.value.id,
+      },
+    })
+
+    if (response.status === 'added') {
+      isFavorite.value = true
+    } else {
+      isFavorite.value = false
+    }
+  } catch (err) {
+    console.error(err)
+  } finally {
+    favoriteLoading.value = false
+  }
+}
+
 const id = computed(() => route.params.id as string) // l'id doit être string pour ton API
 
 const timeAgo = computed(() => {
@@ -192,9 +220,22 @@ useHead(() => {
               <div class="flex items-center justify-between pb-8 mb-8 border-b border-gray-200">
                 <div class="flex items-center gap-4">
                   <button
-                    class="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    @click="toggleFavorite"
+                    :disabled="favoriteLoading"
+                    class="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
+                    :class="
+                      isFavorite
+                        ? 'bg-red-100 text-red-600'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    "
                   >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      class="w-5 h-5"
+                      :class="isFavorite ? 'fill-red-600' : 'stroke-current'"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path
                         stroke-linecap="round"
                         stroke-linejoin="round"
@@ -202,8 +243,11 @@ useHead(() => {
                         d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
                       />
                     </svg>
-                    <span class="text-sm font-medium">Favoris</span>
+                    <span class="text-sm font-medium">
+                      {{ isFavorite ? 'En favori' : 'Favoris' }}
+                    </span>
                   </button>
+
                   <!-- 
                   <button
                     class="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
@@ -267,8 +311,8 @@ useHead(() => {
                   :alt="event.title"
                   class="w-full h-full object-cover"
                 />
-               <!-- Image fallback -->
-              <img v-else src="#" class="w-full h-full object-cover" />
+                <!-- Image fallback -->
+                <img v-else src="#" class="w-full h-full object-cover" />
               </div>
 
               <!-- Tabs Navigation -->

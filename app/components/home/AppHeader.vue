@@ -62,8 +62,8 @@ const navitems = computed<NavigationMenuItem[]>(() => {
   if (isLoggedIn.value) {
     items.push({
       label: 'Favoris',
-      to: '/favorites',
-      active: route.path === '/favorites',
+      to: '/favoris',
+      active: route.path === '/favoris',
       icon: 'i-lucide-heart',
     })
   }

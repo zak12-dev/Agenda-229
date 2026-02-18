@@ -108,7 +108,7 @@ onMounted(fetchRequests)
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50/30 p-6">
+  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-orange-50/30 p-6">
     <div class="max-w-7xl mx-auto space-y-6">
       
       
@@ -117,7 +117,7 @@ onMounted(fetchRequests)
         <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-all">
           <div class="flex items-center justify-between mb-2">
             <p class="text-sm text-gray-600">Total</p>
-            <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-purple-600" />
+            <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-orange-600" />
           </div>
           <p class="text-2xl font-bold text-gray-900">{{ stats.total }}</p>
         </div>
@@ -156,7 +156,7 @@ onMounted(fetchRequests)
             v-model="searchQuery"
             type="text"
             placeholder="Rechercher par nom ou email..."
-            class="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            class="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
           />
         </div>
 
@@ -166,7 +166,7 @@ onMounted(fetchRequests)
             @click="filterStatus = 'all'"
             :class="[
               'px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all',
-              filterStatus === 'all' ? 'bg-purple-600 text-white' : 'bg-white text-gray-700 border border-gray-200 hover:border-purple-300'
+              filterStatus === 'all' ? 'bg-orange-600 text-white' : 'bg-white text-gray-700 border border-gray-200 hover:border-orange-300'
             ]"
           >
             Toutes
@@ -233,7 +233,7 @@ onMounted(fetchRequests)
             <div class="flex items-start justify-between gap-4 mb-4">
               <!-- User Info -->
               <div class="flex items-start gap-4 flex-1">
-                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
                   <template v-if="request.user.image">
                     <img :src="request.user.image" :alt="request.user.name" class="w-full h-full rounded-full object-cover" />
                   </template>
@@ -306,7 +306,7 @@ onMounted(fetchRequests)
           <p class="text-gray-600 mb-4">Aucune demande ne correspond à vos critères</p>
           <button
             @click="searchQuery = ''; filterStatus = 'all'"
-            class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all"
+            class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-all"
           >
             Réinitialiser les filtres
           </button>

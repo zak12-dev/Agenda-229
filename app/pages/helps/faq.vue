@@ -64,7 +64,7 @@ const faqData = [
             <div
               v-for="(item, itemIndex) in section.questions"
               :key="`${sectionIndex}-${itemIndex}`"
-              class="border-l-4 border-gray-200 hover:border-purple-600 transition-all"
+              class="border-l-4 border-gray-200 hover:border-orange-600 transition-all"
             >
               <button
                 @click="toggleItem(`${sectionIndex}-${itemIndex}`)"
@@ -75,7 +75,7 @@ const faqData = [
                   name="i-heroicons-plus" 
                   :class="[
                     'w-5 h-5 flex-shrink-0 transition-transform duration-300',
-                    openItems.has(`${sectionIndex}-${itemIndex}`) ? 'rotate-45 text-purple-600' : 'text-gray-400'
+                    openItems.has(`${sectionIndex}-${itemIndex}`) ? 'rotate-45 text-orange-600' : 'text-gray-400'
                   ]"
                 />
               </button>

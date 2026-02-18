@@ -23,6 +23,7 @@ export default defineEventHandler(async (event) => {
   let villeId = ''
   let categoryId = ''
   let price = ''
+  let entryMode = ''
   let priceType = 'FREE'
   let status = 'DRAFT'
   let imageFiles: any[] = []
@@ -42,6 +43,7 @@ export default defineEventHandler(async (event) => {
     else if (field.name === 'villeId') villeId = value
     else if (field.name === 'categoryId') categoryId = value
     else if (field.name === 'price') price = value
+    else if (field.name === 'entryMode') entryMode = value
     else if (field.name === 'priceType') priceType = value
     else if (field.name === 'status') status = value
     else if (field.name === 'image' || field.name === 'images') {
@@ -51,10 +53,17 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-if (
-  status === 'PUBLISHED' &&
-  (!title || !description || !location || !details || !eventDate || !startDate || !villeId || !categoryId)
-) {
+  if (
+    status === 'PUBLISHED' &&
+    (!title ||
+      !description ||
+      !location ||
+      !details ||
+      !eventDate ||
+      !startDate ||
+      !villeId ||
+      !categoryId)
+  ) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Tous les champs obligatoires doivent être remplis',
@@ -73,6 +82,34 @@ if (
       statusCode: 400,
       statusMessage: "Le nombre d'images maximum est de 3",
     })
+  }
+  let parsedPrice: number | null = null
+
+  if (price && price.trim() !== '') {
+    const numericPrice = parseFloat(price)
+
+    if (!isNaN(numericPrice) && numericPrice >= 0) {
+      parsedPrice = numericPrice
+    } else {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Le prix doit être un nombre positif',
+      })
+    }
+  }
+  // Sécurisation status
+  if (!['DRAFT', 'PUBLISHED'].includes(status)) {
+    status = 'DRAFT'
+  }
+
+  // Sécurisation entryMode
+  if (!['PUBLIC', 'PRIVATE'].includes(entryMode)) {
+    entryMode = 'PUBLIC'
+  }
+
+  // Sécurisation priceType
+  if (!['FREE', 'PAID'].includes(priceType)) {
+    priceType = 'FREE'
   }
   try {
     // Sauvegarde des images
@@ -124,7 +161,7 @@ if (
       event: newEvent,
     }
   } catch (error) {
-  console.error('ERREUR COMPLETE =>', error)
+    console.error('ERREUR COMPLETE =>', error)
     throw createError({
       statusCode: 500,
       statusMessage: "Erreur lors de la creation de l'evenement",

@@ -297,7 +297,7 @@ const formatDate = (date: string) => {
             v-model="searchQuery"
             type="text"
             placeholder="Rechercher par nom d'évènements"
-            class="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            class="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
           />
         </div>
 
@@ -325,8 +325,8 @@ const formatDate = (date: string) => {
               :class="[
                 'px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all',
                 filterStatus === 'all'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-white text-gray-700 border border-gray-200 hover:border-purple-300',
+                  ? 'bg-orange-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:border-orange-300',
               ]"
             >
               Tous

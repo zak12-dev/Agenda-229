@@ -1,5 +1,6 @@
 import { prisma } from "~~/server/utils/prisma";
 import { requireAuth } from "~~/server/utils/protect";
+import cloudinary from '../../utils/cloudinary';
 
 export default defineEventHandler(async (event) => {
   const user = requireAuth(event);
@@ -33,7 +34,7 @@ export default defineEventHandler(async (event) => {
 
     const contentType = getHeader(event, "content-type") || "";
     let data: any = {};
-    let imageFile: any = null;
+    let imageFiles: any = [];
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await readMultipartFormData(event);
@@ -44,8 +45,10 @@ export default defineEventHandler(async (event) => {
 
           if (field.name === "categoryId") {
             data.categoryId = value;
-          } else if (field.name === "image") {
-            imageFile = field;
+          } else if (field.name === "image" || field.name === "images") {
+            if (field.filename) {
+              imageFiles.push(field);
+            }
           } else {
             data[field.name] = value;
           }
@@ -58,6 +61,7 @@ export default defineEventHandler(async (event) => {
     const {
       title,
       description,
+      details,
       location,
       eventDate,
       startDate,
@@ -65,13 +69,36 @@ export default defineEventHandler(async (event) => {
       image,
       villeId,
       categoryId,
+      price,
+      priceType,
+      status,
     } = data;
 
+    if (imageFiles.length > 3) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "Le nombre d'images maximum est de 3",
+      });
+    }
+
     let imagePath = image;
-    if (imageFile && imageFile.filename) {
-      const fileName = `${Date.now()}-${imageFile.filename}`;
-      await useStorage("uploads").setItemRaw(fileName, imageFile.data);
-      imagePath = `/uploads/${fileName}`;
+    const imageUrls: string [] = [];
+
+    if (imageFiles.length > 0) {
+      for (const imageFile of imageFiles) {
+        const timestamp = Date.now()
+      const safeFilename = (imageFile.filename || 'image').replace(/\s+/g, '_')
+      const uniqueSuffix = `${timestamp}-${Math.round(Math.random() * 1E9)}`
+      const uploadResult = await cloudinary.uploader.upload(
+        `data:${imageFile.type};base64,${imageFile.data.toString('base64')}`,
+        {
+          folder: 'events',
+          public_id: `event-${uniqueSuffix}-${safeFilename}`,
+        }
+      )
+    imageUrls.push(uploadResult.secure_url)
+      }
+      imagePath = imageUrls[0];
     }
 
     const updatedEvent = await prisma.event.update({
@@ -79,17 +106,26 @@ export default defineEventHandler(async (event) => {
       data: {
         title,
         description,
+        details: details !== undefined ? details : undefined,
         location,
         eventDate: eventDate ? new Date(eventDate) : undefined,
         startDate: startDate ?? undefined,
         endDate: endDate ?? undefined,
         image: imagePath,
+        images: imageUrls.length > 0 ? {
+          deleteMany: {},
+          create: imageUrls.map(url => ({ url }))
+        } : undefined,
         villeId,
         categoryId: categoryId ?? undefined,
+        price: price !== undefined ? (price ? parseFloat(price) : null) : undefined,
+        priceType: priceType ?? undefined,
+        status: status ?? undefined,
       },
       include: {
         category: true,
         ville: true,
+        images: true,
       },
     });
 

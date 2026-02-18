@@ -10,6 +10,7 @@ const showPassword = ref(false)
 
 const toast = useToast()
 const loading = ref(false)
+const config = useRuntimeConfig()
 
 const { createUser } = useAuth()
 
@@ -76,10 +77,28 @@ const state = ref({
   confirmPassword: '',
 })
 
+
+
 async function onSubmit(event: FormSubmitEvent<Schema>) {
+  if (!tokenReady.value) {
+    toast.add({ title: 'Captcha en cours de génération, veuillez patienter.', color: 'red' })
+    return
+  }
+
+  const token = (window as any).turnstile?.getResponse()
+  if (!token) {
+    toast.add({ title: 'Veuillez valider le captcha avant de continuer.', color: 'red' })
+    return
+  }
   loading.value = true
 
   try {
+    // ✅ Vérification captcha côté serveur
+    await $fetch('/api/cloudeflare/verify-turnstile', {
+      method: 'POST',
+      body: { token },
+    })
+
     const { name, email, password, confirmPassword } = event.data
     // ✅ données déjà validées
 
@@ -93,6 +112,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     await navigateTo('/auth/login')
   } catch (e: any) {
     let message = 'Erreur lors de l’inscription'
+    refreshCaptcha() // reset captcha en cas d'erreur
 
     if (e?.message?.includes('already exists')) {
       message = 'Cette adresse e-mail est déjà associée à un compte existant.'
@@ -104,8 +124,33 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       title: message,
       color: 'red',
     })
+  } finally {
+    loading.value = false
   }
 }
+
+const tokenReady = ref(false)
+let turnstileWidgetId: number | null = null
+
+const refreshCaptcha = () => {
+  const container = document.querySelector('.cf-turnstile')
+  if ((window as any).turnstile && container) {
+    if (turnstileWidgetId !== null) {
+      (window as any).turnstile.reset(turnstileWidgetId)
+    } else {
+      // render la première fois
+      turnstileWidgetId = (window as any).turnstile.render(container, {
+        sitekey: config.public.turnstileSiteKey,
+        callback: () => {
+          tokenReady.value = true
+        },
+      })
+    }
+    tokenReady.value = false
+  }
+}
+
+
 </script>
 
 <template>
@@ -214,6 +259,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
                 aria-label="Confirmer le mot de passe"
               />
             </UFormField>
+            <!-- Captcha Cloudflare Turnstile -->
+            <div class="cf-turnstile" :data-sitekey="config.public.turnstileSiteKey"></div>
           </div>
 
           <UButton

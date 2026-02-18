@@ -9,15 +9,13 @@ const todayEvents = ref<any[]>([])
 /* Date actuelle */
 const now = new Date()
 
-/* Fetch API avec filtrage des dates invalides */
-onMounted(async () => {
-  const { data } = await useFetch('/api/events/index.front')
-  console.log('DATA',data.value)
-  todayEvents.value = (data.value || []).filter(
-    (e) => e.eventDate && !isNaN(new Date(e.eventDate).getTime())
-  )
-  console.log('EVENTS API =', todayEvents.value)
-})
+
+
+const { data } = await useFetch('/api/events/index.front')
+console.log('DATA', data)
+todayEvents.value = (data.value || []).filter(
+  (e) => e.eventDate && !isNaN(new Date(e.eventDate).getTime())
+)
 
 function goToEvent(id: number | string) {
   navigateTo(`api/events/${id}`)
@@ -46,7 +44,7 @@ const displayedEvents = computed(() => {
     if (events.length === 0 && current.getFullYear() - now.getFullYear() > 1) break
   }
 
-  return events
+  return events.slice(0, 3)
 })
 
 /* Affichage du mois pour la timeline */

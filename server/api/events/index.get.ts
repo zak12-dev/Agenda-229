@@ -43,12 +43,23 @@ export default defineEventHandler(async (event) => {
       include: {
         ville: true,
         category: true,
-        user: { select: { id: true, name: true, email: true, image: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    })
 
-    return events
+        images: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+    //  console.log("EVENTS:", events);
+    return events;
   } catch (error) {
     console.error(error)
     throw createError({

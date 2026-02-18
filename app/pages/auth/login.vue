@@ -6,13 +6,12 @@ import { onMounted, ref } from 'vue'
 import { useToast } from '#imports'
 
 const showPassword = ref(false)
-
+const config = useRuntimeConfig()
 const toast = useToast()
-const loadingProvider = ref<string | null>(null) // null ou le label du provider en cours
+const loadingProvider = ref<string | null>(null)
 const loading = ref(false)
 
-const { loginWithGoogle, loginWithFacebook, loginWithEmail, fetchSession, session } = useAuth()
-console.log('SESSION CLIENT 👉', fetchSession)
+const { loginWithGoogle, loginWithFacebook, loginWithEmail, fetchSession } = useAuth()
 
 const schema = z.object({
   email: z.string().email('Email invalide'),
@@ -28,6 +27,9 @@ const state = ref({
   remember: false,
 })
 
+/* ======================
+   SOCIAL LOGIN
+====================== */
 const providers = [
   {
     label: 'Google',
@@ -36,12 +38,11 @@ const providers = [
       loadingProvider.value = 'Google'
       try {
         await loginWithGoogle()
-        toast.add({ title: 'Connexion réussie', color: 'green' })
       } catch (err) {
-        console.error('Login error:', error)
+        console.error('Login error:', err)
         toast.add({ title: 'Erreur de connexion', color: 'red' })
       } finally {
-        loading.value = false
+        loadingProvider.value = null
       }
     },
   },
@@ -52,42 +53,61 @@ const providers = [
       loadingProvider.value = 'Facebook'
       try {
         await loginWithFacebook()
-        toast.add({ title: 'Connexion réussie', color: 'green' })
       } catch (err) {
-        console.error('Login error:', error)
+        console.error('Login error:', err)
         toast.add({ title: 'Erreur de connexion', color: 'red' })
       } finally {
-        loading.value = false
+        loadingProvider.value = null
       }
     },
   },
 ]
 
+const tokenReady = ref(false)
+
+const refreshCaptcha = () => {
+  if ((window as any).turnstile) {
+    ;(window as any).turnstile.reset()
+    tokenReady.value = false
+    setTimeout(() => {
+      tokenReady.value = true
+    }, 100) // attendre que le token soit prêt
+  }
+}
+
 async function onSubmit(event: FormSubmitEvent<Schema>) {
+  if (!tokenReady.value) {
+    toast.add({ title: 'Captcha en cours de génération, veuillez patienter.', color: 'red' })
+    return
+  }
+
+  const token = (window as any).turnstile?.getResponse()
+  if (!token) {
+    toast.add({ title: 'Veuillez valider le captcha avant de continuer.', color: 'red' })
+    return
+  }
+
   loading.value = true
-
   try {
+    await $fetch('/api/cloudeflare/verify-turnstile', { method: 'POST', body: { token } })
     await loginWithEmail(event.data.email, event.data.password, event.data.remember)
-
-    await fetchSession()
-
-    toast.add({
-      title: 'Connexion réussie',
-      color: 'green',
-    })
-
+    toast.add({ title: 'Connexion réussie', color: 'green' })
     await navigateTo('/dashboard/events')
   } catch (error: any) {
     toast.add({
-      title: error.message || 'Erreur de connexion',
+      title: error?.data?.message || error.message || 'Erreur de connexion',
       color: 'red',
     })
+    refreshCaptcha() // reset en cas d'erreur
   } finally {
     loading.value = false
   }
 }
 
-onMounted(() => fetchSession())
+onMounted(() => {
+  fetchSession()
+  refreshCaptcha() // génère un token frais dès l'affichage
+})
 </script>
 
 <template>
@@ -167,19 +187,20 @@ onMounted(() => fetchSession())
                 :disabled="loading"
                 aria-label="Email"
                 autofocus
+                @focus="refreshCaptcha"
               />
             </UFormField>
 
             <UFormField label="Mot de passe" name="password" required>
-              <UInput  
+              <UInput
                 v-model="state.password"
                 :type="showPassword ? 'text' : 'password'"
                 class="w-full mb-4"
-                 placeholder="Mot de passe"
+                placeholder="Mot de passe"
                 icon="i-heroicons-key"
                 size="lg"
                 :ui="{ icon: { trailing: { pointer: '' } } }"
-               >
+              >
                 <!-- Icône à droite -->
                 <template #trailing>
                   <button
@@ -195,8 +216,6 @@ onMounted(() => fetchSession())
                 </template>
               </UInput>
             </UFormField>
-
-            
           </div>
           <div class="flex items-center justify-between">
             <UCheckbox v-model="state.remember">
@@ -211,6 +230,7 @@ onMounted(() => fetchSession())
               Mot de passe oublié ?
             </NuxtLink>
           </div>
+          <div class="cf-turnstile" :data-sitekey="config.public.turnstileSiteKey"></div>
 
           <UButton
             type="submit"

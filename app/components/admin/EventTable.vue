@@ -4,6 +4,11 @@ import { useAuth } from '../../../composables/useAuth'
 import admin from '~~/middleware/admin'
 import { watch } from 'vue'
 
+interface EventImage {
+  id: string
+  url: string
+}
+
 interface CustomEvent {
   id: number
   title: string
@@ -14,6 +19,8 @@ interface CustomEvent {
   duration: string
   description: string
   image: string | null
+  images: EventImage[]
+
   organizer: {
     name: string
     contact: string
@@ -30,7 +37,7 @@ interface CustomEvent {
 
 const { session } = useAuth()
 const searchQuery = ref('')
-const filterStatus = ref<'all' | 'Publié' | 'Brouillon' | 'Recherche'>('all')
+const filterStatus = ref<'all' | 'Publié' | 'Brouillon' | 'Recherche'>('Publié')
 const isAdmin = computed(() => session.value?.user.roleId === 1)
 const events = ref<CustomEvent[]>([])
 const loading = ref(true)
@@ -76,13 +83,15 @@ const fetchEvents = async () => {
       title: event.title,
       categoryId: event.categoryId || 'Sans catégorie',
       date: new Date(event.createdAt).toISOString(),
-      status: event.status || 'Publié',
+      status:
+        event.status === 'PUBLISHED' ? 'Publié' : event.status === 'DRAFT' ? 'Brouillon' : 'Publié',
       views: event.views || 0,
       location: event.location || 'Non spécifié',
       price: event.price || 'Free',
       duration: event.duration || 'Non spécifié',
       description: event.description || 'Pas de description',
-      image: event.image || 'default.jpg',
+      image: event.images.length ? event.images[0].url : 'default.jpg',
+      images: event.images,
       organizer: event.organizer || { name: 'Inconnu', contact: 'Non spécifié' },
       createdAt: event.createdAt,
       updatedAt: event.updatedAt || event.createdAt,
@@ -137,7 +146,7 @@ const updateEvent = async () => {
   const payload = {
     title: selectedEvent.value.title,
     description: selectedEvent.value.description,
-    status: selectedEvent.value.status,
+    status: selectedEvent.value.status === 'Publié' ? 'published' : 'draft',
   }
 
   try {
@@ -145,7 +154,6 @@ const updateEvent = async () => {
       method: 'patch',
       body: payload,
     })
-
     isEditModalOpen.value = false
     await fetchEvents()
     alert('Événement mis à jour ✅')
@@ -598,15 +606,19 @@ const formatDate = (date: string) => {
 
               <div v-else class="space-y-6">
                 <!-- Image si disponible -->
-                <div
-                  v-if="selectedEvent.image && selectedEvent.image !== 'default.jpg'"
-                  class="aspect-video rounded-xl overflow-hidden bg-gray-100"
-                >
-                  <img
-                    :src="selectedEvent.image"
-                    :alt="selectedEvent.title"
-                    class="w-full h-full object-cover"
-                  />
+                <!-- Si plusieurs images -->
+                <div v-if="selectedEvent.images && selectedEvent.images.length" class="space-y-2">
+                  <div
+                    v-for="img in selectedEvent.images"
+                    :key="img.id"
+                    class="rounded-xl overflow-hidden"
+                  >
+                    <img
+                      :src="img.url"
+                      :alt="selectedEvent.title"
+                      class="w-full h-64 object-cover"
+                    />
+                  </div>
                 </div>
 
                 <!-- Informations principales -->
@@ -655,7 +667,7 @@ const formatDate = (date: string) => {
                       <span
                         :class="[
                           'inline-flex px-3 py-1 rounded-full text-sm font-semibold',
-                          selectedEvent.status === 'Publié'
+                          selectedEvent.status === 'PUBLISHED'
                             ? 'bg-emerald-100 text-emerald-700'
                             : 'bg-amber-100 text-amber-700',
                         ]"

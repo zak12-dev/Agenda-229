@@ -1,10 +1,10 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   modules: ['@nuxt/ui', '@nuxt/image'],
 
   css: ['~/assets/css/main.css'],
+
   components: [
     {
       path: '~/components',
@@ -16,7 +16,6 @@ export default defineNuxtConfig({
     head: {
       title: 'We Love Event',
       htmlAttrs: { lang: 'fr' },
-
       link: [
         {
           rel: 'stylesheet',
@@ -32,12 +31,23 @@ export default defineNuxtConfig({
         },
         { rel: 'icon', href: '/favicon.ico' },
       ],
+       script: [
+        {
+          src: "https://challenges.cloudflare.com/turnstile/v0/api.js",
+          async: true,
+          defer: true
+        }
+      ]
     },
   },
 
   runtimeConfig: {
+    turnstileSecret: process.env.TURNSTILE_SECRET_KEY,
+
     public: {
       apiBase: 'http://localhost:3000',
+
+      turnstileSiteKey: process.env.TURNSTILE_SITE_KEY,
     },
   },
 

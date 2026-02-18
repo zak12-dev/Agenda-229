@@ -1,13 +1,37 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
+import { useRuntimeConfig } from '#imports'
 
 const form = reactive({
   name: '',
   email: '',
-  message: ''
+  message: '',
 })
 
 const loading = ref(false)
+const tokenReady = ref(false)
+let turnstileWidgetId: number | null = null
+const config = useRuntimeConfig()
+
+// Générer le captcha Turnstile
+onMounted(() => {
+  const container = document.querySelector('.cf-turnstile')
+  if (container && (window as any).turnstile) {
+    turnstileWidgetId = (window as any).turnstile.render(container, {
+      sitekey: config.public.turnstileSiteKey,
+      callback: () => {
+        tokenReady.value = true
+      },
+    })
+  }
+})
+
+const refreshCaptcha = () => {
+  if (turnstileWidgetId !== null && (window as any).turnstile) {
+    ;(window as any).turnstile.reset(turnstileWidgetId)
+    tokenReady.value = false
+  }
+}
 
 const submitForm = async () => {
   if (!form.name || !form.email || !form.message) {
@@ -15,13 +39,28 @@ const submitForm = async () => {
     return
   }
 
+  // ✅ Vérifier que le captcha est validé
+  const token = (window as any).turnstile?.getResponse(turnstileWidgetId)
+  if (!token || !tokenReady.value) {
+    alert('Veuillez valider le captcha avant de continuer.')
+    return
+  }
+
   loading.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    // Ici tu peux appeler ton API pour envoyer le message ET vérifier le token côté serveur
+    await $fetch('/api/contact', {
+      method: 'POST',
+      body: { ...form, token },
+    })
+
     Object.assign(form, { name: '', email: '', message: '' })
     alert('Message envoyé ✅')
+
+    refreshCaptcha() // reset captcha pour un nouvel envoi
   } catch (err) {
-    alert('Erreur')
+    alert('Erreur lors de l’envoi')
+    refreshCaptcha()
   } finally {
     loading.value = false
   }
@@ -30,11 +69,9 @@ const submitForm = async () => {
 
 <template>
   <div class="min-h-screen mt-10 bg-gradient-to-br from-orange-200 via-white to-indigo-200">
-    
     <div class="max-w-4xl mx-auto px-6 py-20">
-      
       <!-- Header -->
-   <div class="text-center mb-16">
+      <div class="text-center mb-16">
         <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Contactez-nous</h1>
         <p class="text-lg text-gray-600 max-w-2xl mx-auto">
           Une question ? Une suggestion ? N'hésitez pas à nous contacter. Notre équipe vous répondra
@@ -44,10 +81,10 @@ const submitForm = async () => {
 
       <!-- Contact Info Grid -->
       <div class="grid sm:grid-cols-2 gap-6 mb-12">
-       
-
         <div class="text-center p-6 border-b-4 border-blue-600">
-          <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div
+            class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4"
+          >
             <UIcon name="i-heroicons-phone" class="w-8 h-8 text-blue-600" />
           </div>
           <h3 class="font-bold text-gray-900 mb-2">Téléphone</h3>
@@ -57,7 +94,9 @@ const submitForm = async () => {
         </div>
 
         <div class="text-center p-6 border-b-4 border-green-600">
-          <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div
+            class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"
+          >
             <UIcon name="i-heroicons-map-pin" class="w-8 h-8 text-green-600" />
           </div>
           <h3 class="font-bold text-gray-900 mb-2">Adresse</h3>
@@ -99,7 +138,8 @@ const submitForm = async () => {
               class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
             ></textarea>
           </div>
-
+          <!-- Captcha Cloudflare Turnstile -->
+          <div class="cf-turnstile mb-4"></div>
           <button
             type="submit"
             :disabled="loading"
@@ -114,18 +154,26 @@ const submitForm = async () => {
       <div class="text-center mt-12">
         <p class="text-gray-600 mb-4">Suivez-nous sur les réseaux sociaux</p>
         <div class="flex justify-center gap-4">
-          <a href="#" class="w-12 h-12 bg-blue-100 hover:bg-blue-200 rounded-full flex items-center justify-center text-blue-600 transition-all">
+          <a
+            href="#"
+            class="w-12 h-12 bg-blue-100 hover:bg-blue-200 rounded-full flex items-center justify-center text-blue-600 transition-all"
+          >
             <UIcon name="i-simple-icons-facebook" class="w-5 h-5" />
           </a>
-          <a href="#" class="w-12 h-12 bg-sky-100 hover:bg-sky-200 rounded-full flex items-center justify-center text-sky-600 transition-all">
+          <a
+            href="#"
+            class="w-12 h-12 bg-sky-100 hover:bg-sky-200 rounded-full flex items-center justify-center text-sky-600 transition-all"
+          >
             <UIcon name="i-simple-icons-twitter" class="w-5 h-5" />
           </a>
-          <a href="#" class="w-12 h-12 bg-pink-100 hover:bg-pink-200 rounded-full flex items-center justify-center text-pink-600 transition-all">
+          <a
+            href="#"
+            class="w-12 h-12 bg-pink-100 hover:bg-pink-200 rounded-full flex items-center justify-center text-pink-600 transition-all"
+          >
             <UIcon name="i-simple-icons-instagram" class="w-5 h-5" />
           </a>
         </div>
       </div>
-
     </div>
   </div>
 </template>

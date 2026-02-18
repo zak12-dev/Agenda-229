@@ -524,10 +524,13 @@
             <!-- Image avec overlay -->
             <div class="relative overflow-hidden h-64">
               <NuxtImg
-                :src="event.image"
+                v-if="event.images?.length"
+                :src="event.images[0].url"
                 :alt="event.title"
                 class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
               />
+              <!-- Image fallback -->
+              <img v-else src="#" class="w-full h-full object-cover" />
 
               <!-- Gradient overlay -->
               <div
@@ -561,9 +564,9 @@
               </div>
 
               <!-- Prix en bas -->
-          <div class="absolute bottom-4 left-4">
-            <div class="flex items-baseline gap-1">
-              <span class="text-2xl font-bold text-white">
+              <div class="absolute bottom-4 left-4">
+                <div class="flex items-baseline gap-1">
+                  <span class="text-2xl font-bold text-white">
                     <template v-if="event?.price && Number(event.price) > 0">
                       {{ event.price }}Fcfa
                     </template>
@@ -575,8 +578,8 @@
                   >
                     / pers
                   </span>
-            </div>
-          </div>
+                </div>
+              </div>
             </div>
 
             <!-- Content -->
@@ -832,8 +835,7 @@ const prevPage = () => {
 
 // Filtrage des événements
 const filteredEvents = computed(() => {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const now = new Date() // Date + heure actuelle
 
   return events.value
     .filter((event) => {
@@ -841,15 +843,15 @@ const filteredEvents = computed(() => {
 
       const eventDate = new Date(event.eventDate)
 
-      // Supprimer les événements passés
-      if (eventDate < today) return false
+      // ✅ Supprimer tout événement passé (date ou heure)
+      if (eventDate < now) return false
 
       /* Recherche texte */
       const matchQuery =
         !searchQuery.value ||
         event.title?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
         event.description?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        event.ville?.name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        event.ville?.nomVille?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
         event.category?.name?.toLowerCase().includes(searchQuery.value.toLowerCase())
 
       /* Catégorie */
@@ -870,43 +872,10 @@ const filteredEvents = computed(() => {
         (selectedPrice.value === '50€ - 100€' && event.price > 50 && event.price <= 100) ||
         (selectedPrice.value === 'Plus de 100€' && event.price > 100)
 
-      /* Date */
-      let matchDate = true
-
-      if (selectedDate.value) {
-        const now = new Date()
-
-        if (selectedDate.value === "Aujourd'hui") {
-          matchDate = eventDate.toDateString() === now.toDateString()
-        }
-
-        if (selectedDate.value === 'Ce week-end') {
-          const saturday = new Date(now)
-          saturday.setDate(now.getDate() + (6 - now.getDay()))
-
-          const sunday = new Date(saturday)
-          sunday.setDate(saturday.getDate() + 1)
-
-          matchDate = eventDate >= saturday && eventDate <= sunday
-        }
-
-        if (selectedDate.value === 'Cette semaine') {
-          const endWeek = new Date(now)
-          endWeek.setDate(now.getDate() + 7)
-
-          matchDate = eventDate <= endWeek
-        }
-
-        if (selectedDate.value === 'Ce mois-ci') {
-          matchDate =
-            eventDate.getMonth() === now.getMonth() && eventDate.getFullYear() === now.getFullYear()
-        }
-      }
-
-      return matchQuery && matchCategory && matchLocation && matchPrice && matchDate
+      return matchQuery && matchCategory && matchLocation && matchPrice
     })
-    .sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate))
 })
+
 
 // Vérifie s'il y a plus de 9 événements
 const hasMoreEvents = computed(() => {

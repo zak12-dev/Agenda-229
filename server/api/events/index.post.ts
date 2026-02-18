@@ -1,4 +1,3 @@
-
 import { prisma } from '~~/server/utils/prisma'
 import { requireAuth } from '~~/server/utils/protect'
 import cloudinary from '../../utils/cloudinary'
@@ -7,7 +6,6 @@ export default defineEventHandler(async (event) => {
   const user = requireAuth(event)
   const formData = await readMultipartFormData(event)
 
-
   if (!formData) {
     throw createError({
       statusCode: 400,
@@ -15,79 +13,100 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-
-  let title = "";
-  let description = "";
-  let location = "";
-  let eventDate = "";
-  let startDate = "";
-  let endDate = "";
-  let villeId = "";
-  let categoryId = "";
-  let imageFile: any = null;
-
+  let title = ''
+  let description = ''
+  let details = ''
+  let location = ''
+  let eventDate = ''
+  let startDate = ''
+  let endDate = ''
+  let villeId = ''
+  let categoryId = ''
+  let price = ''
+  let priceType = 'FREE'
+  let status = 'DRAFT'
+  let imageFiles: any[] = []
 
   for (const field of formData) {
     if (!field.name) continue
 
     const value = field.data.toString()
 
-
-    if (field.name === "title") title = value;
-    else if (field.name === "description") description = value;
-    else if (field.name === "location") location = value;
-    else if (field.name === "eventDate") eventDate = value;
-    else if (field.name === "startDate") startDate = value;
-    else if (field.name === "endDate") endDate = value;
-    else if (field.name === "villeId") villeId = value;
-    else if (field.name === "categoryId") categoryId = value;
-    else if (field.name === "image") imageFile = field;
-
+    if (field.name === 'title') title = value
+    else if (field.name === 'description') description = value
+    else if (field.name === 'details') details = value
+    else if (field.name === 'location') location = value
+    else if (field.name === 'eventDate') eventDate = value
+    else if (field.name === 'startDate') startDate = value
+    else if (field.name === 'endDate') endDate = value
+    else if (field.name === 'villeId') villeId = value
+    else if (field.name === 'categoryId') categoryId = value
+    else if (field.name === 'price') price = value
+    else if (field.name === 'priceType') priceType = value
+    else if (field.name === 'status') status = value
+    else if (field.name === 'image' || field.name === 'images') {
+      if (field.filename) {
+        imageFiles.push(field)
+      }
+    }
   }
 
-  if (
-    !title ||
-    !description ||
-    !location ||
-    !eventDate ||
-    !startDate ||
-    !imageFile ||
-    !villeId ||
-    !categoryId
-  ) {
+if (
+  status === 'PUBLISHED' &&
+  (!title || !description || !location || !details || !eventDate || !startDate || !villeId || !categoryId)
+) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Tous les champs obligatoires doivent être remplis',
     })
   }
 
+  if (imageFiles.length === 0) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Au moins une image est requise',
+    })
+  }
+
+  if (imageFiles.length > 3) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Le nombre d'images maximum est de 3",
+    })
+  }
   try {
+    // Sauvegarde des images
+    const imagesUrls: string[] = []
 
-
-    // Upload vers Cloudinary
-    const timestamp = Date.now()
-    const safeFilename = (imageFile.filename || 'image').replace(/\s+/g, '_')
-    const uniqueSuffix = `${timestamp}-${Math.round(Math.random() * 1E9)}`
-    const uploadResult = await cloudinary.uploader.upload(
-      `data:${imageFile.type};base64,${imageFile.data.toString('base64')}`,
-      {
-        folder: 'blog_posts',
-        public_id: `post-${uniqueSuffix}-${safeFilename}`,
-      }
-    )
-
-    const imageUrl = uploadResult.secure_url
+    for (const imageFile of imageFiles) {
+      const timestamp = Date.now()
+      const safeFilename = (imageFile.filename || 'image').replace(/\s+/g, '_')
+      const uniqueSuffix = `${timestamp}-${Math.round(Math.random() * 1e9)}`
+      const uploadResult = await cloudinary.uploader.upload(
+        `data:${imageFile.type};base64,${imageFile.data.toString('base64')}`,
+        {
+          folder: 'blog_posts',
+          public_id: `post-${uniqueSuffix}-${safeFilename}`,
+        }
+      )
+      imagesUrls.push(uploadResult.secure_url)
+    }
 
     const newEvent = await prisma.event.create({
       data: {
         title,
         description,
+        details,
         location,
         eventDate: new Date(eventDate),
-
         startDate,
         endDate: endDate || null,
-        image: imageUrl,
+        images: {
+          create: imagesUrls.map((url) => ({ url })),
+        },
+        price: price ? parseFloat(price) : null,
+        priceType: priceType as any,
+        status: status as any,
         userId: user.id,
         villeId,
         categoryId,
@@ -96,20 +115,19 @@ export default defineEventHandler(async (event) => {
         category: true,
         ville: true,
         user: true,
+        images: true,
       },
-    });
+    })
 
     return {
-      message: "Événement créé avec succès",
+      message: 'Événement créé avec succès',
       event: newEvent,
-    };
-
+    }
   } catch (error) {
-    console.error(error)
+  console.error('ERREUR COMPLETE =>', error)
     throw createError({
       statusCode: 500,
-      statusMessage: "Erreur lors de la création de l'événement",
+      statusMessage: "Erreur lors de la creation de l'evenement",
     })
   }
 })
-

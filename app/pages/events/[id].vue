@@ -97,38 +97,39 @@ const share = (platform: string) => {
   window.open(shareUrl, '_blank')
 }
 
-useHead(() => ({
-  title: event.value?.title,
+useHead(() => {
+  if (!event.value) return {}
 
-  meta: [
-    {
-      property: 'og:title',
-      content: event.value?.title,
-    },
-    {
-      property: 'og:description',
-      content: event.value?.description,
-    },
-    {
-      property: 'og:image',
-      content: event.value?.image,
-    },
-    {
-      property: 'og:url',
-      content: window.location.href,
-    },
-    {
-      property: 'og:type',
-      content: 'article',
-    },
-  ],
-}))
+  return {
+    title: event.value.title,
+    meta: [
+      {
+        property: 'og:title',
+        content: event.value.title,
+      },
+      {
+        property: 'og:description',
+        content: event.value.description,
+      },
+      {
+        property: 'og:image',
+        content: event.value.image,
+      },
+      {
+        property: 'og:url',
+        content: process.client ? window.location.href : '',
+      },
+      {
+        property: 'og:type',
+        content: 'article',
+      },
+    ],
+  }
+})
 </script>
 
 <template>
   <div class="min-h-screen">
-  
-
     <div v-if="event" class="bg-gradient-to-br from-orange-200 via-white to-indigo-200">
       <!-- Hero Magazine Style -->
       <div class="relative pt-16 sm:pt-20">
@@ -260,7 +261,14 @@ useHead(() => ({
 
               <!-- Main Image -->
               <div class="relative aspect-video rounded-2xl overflow-hidden mb-8">
-                <img :src="event.image" :alt="event.title" class="w-full h-full object-cover" />
+                <img
+                  v-if="event.images?.length"
+                  :src="event.images[0].url"
+                  :alt="event.title"
+                  class="w-full h-full object-cover"
+                />
+               <!-- Image fallback -->
+              <img v-else src="#" class="w-full h-full object-cover" />
               </div>
 
               <!-- Tabs Navigation -->
@@ -306,7 +314,7 @@ useHead(() => ({
               <div>
                 <!-- Details Tab -->
                 <div v-if="activeTab === 'details'" class="prose prose-lg max-w-none">
-                  <div v-html="event.description"></div>
+                  <div v-html="event?.details"></div>
                 </div>
 
                 <!-- Program Tab 
@@ -437,17 +445,17 @@ useHead(() => ({
                   <div class="mb-6">
                     <div class="flex items-baseline gap-2 mb-2">
                       <span class="text-2xl font-bold text-black">
-                    <template v-if="event?.price && Number(event.price) > 0">
-                      {{ event.price }}Fcfa
-                    </template>
-                    <template v-else> Gratuit </template>
-                  </span>
-                  <span
-                    v-if="event?.price && Number(event.price) > 0"
-                    class="text-sm text-black"
-                  >
-                    / pers
-                  </span>
+                        <template v-if="event?.price && Number(event.price) > 0">
+                          {{ event.price }}Fcfa
+                        </template>
+                        <template v-else> Gratuit </template>
+                      </span>
+                      <span
+                        v-if="event?.price && Number(event.price) > 0"
+                        class="text-sm text-black"
+                      >
+                        / pers
+                      </span>
                     </div>
                   </div>
 

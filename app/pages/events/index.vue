@@ -511,10 +511,13 @@
             <!-- Image avec overlay -->
             <div class="relative overflow-hidden h-64">
               <NuxtImg
-                :src="event.image"
+                v-if="event.images?.length"
+                :src="event.images[0].url"
                 :alt="event.title"
                 class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
               />
+              <!-- Image fallback -->
+              <img v-else src="#" class="w-full h-full object-cover" />
 
               <!-- Gradient overlay -->
               <div

@@ -15,6 +15,12 @@ const similarEvents = ref<Event[]>([])
 const isFavorite = ref(false)
 const favoriteLoading = ref(false)
 
+const checkFavorite = async () => {
+  const data: any = await $fetch(`/api/favorites/check?eventId=${event.value.id}`)
+  isFavorite.value = data.isFavorite
+}
+
+
 const toggleFavorite = async () => {
   if (!event.value) return
 
@@ -490,7 +496,7 @@ useHead(() => {
                     <div class="flex items-baseline gap-2 mb-2">
                       <span class="text-2xl font-bold text-black">
                         <template v-if="event?.price && Number(event.price) > 0">
-                          {{ event.price }}Fcfa
+                          {{ event.price }} Fcfa
                         </template>
                         <template v-else> Gratuit </template>
                       </span>

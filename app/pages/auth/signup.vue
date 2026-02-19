@@ -1,4 +1,8 @@
 <script setup lang="ts">
+definePageMeta({
+  layout: 'auth',
+
+})
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { onMounted, ref } from 'vue'
@@ -138,18 +142,22 @@ const refreshCaptcha = () => {
     if (turnstileWidgetId !== null) {
       (window as any).turnstile.reset(turnstileWidgetId)
     } else {
-      // render la première fois
+      // Render la première fois
       turnstileWidgetId = (window as any).turnstile.render(container, {
         sitekey: config.public.turnstileSiteKey,
         callback: () => {
-          tokenReady.value = true
+          tokenReady.value = true 
         },
+        'expired-callback': () => {
+          tokenReady.value = false 
+        }
       })
     }
-    tokenReady.value = false
   }
 }
-
+onMounted(() => {
+  refreshCaptcha()
+})
 
 </script>
 
@@ -178,13 +186,21 @@ const refreshCaptcha = () => {
       >
         <!-- Logo -->
         <div class="text-center mb-8 space-y-3">
+           <NuxtLink to="/" class="flex items-center justify-center gap-2 sm:gap-3 z-50">
+            <div
+              class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-xs sm:text-sm font-semibold transition-all duration-500 bg-gradient-to-br from-orange-600 to-indigo-600 text-white shadow-lg shadow-orange-500/20"
+            >
+              WLE
+            </div>
+            
+          </NuxtLink>
           <h1
             class="text-3xl font-bold bg-gradient-to-r from-orange-600 to-indigo-600 bg-clip-text text-transparent mb-4"
           >
             Inscription
           </h1>
           <p class="text-gray-600 dark:text-gray-400">
-            Créez votre compte Agenda 229 pour commencer
+            Créez votre compte WeLoveEvent pour commencer
           </p>
         </div>
 

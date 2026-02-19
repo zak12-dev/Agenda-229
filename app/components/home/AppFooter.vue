@@ -1,12 +1,27 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { useAuth } from '../../../composables/useAuth'
-import { useToast } from '#imports'
 import { useRouter } from '#imports'
 
 const { session, fetchSession } = useAuth()
-const toast = useToast()
 const router = useRouter()
+
+// ✅ Modal state
+const showModal = ref(false)
+const modalMessage = ref('')
+const modalType = ref<'success' | 'error'>('success')
+
+// ✅ Fonction utilitaire réutilisable
+const openModal = (message: string, type: 'success' | 'error' = 'success') => {
+  modalMessage.value = message
+  modalType.value = type
+  showModal.value = true
+
+  // Option fermeture automatique après 3s
+  setTimeout(() => {
+    showModal.value = false
+  }, 3000)
+}
 
 // Navigation principale
 const navigation = {
@@ -20,7 +35,7 @@ const navigation = {
   Organisateurs: [
     { label: 'Devenir organisateur', to: '/organizerForm', requiresAuth: true },
     { label: 'Créer un événement', to: '/organizerForm', requiresAuth: true },
-    { label: 'Dashboard', to: '/dashboard', requiresAuth: true },
+    { label: 'Dashboard', to: '/dashboard/events', requiresAuth: true },
     { label: 'Guide organisateur', to: '/organizers/guide' },
   ],
   Support: [
@@ -31,20 +46,11 @@ const navigation = {
   ],
   Société: [
     { label: 'À propos', to: '/about' },
-    { label: "Conditions d'utilisation", to: '/terms' },
-    { label: 'Politique de confidentialité', to: '/privacy' },
+    { label: "Conditions d'utilisation", to: '/helps/terms' },
+    { label: 'Politique de confidentialité', to: '/helps/privacy' },
     { label: 'Sécurité', to: '/security' },
   ],
 }
-
-// Réseaux sociaux
-const socialLinks = [
-  { icon: 'i-simple-icons-instagram', label: 'Instagram', to: 'https://instagram.com' },
-  { icon: 'i-simple-icons-pinterest', label: 'Pinterest', to: 'https://pinterest.com' },
-  { icon: 'i-simple-icons-facebook', label: 'Facebook', to: 'https://facebook.com' },
-  { icon: 'i-simple-icons-twitter', label: 'Twitter', to: 'https://twitter.com' },
-  { icon: 'i-simple-icons-youtube', label: 'YouTube', to: 'https://youtube.com' },
-]
 
 // Newsletter
 const email = ref('')
@@ -52,33 +58,43 @@ const isSubscribing = ref(false)
 
 const handleSubscribe = async () => {
   if (!email.value) return
-  isSubscribing.value = true
-  await new Promise((resolve) => setTimeout(resolve, 1000))
-  console.log('Inscription newsletter:', email.value)
-  email.value = ''
-  isSubscribing.value = false
+
+  try {
+    isSubscribing.value = true
+
+    await $fetch('/api/newsletter', {
+      method: 'POST',
+      body: { email: email.value },
+    })
+
+    email.value = ''
+    openModal('Inscription réussie 🎉', 'success')
+
+  } catch (error: any) {
+    openModal(error?.statusMessage || 'Erreur inscription', 'error')
+  } finally {
+    isSubscribing.value = false
+  }
 }
 
-// Gestion navigation avec vérification de session
+// ✅ Navigation avec modal réutilisé
 const handleNavigation = async (link: { to: string; requiresAuth?: boolean }) => {
   if (link.requiresAuth) {
-    // Recharge la session si nécessaire
     if (!session.value) {
       await fetchSession()
     }
+
     if (!session.value) {
       await nextTick()
-      toast.add({
-        title: 'Accès refusé',
-        description: 'Vous devez vous connecter pour accéder à cette page',
-        duration: 3000,
-      })
+      openModal('Vous devez vous connecter pour accéder à cette page', 'error')
       return
     }
   }
+
   router.push(link.to)
 }
 </script>
+
 
 <template>
   <footer class="bg-gradient-to-br from-slate-900 via-orange-900 to-slate-900 text-white">
@@ -154,7 +170,7 @@ const handleNavigation = async (link: { to: string; requiresAuth?: boolean }) =>
                 type="email"
                 placeholder="votre@email.com"
                 required
-                class="flex-1 px-4 py-3 bg-white/10 border border-gray-300 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent rounded-full"
+                class="flex-1 px-4 py-3 bg-white/10 border border-gray-300 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent rounded-full"
               />
               <UButton
                 type="submit"
@@ -173,7 +189,7 @@ const handleNavigation = async (link: { to: string; requiresAuth?: boolean }) =>
       </div>
 
       <!-- Navigation Links -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-  ">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-">
         <div v-for="(section, name) in navigation" :key="name">
           <h4 class="font-semibold text-lg mb-4 text-orange-300">{{ name }}</h4>
           <ul class="space-y-3">
@@ -191,6 +207,28 @@ const handleNavigation = async (link: { to: string; requiresAuth?: boolean }) =>
             </li>
           </ul>
         </div>
+      </div>
+    </div>
+    <!-- Modal -->
+    <div v-if="showModal" class="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+      <div class="bg-white rounded-xl shadow-xl p-6 w-80 text-center">
+        <h2
+          class="text-lg font-bold mb-4"
+          :class="modalType === 'success' ? 'text-green-600' : 'text-red-600'"
+        >
+          {{ modalType === 'success' ? 'Succès' : 'Erreur' }}
+        </h2>
+
+        <p class="text-gray-600 mb-6">
+          {{ modalMessage }}
+        </p>
+
+        <button
+          @click="showModal = false"
+          class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
+        >
+          OK
+        </button>
       </div>
     </div>
   </footer>

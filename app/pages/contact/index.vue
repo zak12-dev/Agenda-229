@@ -72,7 +72,13 @@ const submitForm = async () => {
     <div class="max-w-4xl mx-auto px-6 py-20">
       <!-- Header -->
       <div class="text-center mb-16">
-        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Contactez-nous</h1>
+        <h1 class="text-4xl sm:text-5xl font-light text-gray-900 mb-4">
+          Nous 
+          <span
+            class="text-transparent font-semibold bg-clip-text bg-gradient-to-r from-orange-600 to-indigo-600"
+            >Contactez</span
+          >
+        </h1>
         <p class="text-lg text-gray-600 max-w-2xl mx-auto">
           Une question ? Une suggestion ? N'hésitez pas à nous contacter. Notre équipe vous répondra
           dans les plus brefs délais.

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+definePageMeta({
+  layout: 'auth',
+})
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { useAuth } from '../../../composables/useAuth'
@@ -65,16 +68,6 @@ const providers = [
 
 const tokenReady = ref(false)
 
-const refreshCaptcha = () => {
-  if ((window as any).turnstile) {
-    ;(window as any).turnstile.reset()
-    tokenReady.value = false
-    setTimeout(() => {
-      tokenReady.value = true
-    }, 100) // attendre que le token soit prêt
-  }
-}
-
 async function onSubmit(event: FormSubmitEvent<Schema>) {
   if (!tokenReady.value) {
     toast.add({ title: 'Captcha en cours de génération, veuillez patienter.', color: 'red' })
@@ -104,9 +97,31 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   }
 }
 
+let turnstileWidgetId: number | null = null
+
+const refreshCaptcha = () => {
+  const container = document.querySelector('.cf-turnstile')
+  if ((window as any).turnstile && container) {
+    if (turnstileWidgetId !== null) {
+      ;(window as any).turnstile.reset(turnstileWidgetId)
+    } else {
+      // Render la première fois
+      turnstileWidgetId = (window as any).turnstile.render(container, {
+        sitekey: config.public.turnstileSiteKey,
+        callback: () => {
+          tokenReady.value = true
+        },
+        'expired-callback': () => {
+          tokenReady.value = false
+        },
+      })
+    }
+  }
+}
+
 onMounted(() => {
   fetchSession()
-  refreshCaptcha() // génère un token frais dès l'affichage
+  refreshCaptcha()
 })
 </script>
 
@@ -135,6 +150,13 @@ onMounted(() => {
       >
         <!-- Logo -->
         <div class="text-center mb-8 -mt-5">
+          <NuxtLink to="/" class="flex items-center justify-center gap-2 sm:gap-3 z-50">
+            <div
+              class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-xs sm:text-sm font-semibold transition-all duration-500 bg-gradient-to-br from-orange-600 to-indigo-600 text-white shadow-lg shadow-orange-500/20"
+            >
+              WLE
+            </div>
+          </NuxtLink>
           <h1
             class="text-3xl font-bold bg-gradient-to-r from-orange-600 to-indigo-600 bg-clip-text text-transparent mb-2"
           >
@@ -230,7 +252,7 @@ onMounted(() => {
               Mot de passe oublié ?
             </NuxtLink>
           </div>
-          <div class="cf-turnstile" :data-sitekey="config.public.turnstileSiteKey"></div>
+          <div class="cf-turnstile mt-3" :data-sitekey="config.public.turnstileSiteKey"></div>
 
           <UButton
             type="submit"
@@ -264,7 +286,7 @@ onMounted(() => {
         <div
           class="flex items-center justify-center gap-4 text-sm text-gray-600 dark:text-gray-400"
         >
-          <NuxtLink to="/privacy" class="hover:text-orange-600 dark:hover:text-indigo-400">
+          <NuxtLink to="/helps/faq" class="hover:text-orange-600 dark:hover:text-indigo-400">
             Confidentialité
           </NuxtLink>
           <span>•</span>

@@ -14,7 +14,7 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: 'We Love Event',
+      title: 'WeLoveEvent',
       htmlAttrs: { lang: 'fr' },
       link: [
         {

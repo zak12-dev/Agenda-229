@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 
 interface FavoriteEvent {
-  id: number
+  id: string // ✅ string et pas number
   title: string
   category: string
   date: string
@@ -21,11 +21,15 @@ const fetchFavorites = async () => {
   loading.value = true
   try {
     const { data } = await useFetch('/api/favorites', {
-      credentials: 'include'
+      credentials: 'include',
     })
-console.log('DATA2', data)
+
+    console.log('DATA2', data.value)
+
     if (data.value) {
-      favorites.value = data.value.map((event: any) => {
+      favorites.value = data.value.map((favorite: any) => {
+        const event = favorite.event // 🔥 IMPORTANT
+
         const now = new Date()
         const eventDate = new Date(event.eventDate)
 
@@ -38,7 +42,7 @@ console.log('DATA2', data)
           price: event.price ?? 'Gratuit',
           image: event.images?.[0]?.url || '',
           organizer: event.user?.name || '',
-          status: eventDate >= now ? 'upcoming' : 'past'
+          status: eventDate >= now ? 'upcoming' : 'past',
         }
       })
     }
@@ -49,22 +53,32 @@ console.log('DATA2', data)
   }
 }
 
-
 const filteredFavorites = computed(() => {
   if (filterStatus.value === 'all') return favorites.value
-  return favorites.value.filter(f => f.status === filterStatus.value)
+  return favorites.value.filter((f) => f.status === filterStatus.value)
 })
 
-const removeFavorite = async (id: number) => {
+const removeFavorite = async (eventId: string) => {
   if (!confirm('Retirer des favoris ?')) return
-  favorites.value = favorites.value.filter(f => f.id !== id)
+
+  try {
+    await $fetch(`/api/favorites/${eventId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    })
+
+    // ✅ Mise à jour locale propre
+    favorites.value = favorites.value.filter((f) => f.id !== eventId)
+  } catch (err) {
+    console.error('Erreur suppression favoris:', err)
+  }
 }
 
 const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString('fr-FR', {
     day: '2-digit',
     month: 'short',
-    year: 'numeric'
+    year: 'numeric',
   })
 }
 
@@ -74,10 +88,14 @@ onMounted(fetchFavorites)
 <template>
   <div class="min-h-screen p-6 mt-18 bg-gradient-to-br from-orange-200 via-white to-indigo-200">
     <div class="max-w-5xl mx-auto">
-      
       <!-- Header -->
       <div class="mb-5 pb-6 border-b border-gray-300 text-center">
-        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Favoris</h1>
+        <h1 class="text-4xl sm:text-5xl font-light text-gray-900 mb-4">
+          Consultez vos <span
+            class="text-transparent font-semibold bg-clip-text bg-gradient-to-r from-orange-600 to-indigo-600"
+            >Favoris</span
+          >
+        </h1>
         <p class="text-gray-600">{{ favorites.length }} événement(s)</p>
       </div>
 
@@ -87,7 +105,9 @@ onMounted(fetchFavorites)
           @click="filterStatus = 'all'"
           :class="[
             'px-4 py-2 rounded-lg font-medium transition-all',
-            filterStatus === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            filterStatus === 'all'
+              ? 'bg-gray-900 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
           ]"
         >
           Tous
@@ -96,7 +116,9 @@ onMounted(fetchFavorites)
           @click="filterStatus = 'upcoming'"
           :class="[
             'px-4 py-2 rounded-lg font-medium transition-all',
-            filterStatus === 'upcoming' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            filterStatus === 'upcoming'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
           ]"
         >
           À venir
@@ -105,7 +127,9 @@ onMounted(fetchFavorites)
           @click="filterStatus = 'past'"
           :class="[
             'px-4 py-2 rounded-lg font-medium transition-all',
-            filterStatus === 'past' ? 'bg-gray-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            filterStatus === 'past'
+              ? 'bg-gray-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
           ]"
         >
           Passés
@@ -134,8 +158,18 @@ onMounted(fetchFavorites)
         >
           <div class="flex items-center gap-4">
             <!-- Image -->
-            <div class="w-20 h-20 bg-gradient-to-br from-orange-500 to-indigo-500 rounded-lg flex-shrink-0 overflow-hidden">
-              <div class="w-full h-full bg-black/20"></div>
+            <img
+              v-if="event.image"
+              :src="event.image"
+              alt="Image de l'événement"
+              class="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+            />
+
+            <div
+              v-else
+              class="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500"
+            >
+              Pas d'image
             </div>
 
             <!-- Content -->
@@ -148,7 +182,7 @@ onMounted(fetchFavorites)
 
                 <button
                   @click="removeFavorite(event.id)"
-                  class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all flex-shrink-0"
+                  class="p-2 mt-7 text-center text-red-500 hover:bg-red-50 rounded-lg transition-all flex-shrink-0"
                   title="Retirer"
                 >
                   <UIcon name="i-heroicons-heart-solid" class="w-5 h-5" />
@@ -165,7 +199,10 @@ onMounted(fetchFavorites)
                   <span>{{ event.location }}</span>
                 </div>
                 <span class="font-semibold text-orange-700">
-                  {{ typeof event.price === 'number' ? `${event.price} XOF` : event.price }}
+                  <template v-if="event?.price && Number(event.price) > 0">
+                    {{ event.price }} Fcfa
+                  </template>
+                  <template v-else> Gratuit </template>
                 </span>
               </div>
             </div>
@@ -186,7 +223,6 @@ onMounted(fetchFavorites)
         <UIcon name="i-heroicons-heart" class="w-16 h-16 text-gray-300 mx-auto mb-4" />
         <p class="text-gray-600">Aucun favori</p>
       </div>
-
     </div>
   </div>
 </template>

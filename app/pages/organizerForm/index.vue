@@ -283,6 +283,5 @@ const handleSubmit = async () => {
       </div>
     </div>
 
-    <AppFooter />
   </div>
 </template>

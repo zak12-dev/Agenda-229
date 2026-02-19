@@ -103,7 +103,7 @@ export const useAuth = () => {
     await authClient.signOut()
     session.value = null
     refreshCaptcha()
-    await navigateTo('/auth/signup')
+    await navigateTo('/')
   }
 
   /* =====================

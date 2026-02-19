@@ -718,7 +718,6 @@
 
     <!-- Résultats des événements -->
   </div>
-  <AppFooter />
 </template>
 
 <script setup>

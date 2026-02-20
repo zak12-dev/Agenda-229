@@ -4,8 +4,8 @@ import AppSearchBar from '../components/home/AppSection1.vue'
 </script>
 
 <template>
-    <AppHero />
-    <AppSearchBar />   
-    <AppSection2 />
-
+  <AppHero />
+  <AppSearchBar />
+  <AppSection2 />
+  <AppSection3 />
 </template>

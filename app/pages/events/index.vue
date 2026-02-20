@@ -718,6 +718,7 @@
 
     <!-- Résultats des événements -->
   </div>
+  
 </template>
 
 <script setup>

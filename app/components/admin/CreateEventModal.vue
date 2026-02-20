@@ -82,6 +82,8 @@ onMounted(async () => {
       id: ville.id,
       name: ville.nomVille,
     }))
+        console.log('VILLES', data)
+
   } catch (err) {
     console.error(err)
     villes.value = []

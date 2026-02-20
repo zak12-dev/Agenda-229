@@ -276,7 +276,7 @@
         <div class="text-center">
           <NuxtLink
             to="/organizerForm"
-            class="inline-block px-8 py-4 bg-indigo-600 border border-gray-300 text-white font-bold rounded-xl hover:bg-indigo-200 transition-all shadow-xl hover:shadow-2xl"
+            class="inline-block px-8 py-4 bg-indigo-600 border border-gray-300 text-white font-bold rounded-xl hover:bg-indigo-400 transition-all shadow-xl hover:shadow-2xl"
           >
             Devenir organisateur 
           </NuxtLink>

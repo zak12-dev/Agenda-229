@@ -162,9 +162,9 @@ const monthEvents = computed(() => {
 
             <!-- Footer timeline -->
             <div class="timeline-footer -mt-10">
-              <!--<button @click="navigateTo('/events?filter=today')" class="timeline-see-all">
-                Voir tous les événements d'aujourd'hui
-              </button>-->
+              <button @click="navigateTo('/events?filter=today')" class="timeline-see-all">
+                Voir tous les événements du mois
+              </button>
             </div>
           </div>
         </div>

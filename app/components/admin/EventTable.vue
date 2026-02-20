@@ -37,7 +37,7 @@ interface CustomEvent {
 
 const { session } = useAuth()
 const searchQuery = ref('')
-const filterStatus = ref<'all' | 'Publié' | 'Brouillon' | 'Recherche'>('Publié')
+const filterStatus = ref<'all' | 'Publié' | 'Brouillon' | 'Recherche'>('all')
 const isAdmin = computed(() => session.value?.user.roleId === 1)
 const events = ref<CustomEvent[]>([])
 const loading = ref(true)

@@ -276,11 +276,11 @@
         <div class="text-center">
           <NuxtLink
             to="/organizerForm"
-            class="inline-block px-8 py-4 bg-indigo-600 border border-gray-300 text-white font-bold rounded-xl hover:bg-purple-50 transition-all shadow-xl hover:shadow-2xl"
+            class="inline-block px-8 py-4 bg-indigo-600 border border-gray-300 text-white font-bold rounded-xl hover:bg-indigo-200 transition-all shadow-xl hover:shadow-2xl"
           >
             Devenir organisateur 
           </NuxtLink>
-          <p class="text-purple-100 text-sm mt-6">
+          <p class="text-gray-600 text-sm mt-6">
             Des questions ? Contactez-nous :
             <a href="mailto:contact@bj-events.com" class="underline font-semibold"
               >contact@weloveevent.com</a

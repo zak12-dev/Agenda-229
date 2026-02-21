@@ -52,6 +52,31 @@ const navigation = {
   ],
 }
 
+// Social Links
+const socialLinks = [
+  {
+    label: 'Facebook',
+    to: 'https://facebook.com',
+    icon: 'lucide:facebook',
+  },
+  {
+    label: 'Instagram',
+    to: 'https://instagram.com',
+    icon: 'lucide:instagram',
+  },
+ {
+    label: "WhatsApp",
+    to: "https://wa.me/TON_NUMERO", 
+    icon: "simple-icons:whatsapp",
+  },
+ 
+  {
+    label: 'YouTube',
+    to: 'https://youtube.com',
+    icon: 'lucide:youtube',
+  },
+]
+
 // Newsletter
 const email = ref('')
 const isSubscribing = ref(false)
@@ -69,7 +94,6 @@ const handleSubscribe = async () => {
 
     email.value = ''
     openModal('Inscription réussie 🎉', 'success')
-
   } catch (error: any) {
     openModal(error?.statusMessage || 'Erreur inscription', 'error')
   } finally {
@@ -93,15 +117,25 @@ const handleNavigation = async (link: { to: string; requiresAuth?: boolean }) =>
 
   router.push(link.to)
 }
-</script>
 
+// ✅ Accordéons mobile
+const openSections = ref<Set<string>>(new Set())
+
+const toggleSection = (section: string) => {
+  if (openSections.value.has(section)) {
+    openSections.value.delete(section)
+  } else {
+    openSections.value.add(section)
+  }
+}
+</script>
 
 <template>
   <footer class="bg-gradient-to-br from-slate-900 via-orange-900 to-slate-900 text-white">
     <!-- Vague décorative -->
-    <div class="relative h-16">
+    <div class="relative h-12 sm:h-16">
       <svg
-        class="absolute bottom-0 w-full h-16 text-slate-50"
+        class="absolute bottom-0 w-full h-full text-slate-50"
         viewBox="0 0 1440 120"
         preserveAspectRatio="none"
       >
@@ -112,38 +146,47 @@ const handleNavigation = async (link: { to: string; requiresAuth?: boolean }) =>
       </svg>
     </div>
 
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-16 pb-6 sm:pb-8">
       <!-- Top Section -->
-      <div class="grid md:grid-cols-2 gap-12 mb-16 pb-16 border-b border-white/10">
+      <div
+        class="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 mb-8 sm:mb-16 pb-8 sm:pb-16 border-b border-white/10"
+      >
         <!-- Branding & Social -->
-        <div class="space-y-6">
-          <div class="flex items-center gap-3">
+        <div class="space-y-4 sm:space-y-6">
+          <div class="flex items-center gap-2 sm:gap-3">
             <NuxtLink to="/" class="flex items-center gap-2 sm:gap-3 z-50">
               <div
-                class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-xs sm:text-sm font-semibold transition-all duration-500 bg-gradient-to-br from-orange-600 to-indigo-600 text-white shadow-lg shadow-orange-500/20"
+                class="w-10 h-10 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-sm font-semibold transition-all duration-500 bg-gradient-to-br from-orange-600 to-indigo-600 text-white shadow-lg shadow-orange-500/20"
               >
-                WxLE
+                WLE
               </div>
               <span
-                class="hidden sm:block text-base lg:text-3xl font-bold tracking-tight transition-all duration-500 text-transparent bg-clip-text bg-white"
+                class="text-xl sm:text-base lg:text-3xl font-bold tracking-tight transition-all duration-500 text-white"
               >
                 WeLoveEvent
               </span>
             </NuxtLink>
           </div>
-          <div class="flex gap-3 pt-4">
+
+          <p class="text-sm sm:text-base text-gray-300 max-w-md">
+            Découvrez et participez aux meilleurs événements du Bénin. Culture, sport, business et
+            plus encore.
+          </p>
+
+          <div class="flex gap-2 sm:gap-3 pt-2 sm:pt-4">
             <a
               v-for="social in socialLinks"
               :key="social.label"
               :href="social.to"
               target="_blank"
               class="group relative"
+              :aria-label="social.label"
             >
               <div
                 class="absolute inset-0 bg-white rounded-lg opacity-0 group-hover:opacity-20 transition-opacity blur-sm"
               ></div>
               <div
-                class="relative bg-white/10 backdrop-blur-sm p-3 rounded-lg hover:bg-white/20 transition-all duration-300 hover:scale-110"
+                class="relative bg-white/10 backdrop-blur-sm p-2.5 sm:p-3 rounded-lg hover:bg-white/20 transition-all duration-300 hover:scale-110"
               >
                 <UIcon :name="social.icon" class="w-5 h-5" />
               </div>
@@ -152,44 +195,41 @@ const handleNavigation = async (link: { to: string; requiresAuth?: boolean }) =>
         </div>
 
         <!-- Newsletter -->
-        <div class="bg-white bg-opacity-5 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-          <div class="flex items-center gap-2 mb-4">
-            <UIcon name="i-heroicons-envelope" class="w-6 h-6 text-orange-600" />
-            <h3 class="text-xl font-bold text-orange-600">
-              Restez informé des meilleurs événements
-            </h3>
+        <div
+          class="bg-white/5 backdrop-blur-sm rounded-xl sm:rounded-2xl p-6 sm:p-8 border border-white/20"
+        >
+          <div class="flex items-center gap-2 mb-3 sm:mb-4">
+            <UIcon name="i-heroicons-envelope" class="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
+            <h3 class="text-base sm:text-xl font-bold text-orange-400">Newsletter</h3>
           </div>
-          <p class="text-gray-600 text-sm mb-6">
-            Recevez notre newsletter hebdomadaire avec une sélection d'événements populaires au
-            Bénin
+          <p class="text-gray-300 text-xs sm:text-sm mb-4 sm:mb-6">
+            Recevez notre sélection hebdomadaire des meilleurs événements au Bénin
           </p>
           <form @submit.prevent="handleSubscribe" class="space-y-3">
-            <div class="flex gap-2">
+            <div class="flex flex-col sm:flex-row gap-2">
               <input
                 v-model="email"
                 type="email"
                 placeholder="votre@email.com"
                 required
-                class="flex-1 px-4 py-3 bg-white/10 border border-gray-300 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent rounded-full"
+                class="flex-1 px-4 py-2.5 sm:py-3 bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent rounded-full text-sm"
               />
-              <UButton
+              <button
                 type="submit"
-                color="primary"
-                size="lg"
-                :loading="isSubscribing"
-                icon="i-heroicons-paper-airplane"
-                trailing
-                class="bg-amber-400 hover:bg-amber-500 rounded-full"
+                :disabled="isSubscribing"
+                class="px-6 py-2.5 sm:py-3 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-800 text-white font-medium rounded-full transition-all duration-300 flex items-center justify-center gap-2 text-sm whitespace-nowrap"
               >
-                {{ isSubscribing ? 'Envoi...' : "S'abonner" }}
-              </UButton>
+                <span>{{ isSubscribing ? 'Envoi...' : "S'abonner" }}</span>
+                <UIcon name="i-heroicons-paper-airplane" class="w-4 h-4" />
+              </button>
             </div>
           </form>
         </div>
       </div>
 
       <!-- Navigation Links -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-">
+      <!-- Desktop: Grid 4 colonnes -->
+      <div class="hidden md:grid md:grid-cols-4 gap-8 mb-8">
         <div v-for="(section, name) in navigation" :key="name">
           <h4 class="font-semibold text-lg mb-4 text-orange-300">{{ name }}</h4>
           <ul class="space-y-3">
@@ -208,33 +248,134 @@ const handleNavigation = async (link: { to: string; requiresAuth?: boolean }) =>
           </ul>
         </div>
       </div>
-    </div>
-    <!-- Modal -->
-    <div v-if="showModal" class="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-      <div class="bg-white rounded-xl shadow-xl p-6 w-80 text-center">
-        <h2
-          class="text-lg font-bold mb-4"
-          :class="modalType === 'success' ? 'text-green-600' : 'text-red-600'"
-        >
-          {{ modalType === 'success' ? 'Succès' : 'Erreur' }}
-        </h2>
 
-        <p class="text-gray-600 mb-6">
-          {{ modalMessage }}
-        </p>
+      <!-- Mobile: Accordéons -->
+      <div class="md:hidden space-y-3 mb-8">
+        <div v-for="(section, name) in navigation" :key="name" class="border-b border-white/10">
+          <button
+            @click="toggleSection(name as string)"
+            class="w-full flex items-center justify-between py-4 text-left"
+          >
+            <span class="font-semibold text-base text-orange-300">{{ name }}</span>
+            <UIcon
+              name="i-heroicons-chevron-down"
+              :class="[
+                'w-5 h-5 text-orange-300 transition-transform duration-300',
+                openSections.has(name as string) ? 'rotate-180' : '',
+              ]"
+            />
+          </button>
 
-        <button
-          @click="showModal = false"
-          class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
+          <Transition
+            enter-active-class="transition-all duration-300 ease-out"
+            enter-from-class="max-h-0 opacity-0"
+            enter-to-class="max-h-96 opacity-100"
+            leave-active-class="transition-all duration-200 ease-in"
+            leave-from-class="max-h-96 opacity-100"
+            leave-to-class="max-h-0 opacity-0"
+          >
+            <ul v-if="openSections.has(name as string)" class="pb-4 space-y-3 overflow-hidden">
+              <li v-for="link in section" :key="link.to">
+                <button
+                  @click="handleNavigation(link)"
+                  class="text-gray-300 hover:text-white transition-colors duration-200 flex items-center gap-2 w-full text-left py-1.5 pl-4"
+                >
+                  <UIcon name="i-heroicons-chevron-right" class="w-4 h-4" />
+                  <span class="text-sm">{{ link.label }}</span>
+                </button>
+              </li>
+            </ul>
+          </Transition>
+        </div>
+      </div>
+
+      <!-- Bottom Section -->
+      <div class="pt-6 sm:pt-8 border-t border-white/10">
+        <div
+          class="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-gray-400"
         >
-          OK
-        </button>
+          <p class="text-center sm:text-left">
+            © {{ new Date().getFullYear() }} WeLoveEvent. Tous droits réservés.
+          </p>
+          <div class="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+            <NuxtLink to="/helps/terms" class="hover:text-white transition-colors">
+              Conditions
+            </NuxtLink>
+            <NuxtLink to="/helps/privacy" class="hover:text-white transition-colors">
+              Confidentialité
+            </NuxtLink>
+            <NuxtLink to="/contact" class="hover:text-white transition-colors"> Contact </NuxtLink>
+          </div>
+        </div>
       </div>
     </div>
+
+    <!-- Modal -->
+    <Transition
+      enter-active-class="transition-opacity duration-300"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition-opacity duration-200"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="showModal"
+        class="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4"
+      >
+        <Transition
+          enter-active-class="transition-all duration-300"
+          enter-from-class="opacity-0 scale-95"
+          enter-to-class="opacity-100 scale-100"
+          leave-active-class="transition-all duration-200"
+          leave-from-class="opacity-100 scale-100"
+          leave-to-class="opacity-0 scale-95"
+        >
+          <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm text-center">
+            <div class="mb-4">
+              <div
+                :class="[
+                  'w-16 h-16 mx-auto rounded-full flex items-center justify-center',
+                  modalType === 'success' ? 'bg-green-100' : 'bg-red-100',
+                ]"
+              >
+                <UIcon
+                  :name="
+                    modalType === 'success' ? 'i-heroicons-check-circle' : 'i-heroicons-x-circle'
+                  "
+                  :class="[
+                    'w-10 h-10',
+                    modalType === 'success' ? 'text-green-600' : 'text-red-600',
+                  ]"
+                />
+              </div>
+            </div>
+
+            <h2
+              class="text-lg font-bold mb-3"
+              :class="modalType === 'success' ? 'text-green-600' : 'text-red-600'"
+            >
+              {{ modalType === 'success' ? 'Succès' : 'Erreur' }}
+            </h2>
+
+            <p class="text-gray-600 mb-6 text-sm">
+              {{ modalMessage }}
+            </p>
+
+            <button
+              @click="showModal = false"
+              class="w-full bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 transition font-medium"
+            >
+              OK
+            </button>
+          </div>
+        </Transition>
+      </div>
+    </Transition>
   </footer>
 </template>
 
-<style>
+<style scoped>
 html {
   scroll-behavior: smooth;
 }

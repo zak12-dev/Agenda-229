@@ -123,12 +123,12 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
         <!-- Logo -->
         <NuxtLink to="/" class="flex items-center gap-2 sm:gap-3 z-50">
           <div
-            class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-xs sm:text-sm font-semibold transition-all duration-500 bg-gradient-to-br from-orange-600 to-indigo-600 text-white shadow-lg shadow-orange-500/20"
+            class="  w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-xs sm:text-sm font-semibold transition-all duration-500 bg-gradient-to-br from-orange-600 to-indigo-600 text-white shadow-lg shadow-orange-500/20"
           >
             WLE
           </div>
           <span
-            class="hidden sm:block text-base lg:text-3xl font-bold tracking-tight transition-all duration-500 text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-indigo-600"
+            class=" text-base lg:text-3xl font-bold tracking-tight transition-all duration-500 text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-indigo-600"
             >WeLoveEvents</span
           >
         </NuxtLink>
@@ -216,7 +216,7 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
     >
       <div
         v-if="mobileMenuOpen"
-        class="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+        class="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 mt-20"
         @click="mobileMenuOpen = false"
       />
     </Transition>
@@ -231,21 +231,10 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
     >
       <div
         v-if="mobileMenuOpen"
-        class="fixed top-14 sm:top-16 left-0 right-0 bg-white/95 backdrop-blur-2xl border-b border-gray-200/50 z-40 md:hidden max-h-[85vh] overflow-y-auto"
+        class="fixed top-14 sm:top-16 left-0 right-0 bg-white backdrop-blur-2xl border-b border-gray-200/50 z-40 md:hidden max-h-[85vh] overflow-y-auto"
       >
-        <div class="px-4 py-4 border-b border-gray-100 sm:hidden"><AppSearch /></div>
-        <nav class="px-4 py-4 space-y-1">
-          <NuxtLink
-            v-for="item in navitems"
-            :key="item.to"
-            :to="item.to"
-            class="block px-4 py-3 rounded-xl text-sm font-medium transition-all"
-            :class="item.active ? 'bg-orange-50 text-orange-600' : 'text-gray-700 hover:bg-gray-50'"
-          >
-            {{ item.label }}
-          </NuxtLink>
-        </nav>
-        <<!-- Mobile actions -->
+       
+        <!-- Mobile actions -->
         <div class="px-4 py-4 border-t border-gray-100 space-y-2">
           <template v-if="!isLoggedIn">
             <button

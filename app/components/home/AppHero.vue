@@ -204,7 +204,7 @@ onMounted(() => {
         </div>
 
         <!-- Catégories -->
-        <div class="categories-section">
+        <div class="categories-section hidden sm:block">
           <h3 class="categories-title">Explorer par catégorie</h3>
           <div class="categories-grid">
             <button

@@ -5,27 +5,34 @@
     <!-- Résultats des événements -->
     <div class="px-10 mt-">
       <!-- Header résultats -->
-      <div class="flex items-center justify-between mb-6">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <div>
-          <h3 class="text-5xl font-semibold text-gray-900">Événements passés</h3>
-          <p class="text-sm text-gray-600 mt-1">
-            {{ hasActiveFilters ? 'Résultats filtrés' : 'Découvrez les événements passés' }}
-          </p>
+          <h3 class="text-2xl sm:text-5xl font-semibold text-gray-900">Événements passés</h3>
+          <p class="text-sm text-gray-600 mt-1">Découvrez nos événements passés</p>
         </div>
-        <div v-if="!loading" class="text-center mt-10">
+        <div v-if="!loading" class="w-full sm:w-auto">
           <button
             @click="goToEvents()"
-            class="inline-flex items-center gap-2 px-8 py-4 bg-white border-2 border-orange-600 text-orange-600 font-semibold rounded-xl hover:bg-orange-600 hover:text-white transition-all duration-300 shadow-lg hover:shadow-xl"
+            class="group relative w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-gray-900 text-white font-semibold rounded-full overflow-hidden transition-all duration-300 shadow-lg hover:shadow-2xl hover:bg-gray-800"
           >
-            <span>Voir les événements passés</span>
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
+            <!-- Effet shine -->
+            <span
+              class="absolute inset-0 w-1/4 h-full bg-gradient-to-r from-transparent via-white to-transparent opacity-20 -translate-x-full group-hover:translate-x-[400%] transition-transform duration-1000 ease-out skew-x-12"
+            ></span>
+
+            <!-- Contenu -->
+            <span class="relative z-10 flex items-center gap-2">
+              <span class="flex gap-3 items-center"
+                >Voir les évènements passés <ArrowRight />
+              </span>
+            </span>
+
+            <!-- Badge notification -->
+            <span
+              class="absolute -top-1 -right-1 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-xs font-bold shadow-lg"
+            >
+              {{ eventCount }}
+            </span>
           </button>
         </div>
       </div>
@@ -236,16 +243,31 @@
         </button>
       </div>
     </div>
-    <section class="py-20 text-white mt-25 ">
-      <div class="max-w-6xl mx-auto px-6">
+    <section class="py-20 text-white mt-5">
+      <div class="max-w-5xl mx-auto px-6">
         <!-- Header -->
         <div class="text-center mb-16">
+          <div class="flex items-center justify-center mb-6">
+            <div
+              class="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-400 to-transparent"
+            ></div>
+
+            <span
+              class="mx-6 px-4 py-2 bg-white rounded-full text-sm font-semibold text-indigo-600 border border-gray-300"
+            >
+              Pour les organisateurs
+            </span>
+
+            <div
+              class="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-400 to-transparent"
+            ></div>
+          </div>
           <h2 class="text-3xl sm:text-4xl lg:text-5xl font-light text-gray-900 mb-3">
             Devenez
             <span
               class="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-indigo-600"
-              >Organisateur </span
-            >
+              >Organisateur
+            </span>
           </h2>
           <p class="text-sm sm:text-base text-gray-600">
             Rejoignez notre communauté de <strong>+100 organisateurs</strong> et donnez de la
@@ -267,7 +289,7 @@
             </div>
             <div>
               <h3 class="font-bold text-lg mb-2">{{ advantage.title }}</h3>
-              <p class="text-purple-100">{{ advantage.description }}</p>
+              <p class="text-white">{{ advantage.description }}</p>
             </div>
           </div>
         </div>
@@ -276,11 +298,14 @@
         <div class="text-center">
           <NuxtLink
             to="/organizerForm"
-            class="inline-block px-8 py-4 bg-indigo-600 border border-gray-300 text-white font-bold rounded-xl hover:bg-purple-50 transition-all shadow-xl hover:shadow-2xl"
+            class="inline-block -20 px-8 py-4 bg-indigo-600 border border-gray-300 text-white font-bold rounded-xl hover:bg-indigo-500 transition-all shadow-xl hover:shadow-2xl"
           >
-            Devenir organisateur 
+            <span class="flex items-center gap-2 leading-none">
+              <span>Devenir organisateur</span>
+              <ArrowRight class="w-5 h-5 shrink-0" />
+            </span>
           </NuxtLink>
-          <p class="text-purple-100 text-sm mt-6">
+          <p class="text-gray-600 text-sm mt-6">
             Des questions ? Contactez-nous :
             <a href="mailto:contact@bj-events.com" class="underline font-semibold"
               >contact@weloveevent.com</a
@@ -295,6 +320,7 @@
 <script setup>
 import { NuxtImg } from '#components'
 import { ref, computed, onMounted, watch } from 'vue'
+import { ArrowRight } from 'lucide-vue-next'
 
 function goToEvents() {
   navigateTo('/events')

@@ -108,7 +108,7 @@ const monthEvents = computed(() => {
           </div>
 
           <!-- CTA Principal -->
-          <button @click="navigateTo('/events')" class="cta-explore">
+          <button @click="navigateTo('/events')" class="cta-explore hidden sm:block">
             <span>Explorer tous les événements de ce mois</span>
             <svg class="cta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path

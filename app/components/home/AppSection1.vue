@@ -463,9 +463,9 @@
     <!-- Résultats des événements -->
     <div class="px-10 mt-16">
       <!-- Header résultats -->
-      <div class="flex items-center justify-between mb-6">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <div>
-          <h3 class="text-5xl font-semibold text-gray-900">
+          <h3 class="text-2xl sm:text-5xl font-semibold text-gray-900">
             {{
               filteredEvents.length > 0
                 ? `${filteredEvents.length} événements trouvés`
@@ -476,20 +476,27 @@
             {{ hasActiveFilters ? 'Résultats filtrés' : "Découvrez nos événements d'exception" }}
           </p>
         </div>
-        <div v-if="!loading" class="text-center mt-10">
+        <div v-if="!loading" class="w-full sm:w-auto">
           <button
             @click="goToEvents()"
-            class="inline-flex items-center gap-2 px-8 py-4 bg-white border-2 border-orange-600 text-orange-600 font-semibold rounded-xl hover:bg-orange-600 hover:text-white transition-all duration-300 shadow-lg hover:shadow-xl"
+            class="group relative w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-gray-900 text-white font-semibold rounded-full overflow-hidden transition-all duration-300 shadow-lg hover:shadow-2xl hover:bg-gray-800"
           >
-            <span>Voir tous les événements</span>
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
+            <!-- Effet shine -->
+            <span
+              class="absolute inset-0 w-1/4 h-full bg-gradient-to-r from-transparent via-white to-transparent opacity-20 -translate-x-full group-hover:translate-x-[400%] transition-transform duration-1000 ease-out skew-x-12"
+            ></span>
+
+            <!-- Contenu -->
+            <span class="relative z-10 flex items-center gap-2">
+              <span class="flex gap-3 items-center">Voir tout les évènements <ArrowRight /> </span>
+            </span>
+
+            <!-- Badge notification -->
+            <span
+              class="absolute -top-1 -right-1 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-xs font-bold shadow-lg"
+            >
+              {{ eventCount }}
+            </span>
           </button>
         </div>
       </div>
@@ -510,26 +517,25 @@
         </div>
       </div>
 
-      <!-- Grid des événements -->
+      <!-- Grid des événements - VARIANTE 1 -->
       <div
         v-else-if="displayedEvents.length > 0"
-        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
       >
         <article
           v-for="event in displayedEvents"
           :key="event.id"
-          class="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:border-orange-300"
+          class="group bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:border-orange-300"
         >
           <NuxtLink :to="`/events/${event.id}`">
-            <!-- Image avec overlay -->
-            <div class="relative overflow-hidden h-64">
+            <!-- Image avec overlay - Version Mobile Optimisée -->
+            <div class="relative overflow-hidden h-48 sm:h-64">
               <NuxtImg
                 v-if="event.images?.length"
                 :src="event.images[0].url"
                 :alt="event.title"
                 class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
               />
-              <!-- Image fallback -->
               <img v-else src="#" class="w-full h-full object-cover" />
 
               <!-- Gradient overlay -->
@@ -537,63 +543,65 @@
                 class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"
               ></div>
 
-              <!-- Badge Catégorie -->
-              <div class="absolute top-4 left-4">
+              <!-- Badge Catégorie - Plus petit sur mobile -->
+              <div class="absolute top-2 sm:top-4 left-2 sm:left-4">
                 <span
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white/90 backdrop-blur-md text-gray-900 shadow-lg"
+                  class="inline-flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs font-semibold bg-white/90 backdrop-blur-md text-gray-900 shadow-lg"
                 >
                   <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                     <path
                       d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
                     />
                   </svg>
-                  {{ event.category?.name }}
+                  <span class="hidden sm:inline">{{ event.category?.name }}</span>
+                  <span class="sm:hidden">{{ event.category?.name.substring(0, 8) }}</span>
                 </span>
               </div>
 
-              <!-- Date Badge -->
-              <div class="absolute top-4 right-4">
-                <div class="flex flex-col items-center px-3 py-2 rounded-xl bg-white shadow-lg">
-                  <span class="text-2xl font-bold text-orange-600">{{
+              <!-- Date Badge - Plus compact sur mobile -->
+              <div class="absolute top-2 sm:top-4 right-2 sm:right-4">
+                <div
+                  class="flex flex-col items-center px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl bg-white shadow-lg"
+                >
+                  <span class="text-xl sm:text-2xl font-bold text-orange-600">{{
                     formatDay(event.eventDate)
                   }}</span>
-                  <span class="text-xs font-medium text-gray-600 uppercase">{{
+                  <span class="text-[10px] sm:text-xs font-medium text-gray-600 uppercase">{{
                     formatMonth(event.eventDate)
                   }}</span>
                 </div>
               </div>
 
               <!-- Prix en bas -->
-              <div class="absolute bottom-4 left-4">
+              <div class="absolute bottom-2 sm:bottom-4 left-2 sm:left-4">
                 <div class="flex items-baseline gap-1">
-                  <span class="text-2xl font-bold text-white">
+                  <span class="text-xl sm:text-2xl font-bold text-white">
                     <template v-if="event?.price && Number(event.price) > 0">
-                      {{ event.price }}Fcfa
+                      {{ event.price }}F
                     </template>
                     <template v-else> Gratuit </template>
-                  </span>
-                  <span
-                    v-if="event?.price && Number(event.price) > 0"
-                    class="text-sm text-white/80"
-                  >
-                    / pers
                   </span>
                 </div>
               </div>
             </div>
 
-            <!-- Content -->
-            <div class="p-6">
+            <!-- Content - Compact sur mobile -->
+            <div class="p-4 sm:p-6">
               <!-- Titre -->
               <h3
-                class="text-xl font-bold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors line-clamp-2"
+                class="text-base sm:text-xl font-bold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors line-clamp-2"
               >
                 {{ event.title }}
               </h3>
 
               <!-- Lieu -->
-              <div class="flex items-center gap-2 text-sm text-gray-600 mb-3">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="flex items-center gap-2 text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
+                <svg
+                  class="w-3 h-3 sm:w-4 sm:h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     stroke-linecap="round"
                     stroke-linejoin="round"
@@ -610,16 +618,21 @@
                 <span>{{ event.ville?.nomVille }}</span>
               </div>
 
-              <!-- Description -->
+              <!-- Description - Cachée sur très petit écran -->
               <p class="text-sm text-gray-600 line-clamp-2 mb-4">
                 {{ event.description }}
               </p>
 
               <!-- Infos supplémentaires -->
-              <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+              <div class="flex items-center justify-between pt-3 sm:pt-4 border-t border-gray-100">
                 <!-- Participants -->
                 <div class="flex items-center gap-1 text-xs text-gray-500">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    class="w-3 h-3 sm:w-4 sm:h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       stroke-linecap="round"
                       stroke-linejoin="round"
@@ -627,15 +640,15 @@
                       d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                     />
                   </svg>
-                  <span>{{ event.views }} vue</span>
+                  <span>{{ event.views }}</span>
                 </div>
 
                 <!-- CTA Arrow -->
                 <div
-                  class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center group-hover:bg-gradient-to-r group-hover:from-orange-600 group-hover:to-indigo-600 transition-all"
+                  class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-orange-100 flex items-center justify-center group-hover:bg-gradient-to-r group-hover:from-orange-600 group-hover:to-indigo-600 transition-all"
                 >
                   <svg
-                    class="w-5 h-5 text-orange-600 group-hover:text-white group-hover:translate-x-0.5 transition-all"
+                    class="w-4 h-4 sm:w-5 sm:h-5 text-orange-600 group-hover:text-white group-hover:translate-x-0.5 transition-all"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -721,6 +734,7 @@
 import { useNuxtApp, navigateTo } from '#app'
 import { NuxtImg } from '#components'
 import { ref, computed, onMounted, watch } from 'vue'
+import { ArrowRight } from 'lucide-vue-next'
 
 const searchQuery = ref('')
 const showSuggestions = ref(false)
@@ -837,45 +851,42 @@ const prevPage = () => {
 const filteredEvents = computed(() => {
   const now = new Date() // Date + heure actuelle
 
-  return events.value
-    .filter((event) => {
-      if (!event.eventDate) return false
+  return events.value.filter((event) => {
+    if (!event.eventDate) return false
 
-      const eventDate = new Date(event.eventDate)
+    const eventDate = new Date(event.eventDate)
 
-      // ✅ Supprimer tout événement passé (date ou heure)
-      if (eventDate < now) return false
+    // ✅ Supprimer tout événement passé (date ou heure)
+    if (eventDate < now) return false
 
-      /* Recherche texte */
-      const matchQuery =
-        !searchQuery.value ||
-        event.title?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        event.description?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        event.ville?.nomVille?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        event.category?.name?.toLowerCase().includes(searchQuery.value.toLowerCase())
+    /* Recherche texte */
+    const matchQuery =
+      !searchQuery.value ||
+      event.title?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      event.description?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      event.ville?.nomVille?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      event.category?.name?.toLowerCase().includes(searchQuery.value.toLowerCase())
 
-      /* Catégorie */
-      const matchCategory =
-        !selectedCategory.value || event.category?.name === selectedCategory.value
+    /* Catégorie */
+    const matchCategory = !selectedCategory.value || event.category?.name === selectedCategory.value
 
-      /* Lieu */
-      const matchLocation =
-        !selectedLocation.value ||
-        event.ville?.nomVille.toLowerCase() === selectedLocation.value.toLowerCase()
+    /* Lieu */
+    const matchLocation =
+      !selectedLocation.value ||
+      event.ville?.nomVille.toLowerCase() === selectedLocation.value.toLowerCase()
 
-      /* Prix */
-      const matchPrice =
-        !selectedPrice.value ||
-        (selectedPrice.value === 'Gratuit' && event.price === 0) ||
-        (selectedPrice.value === 'Moins de 20€' && event.price < 20) ||
-        (selectedPrice.value === '20€ - 50€' && event.price >= 20 && event.price <= 50) ||
-        (selectedPrice.value === '50€ - 100€' && event.price > 50 && event.price <= 100) ||
-        (selectedPrice.value === 'Plus de 100€' && event.price > 100)
+    /* Prix */
+    const matchPrice =
+      !selectedPrice.value ||
+      (selectedPrice.value === 'Gratuit' && event.price === 0) ||
+      (selectedPrice.value === 'Moins de 20€' && event.price < 20) ||
+      (selectedPrice.value === '20€ - 50€' && event.price >= 20 && event.price <= 50) ||
+      (selectedPrice.value === '50€ - 100€' && event.price > 50 && event.price <= 100) ||
+      (selectedPrice.value === 'Plus de 100€' && event.price > 100)
 
-      return matchQuery && matchCategory && matchLocation && matchPrice
-    })
+    return matchQuery && matchCategory && matchLocation && matchPrice
+  })
 })
-
 
 // Vérifie s'il y a plus de 9 événements
 const hasMoreEvents = computed(() => {

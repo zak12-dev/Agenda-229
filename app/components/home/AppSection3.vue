@@ -244,12 +244,7 @@
         </button>
       </div>
     </div>
-<<<<<<< HEAD
-    <section class="py-20 text-white mt-25 ">
-      <div class="max-w-6xl mx-auto px-6">
-        <!-- Header -->
-        <div class="text-center mb-16">
-=======
+
     <section class="py-20 text-white mt-5">
       <div class="max-w-5xl mx-auto px-6">
         <!-- Header -->
@@ -269,18 +264,12 @@
               class="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-400 to-transparent"
             ></div>
           </div>
->>>>>>> origin/dev-zak
           <h2 class="text-3xl sm:text-4xl lg:text-5xl font-light text-gray-900 mb-3">
             Devenez
             <span
               class="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-indigo-600"
-<<<<<<< HEAD
-              >Organisateur </span
-            >
-=======
               >Organisateur
             </span>
->>>>>>> origin/dev-zak
           </h2>
           <p class="text-sm sm:text-base text-gray-600">
             Rejoignez notre communauté de <strong>+100 organisateurs</strong> et donnez de la
@@ -302,11 +291,8 @@
             </div>
             <div>
               <h3 class="font-bold text-lg mb-2">{{ advantage.title }}</h3>
-<<<<<<< HEAD
-              <p class="text-purple-100">{{ advantage.description }}</p>
-=======
+
               <p class="text-white">{{ advantage.description }}</p>
->>>>>>> origin/dev-zak
             </div>
           </div>
         </div>
@@ -315,18 +301,13 @@
         <div class="text-center">
           <NuxtLink
             to="/organizerForm"
-<<<<<<< HEAD
-            class="inline-block px-8 py-4 bg-indigo-600 border border-gray-300 text-white font-bold rounded-xl hover:bg-indigo-400 transition-all shadow-xl hover:shadow-2xl"
-          >
-            Devenir organisateur 
-=======
+
             class="inline-block -20 px-8 py-4 bg-indigo-600 border border-gray-300 text-white font-bold rounded-xl hover:bg-indigo-500 transition-all shadow-xl hover:shadow-2xl"
           >
             <span class="flex items-center gap-2 leading-none">
               <span>Devenir organisateur</span>
               <ArrowRight class="w-5 h-5 shrink-0" />
             </span>
->>>>>>> origin/dev-zak
           </NuxtLink>
           <p class="text-gray-600 text-sm mt-6">
             Des questions ? Contactez-nous :
@@ -343,10 +324,8 @@
 <script setup>
 import { NuxtImg } from '#components'
 import { ref, computed, onMounted, watch } from 'vue'
-<<<<<<< HEAD
-=======
+
 import { ArrowRight } from 'lucide-vue-next'
->>>>>>> origin/dev-zak
 
 function goToEvents() {
   navigateTo('/events')

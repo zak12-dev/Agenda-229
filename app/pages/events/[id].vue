@@ -20,7 +20,6 @@ const checkFavorite = async () => {
   isFavorite.value = data.isFavorite
 }
 
-
 const toggleFavorite = async () => {
   if (!event.value) return
 
@@ -606,11 +605,11 @@ useHead(() => {
                       </div>
                     </div>
                   </div>
-                  <button
+                  <!-- <button
                     class="w-full py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-white transition-colors text-sm font-medium"
                   >
                     Contacter l'organisateur
-                  </button>
+                  </button>-->
                 </div>
 
                 <!-- Need Help -->

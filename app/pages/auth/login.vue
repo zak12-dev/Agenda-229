@@ -84,6 +84,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   try {
     await $fetch('/api/cloudeflare/verify-turnstile', { method: 'POST', body: { token } })
     await loginWithEmail(event.data.email, event.data.password, event.data.remember)
+    await fetchSession()
+
     toast.add({ title: 'Connexion réussie', color: 'green' })
     await navigateTo('/dashboard/events')
   } catch (error: any) {

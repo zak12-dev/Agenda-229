@@ -785,7 +785,7 @@ const dates = ["Aujourd'hui", 'Ce week-end', 'Cette semaine', 'Ce mois-ci', 'Pro
 
 const prices = ['Gratuit', 'Moins de 20€', '20€ - 50€', '50€ - 100€', 'Plus de 100€']
 
-const popularTags = ['Concert jazz', 'Exposition art', 'Festival été', 'Théâtre Paris']
+const popularTags = ['Concert', 'Exposition', 'Festival', 'Spectacle', 'Sport']
 
 // Données fictives (Mock events)
 const events = ref([])

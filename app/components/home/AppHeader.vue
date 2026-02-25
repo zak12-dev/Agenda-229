@@ -7,11 +7,6 @@ import { log } from 'node:console'
 
 const sessionLoaded = ref(false)
 
-onMounted(async () => {
-  await fetchSession()
-  sessionLoaded.value = true
-})
-
 // ====== AUTH ======
 const { session, logout, fetchSession } = useAuth()
 const isLoggedIn = computed(() => !!session.value?.user)
@@ -80,15 +75,13 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
     ]
 
     // Si admin ou organisateur, ajouter "Dashboard"
-    if (session.value?.user?.roleId === 1 || session.value?.user?.roleId === 2)
- {
+    if (session.value?.user?.roleId === 1 || session.value?.user?.roleId === 2) {
       mainItems.push({
         label: 'Mon dashboard',
         icon: 'i-lucide-layout',
         onClick: () => navigateTo('/dashboard/events'),
       })
     }
-    
 
     // Ajouter déconnexion
     mainItems.push({
@@ -123,12 +116,12 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
         <!-- Logo -->
         <NuxtLink to="/" class="flex items-center gap-2 sm:gap-3 z-50">
           <div
-            class="  w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-xs sm:text-sm font-semibold transition-all duration-500 bg-gradient-to-br from-orange-600 to-indigo-600 text-white shadow-lg shadow-orange-500/20"
+            class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-xs sm:text-sm font-semibold transition-all duration-500 bg-gradient-to-br from-orange-600 to-indigo-600 text-white shadow-lg shadow-orange-500/20"
           >
             WLE
           </div>
           <span
-            class=" text-base lg:text-3xl font-bold tracking-tight transition-all duration-500 text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-indigo-600"
+            class="text-base lg:text-3xl font-bold tracking-tight transition-all duration-500 text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-indigo-600"
             >WeLoveEvents</span
           >
         </NuxtLink>
@@ -233,16 +226,53 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
         v-if="mobileMenuOpen"
         class="fixed top-14 sm:top-16 left-0 right-0 bg-white backdrop-blur-2xl border-b border-gray-200/50 z-40 md:hidden max-h-[85vh] overflow-y-auto"
       >
-       
         <!-- Mobile actions -->
+
         <div class="px-4 py-4 border-t border-gray-100 space-y-2">
-          <template v-if="!isLoggedIn">
+          <!-- Si connecté -->
+          <template v-if="isLoggedIn">
+            <button
+              @click="
+                navigateTo('/profile');
+                mobileMenuOpen = false
+              "
+              class="w-full py-2.5 text-sm font-medium rounded-xl border border-gray-200"
+            >
+              Mon profil
+            </button>
+
+            <button
+              v-if="session?.user?.roleId === 1 || session?.user?.roleId === 2"
+              @click="
+                navigateTo('/dashboard/events');
+                mobileMenuOpen = false
+              "
+              class="w-full py-2.5 text-sm font-medium rounded-xl border border-gray-200"
+            >
+              Dashboard
+            </button>
+
+            <button
+              @click="
+                logout()
+                navigateTo('/');
+                mobileMenuOpen = false
+              "
+              class="w-full py-2.5 text-sm font-medium rounded-xl bg-red-500 text-white"
+            >
+              Déconnexion
+            </button>
+          </template>
+
+          <!-- Si NON connecté -->
+          <template v-else>
             <button
               @click="goToLogin"
               class="w-full py-2.5 bg-gradient-to-r from-orange-600 to-indigo-600 text-white text-sm font-medium rounded-xl"
             >
               Connexion
             </button>
+
             <button
               @click="goToSignUp"
               class="w-full py-2.5 border border-orange-600 text-orange-600 text-sm font-medium rounded-xl"

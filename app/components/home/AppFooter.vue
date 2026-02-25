@@ -3,6 +3,13 @@ import { ref, nextTick } from 'vue'
 import { useAuth } from '../../../composables/useAuth'
 import { useRouter } from '#imports'
 
+type NavLink = {
+  label: string
+  to: string
+  requiresAuth?: boolean
+  requiresOrganizer?: boolean
+}
+
 const { session, fetchSession } = useAuth()
 const router = useRouter()
 
@@ -24,7 +31,7 @@ const openModal = (message: string, type: 'success' | 'error' = 'success') => {
 }
 
 // Navigation principale
-const navigation = {
+const navigation: Record<string, NavLink[]> = {
   Événements: [
     { label: 'Concerts', to: '/events/concerts' },
     { label: 'Conférences', to: '/events/conferences' },
@@ -34,21 +41,29 @@ const navigation = {
   ],
   Organisateurs: [
     { label: 'Devenir organisateur', to: '/organizerForm', requiresAuth: true },
-    { label: 'Créer un événement', to: '/organizerForm', requiresAuth: true },
-    { label: 'Dashboard', to: '/dashboard/events', requiresAuth: true },
-    { label: 'Guide organisateur', to: '/organizers/guide' },
+    {
+      label: 'Créer un événement',
+      to: '/organizerForm',
+      requiresAuth: true,
+      requiresOrganizer: true,
+    },
+    { label: 'Dashboard', to: '/dashboard/events', requiresAuth: true, requiresOrganizer: true },
+    {
+      label: 'Guide organisateur',
+      to: '/organizers/guide',
+      requiresOrganizer: true,
+      requiresAuth: true,
+    },
   ],
   Support: [
     { label: "Centre d'aide", to: '/guides' },
     { label: 'Contact', to: '/contact' },
     { label: 'FAQ', to: '/helps/faq' },
-    { label: 'Blog', to: '/blog' },
   ],
   Société: [
     { label: 'À propos', to: '/about' },
     { label: "Conditions d'utilisation", to: '/helps/terms' },
     { label: 'Politique de confidentialité', to: '/helps/privacy' },
-    { label: 'Sécurité', to: '/security' },
   ],
 }
 
@@ -64,12 +79,12 @@ const socialLinks = [
     to: 'https://instagram.com',
     icon: 'lucide:instagram',
   },
- {
-    label: "WhatsApp",
-    to: "https://wa.me/TON_NUMERO", 
-    icon: "simple-icons:whatsapp",
+  {
+    label: 'WhatsApp',
+    to: 'https://wa.me/TON_NUMERO',
+    icon: 'simple-icons:whatsapp',
   },
- 
+
   {
     label: 'YouTube',
     to: 'https://youtube.com',
@@ -233,7 +248,15 @@ const toggleSection = (section: string) => {
         <div v-for="(section, name) in navigation" :key="name">
           <h4 class="font-semibold text-lg mb-4 text-orange-300">{{ name }}</h4>
           <ul class="space-y-3">
-            <li v-for="link in section" :key="link.to">
+            <li
+              v-for="link in section.filter((link) => {
+                if (link.requiresOrganizer && session?.user?.roleId !== 2) {
+                  return false
+                }
+                return true
+              })"
+              :key="link.to"
+            >
               <button
                 @click="handleNavigation(link)"
                 class="text-gray-300 hover:text-white transition-colors duration-200 flex items-center gap-2 group w-full text-left"
@@ -275,7 +298,15 @@ const toggleSection = (section: string) => {
             leave-to-class="max-h-0 opacity-0"
           >
             <ul v-if="openSections.has(name as string)" class="pb-4 space-y-3 overflow-hidden">
-              <li v-for="link in section" :key="link.to">
+              <li
+                v-for="link in section.filter((link) => {
+                  if (link.requiresOrganizer && session?.user?.roleId !== 2) {
+                    return false
+                  }
+                  return true
+                })"
+                :key="link.to"
+              >
                 <button
                   @click="handleNavigation(link)"
                   class="text-gray-300 hover:text-white transition-colors duration-200 flex items-center gap-2 w-full text-left py-1.5 pl-4"

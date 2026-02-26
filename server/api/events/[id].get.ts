@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
 // vérifier si la vue existe déja
 const existingView = await prisma.eventView.findFirst({
   where: {
-    eventId: id, //0196740100
+    eventId: id,
     ipAddress: ip,
   },
 });

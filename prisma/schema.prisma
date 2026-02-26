@@ -29,6 +29,7 @@ model User {
   organizerRequests OrganizerRequest[]
   reviewedRequests  OrganizerRequest[] @relation("OrganizerRequestReviewer")
   favorites         Favorite[]
+  eventViews        EventView[]
 }
 
 model Role {
@@ -125,6 +126,7 @@ model Event {
   category   Categorie        @relation(fields: [categoryId], references:[id], onDelete: Cascade)
   images      EventImage[]
   favorites   Favorite[]
+  viewsRelation EventView[]
 }
 
 model EventImage {
@@ -184,6 +186,20 @@ model Contact {
   email     String
   message   String
   createdAt DateTime @default(now())
+}
+
+model EventView {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String?   // null si visiteur non connecté
+  ipAddress String?   // pour visiteurs anonymes
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@unique([eventId, ipAddress])
 }
 
 enum OrganizerRequestStatus {

@@ -2,7 +2,9 @@
 import { useRoute, useRouter } from 'vue-router'
 import { ref, computed, watchEffect } from 'vue'
 import type { Event } from '../../../types/event'
+import { useAuth } from '../../../composables/useAuth'
 
+const { session } = useAuth()
 const route = useRoute()
 const router = useRouter()
 
@@ -108,7 +110,7 @@ watch(event, (val) => {
 })
 
 watch(
-  currentEvent,
+  event,
   async (event) => {
     if (!event?.id || !session.value) return
 

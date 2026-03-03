@@ -5,19 +5,22 @@ import type { Event } from '../../../types/event'
 
 const route = useRoute()
 const router = useRouter()
-const loading = ref(true)
-const error = ref<string | null>(null)
 
 const activeTab = ref('details')
-const event = ref<any>(null)
 const similarEvents = ref<Event[]>([])
 
 const isFavorite = ref(false)
 const favoriteLoading = ref(false)
 
 const checkFavorite = async () => {
-  const data: any = await $fetch(`/api/favorites/check?eventId=${event.value.id}`)
-  isFavorite.value = data.isFavorite
+  if (!event.value?.id) return
+
+  try {
+    const data: any = await $fetch(`/api/favorites/check?eventId=${event.value.id}`)
+    isFavorite.value = data.isFavorite
+  } catch (err) {
+    console.error(err)
+  }
 }
 
 const toggleFavorite = async () => {
@@ -45,6 +48,8 @@ const toggleFavorite = async () => {
   }
 }
 
+
+
 const id = computed(() => route.params.id as string) // l'id doit être string pour ton API
 
 const timeAgo = computed(() => {
@@ -69,44 +74,60 @@ const timeAgo = computed(() => {
 })
 
 // Fonction pour récupérer l'événement depuis l'API
-const fetchEvent = async () => {
-  loading.value = true
-  error.value = null
-
-  try {
-    const { data, error: fetchError } = await useFetch(`/api/events/${id.value}`, {})
-
-    console.log('Retour API event :', data.value)
-
-    if (fetchError.value) {
-      throw fetchError.value
-    }
-
-    if (!data.value) {
-      throw new Error('Aucune donnée reçue')
-    }
-
-    if (data.value && !Array.isArray(data.value)) {
-      event.value = {
-        ...data.value,
-        organizer: data.value.user?.name ?? 'Inconnu',
-        category: data.value.category?.name ?? 'Autre',
-      }
-    }
-  } catch (err: any) {
-    console.error('Erreur fetch event :', err)
-    error.value = err.message || 'Impossible de récupérer l’événement'
-  } finally {
-    loading.value = false
+const {
+  data,
+  pending,
+  error: fetchError
+} = await useAsyncData(
+  () => `event-${id.value}`,
+  () => $fetch(`/api/events/${id.value}`),
+  {
+    watch: [id]
   }
-}
+)
 
-// Charger l’événement dès que l’ID est défini
-watchEffect(() => {
-  if (id.value) fetchEvent()
+const event = computed(() => {
+  if (!data.value || Array.isArray(data.value)) return null
+
+  return {
+    ...data.value,
+    organizer: data.value.user?.name ?? 'Inconnu',
+    category: data.value.category?.name ?? 'Autre',
+  }
 })
 
+const loading = computed(() => pending.value)
+const error = computed(() =>
+  fetchError.value?.message || null
+)
+
+watch(event, (val) => {
+  if (val) {
+    checkFavorite()
+  }
+})
+
+watch(
+  currentEvent,
+  async (event) => {
+    if (!event?.id || !session.value) return
+
+    try {
+     const response: any = await $fetch(
+  `/api/favorites/check?eventId=${event.id}`
+)
+console.log('Favorite Check Response:', response)
+isFavorite.value = response.isFavorite
+    } catch (err) {
+      console.error(err)
+      isFavorite.value = false
+    }
+  },
+  { immediate: true }
+)
+
 const share = (platform: string) => {
+  if (!process.client || !event.value) return
   const url = encodeURIComponent(window.location.href)
   const text = encodeURIComponent(event.value?.title || 'Événement à découvrir')
 
@@ -146,7 +167,7 @@ useHead(() => {
       },
       {
         property: 'og:image',
-        content: event.value.image,
+        content: event.value.images?.[0]?.url || '', // URL de l'image principale ou une image par défaut
       },
       {
         property: 'og:url',

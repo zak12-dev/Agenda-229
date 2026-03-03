@@ -2,47 +2,25 @@
 import AppHeader from './AppHeader.vue'
 import { ref, onMounted, computed } from 'vue'
 import { navigateTo } from '#app'
+import { useAuth } from '../../../composables/useAuth'
 
-const props = defineProps({
-  featuredEvents: {
-    type: Array,
-    default: () => [
-      {
-        id: 1,
-        title: 'We love eya 2026 ',
-        subtitle: 'Les plus grands DJs européens et africains réunis',
-        date: '27 Decembre 2026',
-        location: 'Cotonou, Place de l\'amazone',
-        image: '/images/weloveeya.jpeg',
-        category: 'Festival'
-      },
-      {
-        id: 2,
-        title: 'Vodoun Day ',
-        subtitle: 'Une soirée inoubliable',
-        date: '2027-01-10',
-        location: 'Bénin, Arène de Ouidah',
-        image: '/images/vodoudays.jpeg',
-        category: 'Festival'
-      },
-      {
-        id: 3,
-        title: '10 ans Vano Baby',
-        subtitle: 'Concert 10 ans de carrière',
-        date: '2026-03-25',
-        location: 'Place de l\'amazone, Cotonou',
-        image: 'https://images.unsplash.com/photo-1531243269054-5ebf6f34081e?w=1920&q=80',
-        category: 'Concert'
-      }
-    ]
-  }
+const toast = useToast()
+const { session } = useAuth()
+
+const { data, pending, error } = await useAsyncData('featured-events', () =>
+  $fetch('/api/events/featured?featured=true')
+)
+
+const featuredEvents = computed(() => {
+  return Array.isArray(data.value) ? data.value : []
 })
+console.log('Featured Events:', featuredEvents.value)
 
 // Carousel
 const currentSlide = ref(0)
 const isTransitioning = ref(false)
 
-const currentEvent = computed(() => props.featuredEvents[currentSlide.value])
+const currentEvent = computed(() => featuredEvents.value[currentSlide.value])
 
 function goToSlide(index: number) {
   if (isTransitioning.value) return
@@ -54,12 +32,12 @@ function goToSlide(index: number) {
 }
 
 function nextSlide() {
-  const next = (currentSlide.value + 1) % props.featuredEvents.length
+  const next = (currentSlide.value + 1) % featuredEvents.value.length
   goToSlide(next)
 }
 
 function prevSlide() {
-  const prev = (currentSlide.value - 1 + props.featuredEvents.length) % props.featuredEvents.length
+  const prev = (currentSlide.value - 1 + featuredEvents.value.length) % featuredEvents.value.length
   goToSlide(prev)
 }
 
@@ -79,13 +57,76 @@ onMounted(() => {
   startAutoPlay()
 })
 
+const isFavorite = ref(false)
+const favoriteLoading = ref(false)
+
+const toggleFavorite = async () => {
+  if (!currentEvent.value?.id) return
+
+  if (!session.value) {
+    toast.add({
+      title: 'Connexion requise',
+      description: 'Vous devez être connecté pour ajouter aux favoris',
+      color: 'red'
+    })
+    return
+  }
+
+  favoriteLoading.value = true
+
+  try {
+    const response: any = await $fetch('/api/favorites', {
+      method: 'POST',
+      body: {
+        eventId: currentEvent.value.id,
+      },
+    })
+
+    isFavorite.value = response.status === 'added'
+
+    toast.add({
+      title: isFavorite.value
+        ? 'Ajouté aux favoris ❤️'
+        : 'Retiré des favoris',
+      color: isFavorite.value ? 'green' : 'orange'
+    })
+
+  } catch (err) {
+    toast.add({
+      title: 'WeLoveEvents',
+      description: 'Vous devez être connecté pour ajouter aux favoris',
+      color: 'red'
+    })
+  } finally {
+    favoriteLoading.value = false
+  }
+}
+
+watch(
+  currentEvent,
+  async (event) => {
+    if (!event?.id || !session.value) return
+
+    try {
+     const response: any = await $fetch(
+  `/api/favorites/check?eventId=${event.id}`
+)
+console.log('Favorite Check Response:', response)
+isFavorite.value = response.isFavorite
+    } catch (err) {
+      console.error(err)
+      isFavorite.value = false
+    }
+  },
+  { immediate: true }
+)
 // Categories
 const categories = [
   { id: 'concerts', name: 'Concerts', icon: '🎵', count: 234 },
   { id: 'festivals', name: 'Festivals', icon: '🎪', count: 89 },
   { id: 'expos', name: 'Expositions', icon: '🎨', count: 156 },
   { id: 'spectacles', name: 'Spectacles', icon: '🎭', count: 178 },
-  { id: 'sport', name: 'Sport', icon: '⚽', count: 92 }
+  { id: 'sport', name: 'Sport', icon: '⚽', count: 92 },
 ]
 
 function goToCategory(categoryId: string) {
@@ -94,16 +135,14 @@ function goToCategory(categoryId: string) {
 
 const isReady = ref(false)
 onMounted(() => {
-  setTimeout(() => { isReady.value = true }, 100)
+  setTimeout(() => {
+    isReady.value = true
+  }, 100)
 })
 </script>
 
 <template>
-  <section 
-    class="hero-carousel"
-    @mouseenter="stopAutoPlay"
-    @mouseleave="startAutoPlay"
-  >
+  <section class="hero-carousel" @mouseenter="stopAutoPlay" @mouseleave="startAutoPlay">
     <!-- Background avec transition -->
     <div class="carousel-backgrounds h-max-[100px]">
       <div
@@ -113,12 +152,15 @@ onMounted(() => {
         :class="{ 'carousel-bg--active': currentSlide === index }"
       >
         <NuxtImg
-          :src="event.image"
+          v-if="event.image?.url"
+          :src="event.image.url"
           :alt="event.title"
-          class="bg-image "
+          class="bg-image"
           loading="eager"
           quality="85"
         />
+
+        <img v-else src="#" class="bg-image" />
         <div class="bg-overlay"></div>
       </div>
     </div>
@@ -126,54 +168,108 @@ onMounted(() => {
     <AppHeader />
 
     <!-- Contenu principal -->
-    <div class="hero-content " :class="{ 'hero-content--ready': isReady }">
+    <div class="hero-content" :class="{ 'hero-content--ready': isReady }">
       <div class="container">
         <!-- Event actuel -->
         <div class="event-showcase">
           <div class="event-badge">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              <path
+                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+              />
             </svg>
-            {{ currentEvent.category }}
+            {{ currentEvent?.category }}
           </div>
 
           <h1 class="event-title">
-            {{ currentEvent.title }}
+            {{ currentEvent?.title }}
           </h1>
 
           <p class="event-subtitle">
-            {{ currentEvent.subtitle }}
+            {{ currentEvent?.description }}
           </p>
 
           <div class="event-meta">
             <div class="meta-item">
               <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
               </svg>
-              {{ new Date(currentEvent.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) }}
+              {{
+                new Date(currentEvent?.startDate).toLocaleDateString('fr-FR', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })
+              }}
             </div>
             <div class="meta-item">
               <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
               </svg>
-              {{ currentEvent.location }}
+              {{ currentEvent?.location }}
             </div>
           </div>
+          <div :to="`/events/${currentEvent?.id}`">
+            <div class="event-actions">
+              <NuxtLink :to="`/events/${currentEvent?.id}`">
+                <button class="btn-primary" @click="navigateTo(`/events/${currentEvent?.id}`)">
+                  Voir les détails
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    />
+                  </svg>
+                </button>
+              </NuxtLink>
 
-          <div class="event-actions">
-            <button class="btn-primary" @click="navigateTo(`/events/${currentEvent.id}`)">
-              Voir les détails
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </button>
-            <button class="btn-secondary">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-              </svg>
-              Sauvegarder
-            </button>
+              <button
+                @click="toggleFavorite"
+                :disabled="favoriteLoading"
+                class="btn-secondary"
+                :class="
+                  isFavorite
+                    ? 'bg-red-100 text-red-600'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                "
+              >
+                <svg
+                      class="w-5 h-5"
+                      :class="isFavorite ? 'fill-red-600' : 'stroke-current'"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                      />
+                    </svg>
+                <span class="text-sm font-medium">
+                  {{ isFavorite ? 'En favori' : 'Favoris' }}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -181,7 +277,12 @@ onMounted(() => {
         <div class="carousel-controls">
           <button class="carousel-btn" @click="prevSlide" aria-label="Précédent">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
           </button>
 
@@ -198,7 +299,12 @@ onMounted(() => {
 
           <button class="carousel-btn" @click="nextSlide" aria-label="Suivant">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5l7 7-7 7"
+              />
             </svg>
           </button>
         </div>
@@ -216,10 +322,15 @@ onMounted(() => {
               <span class="category-icon">{{ category.icon }}</span>
               <div class="category-info">
                 <span class="category-name">{{ category.name }}</span>
-                <span class="category-count">{{ category.count }} événements</span>
+               <!-- <span class="category-count">{{ category.count }} événements</span>-->
               </div>
               <svg class="category-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </button>
           </div>

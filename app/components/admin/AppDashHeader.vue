@@ -15,7 +15,7 @@ const pagesConfig: Record<string, { title: string; icon: string; description?: s
     icon: 'i-heroicons-squares-2x2',
     description: 'Tableau de bord et statistiques globales'
   },
-  'admin-events': {
+  'admin-event': {
     title: 'Evenements',
     icon: 'i-heroicons-document-duplicate',
     description: 'Gérez vos evenements à venir'
@@ -30,6 +30,12 @@ const pagesConfig: Record<string, { title: string; icon: string; description?: s
     icon: 'i-heroicons-folder',
     description: 'Toutes les demandes d\'organisateur'
   },
+    'admin-villes': {
+    title: 'Villes',
+    icon: 'i-heroicons-map-pin',
+    description: 'Gérez les villes disponibles pour les événements'
+  },
+
   'admin-organizer': {
     title: 'Organisateur',
     icon: 'i-heroicons-user-group',

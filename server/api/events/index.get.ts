@@ -3,6 +3,7 @@ import { auth } from "../../../server/utils/auth"
 
 export default defineEventHandler(async (event) => {
   try {
+    
     // 1️⃣ récupérer headers et filtrer undefined
     const rawHeaders = getRequestHeaders(event)
     const headers: Record<string, string> = {}
@@ -58,6 +59,8 @@ export default defineEventHandler(async (event) => {
         createdAt: 'desc'
       }
     });
+
+    
     //  console.log("EVENTS:", events);
     return events;
   } catch (error) {

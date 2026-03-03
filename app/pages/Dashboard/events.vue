@@ -3,7 +3,7 @@ import moderator from '../../../middleware/moderator'
 import { useAuth } from '../../../composables/useAuth'
 
 definePageMeta({
-  name: 'admin-events',
+  name: 'admin-event',
   layout: 'dashboard',
   middleware: [moderator]
 })

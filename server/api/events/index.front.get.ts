@@ -6,6 +6,8 @@ export default defineEventHandler(async (event) => {
       where: {
         status: 'PUBLISHED', // <-- filtre ici
       },
+    
+
       include: {
         ville: true,
         category: true,

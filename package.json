@@ -1,5 +1,5 @@
 {
-  "name": "WeLove Event",
+  "name": "welove-event",
   "type": "module",
   "private": true,
   "scripts": {
@@ -8,6 +8,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "prisma generate ",
+
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write ."
@@ -23,12 +24,14 @@
     "lodash-es": "^4.17.23",
     "lucide": "^0.563.0",
     "lucide-vue-next": "^0.575.0",
+    "nodemailer": "^8.0.1",
     "nuxt": "^4.3.0",
     "pinia": "^3.0.4",
     "prisma": "6.19.2",
     "tailwindcss": "^4.1.18",
     "vue": "^3.5.27",
     "vue-router": "^4.6.4",
+    "vue-toastification": "^1.7.14",
     "zod": "^4.3.6"
   },
   "prisma": {
@@ -41,6 +44,7 @@
     "@nuxt/eslint-config": "^1.13.0",
     "@types/lodash": "^4.17.23",
     "@types/node": "^25.0.10",
+    "@types/nodemailer": "^7.0.10",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",

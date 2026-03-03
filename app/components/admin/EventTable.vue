@@ -20,7 +20,7 @@ interface CustomEvent {
   description: string
   image: string | null
   images: EventImage[]
-
+  privilege: boolean
   organizer: {
     name: string
     contact: string
@@ -58,16 +58,6 @@ const filteredEvents = computed(() => {
   })
 })
 
-const handleImageUpload = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  if (!target.files || target.files.length === 0) return
-
-  const file = target.files[0]
-  if (selectedEvent.value) {
-    selectedEvent.value.image = URL.createObjectURL(file)
-  }
-}
-
 const fetchEvents = async () => {
   loading.value = true
   error.value = ''
@@ -96,6 +86,7 @@ const fetchEvents = async () => {
       createdAt: event.createdAt,
       updatedAt: event.updatedAt || event.createdAt,
       category: event.category,
+      privilege: event.privilege ?? false,
     }))
     console.log('Event:', events.value)
   } catch (err: any) {
@@ -104,6 +95,19 @@ const fetchEvents = async () => {
     events.value = []
   } finally {
     loading.value = false
+  }
+}
+
+const togglePrivilege = async (eventItem: any) => {
+  try {
+    const updated = await $fetch(`/api/admin/events/${eventItem.id}/feature`, {
+      method: 'PATCH',
+    })
+
+    // 🔥 mise à jour visuelle instantanée
+    eventItem.privilege = updated.privilege
+  } catch (error) {
+    console.error('Erreur privilège:', error)
   }
 }
 
@@ -505,34 +509,91 @@ const formatDate = (date: string) => {
                 </span>
 
                 <div class="flex items-center gap-1">
+<div v-if="isAdmin" class="relative group">
+  <button
+    @click="togglePrivilege(event)"
+    :class="[
+      'relative p-2 rounded-full transition-all duration-300',
+      event.privilege
+        ? 'bg-amber-50 border-2 border-amber-400 text-amber-600 hover:bg-amber-100'
+        : 'bg-white border-2 border-gray-200 text-gray-400 hover:border-amber-300 hover:text-amber-500'
+    ]"
+  >
+    <!-- Étoile avec rotation -->
+    <svg
+      class="w-5 h-5 transition-all duration-500"
+      :class="event.privilege ? 'rotate-0 scale-110' : 'rotate-180 scale-100'"
+      fill="currentColor"
+      viewBox="0 0 20 20"
+    >
+      <path
+        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+      />
+    </svg>
+
+    <!-- Badge count (optionnel - si plusieurs privilèges) -->
+    <span
+      v-if="event.privilege"
+      class="absolute -top-1 -right-1 flex items-center justify-center w-4 h-4 bg-amber-500 text-white text-[9px] font-bold rounded-full shadow-lg"
+    >
+      ✓
+    </span>
+  </button>
+
+  <!-- Tooltip -->
+  <div
+    class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10"
+  >
+    <span v-if="event.privilege">Retirer le privilège</span>
+    <span v-else>Marquer comme privilégié</span>
+    <!-- Arrow -->
+    <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-px">
+      <div class="w-2 h-2 bg-gray-900 rotate-45"></div>
+    </div>
+  </div>
+</div>
+<button
+  @click="
+    loadEventById(event.id);
+    isPreviewModalOpen = true
+  "
+  class="group relative w-9 h-9 rounded-full bg-white border border-gray-200 hover:border-blue-400 shadow-sm hover:shadow-lg transition-all duration-300 flex items-center justify-center hover:bg-blue-50"
+  title="Voir"
+>
+  <UIcon 
+    name="i-heroicons-eye" 
+    class="w-4 h-4 text-gray-600 group-hover:text-blue-600 transition-colors" 
+  />
+  <!-- Ring animé -->
+  <span class="absolute inset-0 rounded-full border-2 border-blue-400 opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-110 transition-all duration-300"></span>
+</button>
                   <button
-                    @click="
-                      loadEventById(event.id);
-                      isPreviewModalOpen = true
-                    "
-                    class="p-2 hover:bg-blue-50 rounded text-blue-600 transition-all"
-                    title="Voir"
-                  >
-                    <UIcon name="i-heroicons-eye" class="w-4 h-4" />
-                  </button>
-                  <button
-                    v-if="!isAdmin"
-                    @click="
-                      loadEventById(event.id);
-                      isEditModalOpen = true
-                    "
-                    class="p-2 hover:bg-orange-50 rounded text-orange-600 transition-all"
-                    title="Modifier"
-                  >
-                    <UIcon name="i-heroicons-pencil-square" class="w-4 h-4" />
-                  </button>
-                  <button
-                    @click="deleteEvent(event.id)"
-                    class="p-2 hover:bg-red-50 rounded text-red-600 transition-all"
-                    title="Supprimer"
-                  >
-                    <UIcon name="i-heroicons-trash" class="w-4 h-4" />
-                  </button>
+  v-if="!isAdmin"
+  @click="
+    loadEventById(event.id);
+    isEditModalOpen = true
+  "
+  class="group relative w-9 h-9 rounded-full bg-white border border-gray-200 hover:border-orange-400 shadow-sm hover:shadow-lg transition-all duration-300 flex items-center justify-center hover:bg-orange-50"
+  title="Modifier"
+>
+  <UIcon 
+    name="i-heroicons-pencil-square" 
+    class="w-4 h-4 text-gray-600 group-hover:text-orange-600 transition-colors" 
+  />
+  <span class="absolute inset-0 rounded-full border-2 border-orange-400 opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-110 transition-all duration-300"></span>
+</button>
+
+                 <button
+  @click="deleteEvent(event.id)"
+  class="group relative w-9 h-9 rounded-full bg-white border border-gray-200 hover:border-red-400 shadow-sm hover:shadow-lg transition-all duration-300 flex items-center justify-center hover:bg-red-50"
+  title="Supprimer"
+>
+  <UIcon 
+    name="i-heroicons-trash" 
+    class="w-4 h-4 text-gray-600 group-hover:text-red-600 transition-colors" 
+  />
+  <span class="absolute inset-0 rounded-full border-2 border-red-400 opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-110 transition-all duration-300"></span>
+</button>
                 </div>
               </div>
             </div>

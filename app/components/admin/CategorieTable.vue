@@ -71,7 +71,7 @@ onMounted(fetchCategories)
 
 <template>
   <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 -mt-2">
-    <div class="max-w-7xl mx-auto space-y-6">
+    <div class="max-w-7xl mx-auto space-y-6  overflow-auto">
       <!-- Header -->
       <div class="border-b border-gray-200 pb-3">
         <div class="flex items-center justify-between mb-4">

@@ -4,9 +4,10 @@ import type { DropdownMenuItem } from '@nuxt/ui'
 import { useAuth } from '../../../composables/useAuth'
 import { useToast } from '#imports'
 import { ref, computed } from 'vue'
-import { navigateTo } from '#app'
+import { navigateTo, useRoute } from '#app'
 
 const toast = useToast()
+const route = useRoute()
 const { logout, session, role: userRole } = useAuth()
 
 interface CustomEvent {
@@ -37,6 +38,56 @@ const userAvatar = computed(
   () => session.value?.user.image || 'https://github.com/benjamincanac.png'
 )
 
+// Menu mobile (items principaux uniquement - max 5 items)
+const mobileNavItems = computed(() => {
+  const items: Array<{ label: string; icon: string; to: string }> = []
+
+  // Événements (toujours présent)
+  items.push({
+    label: 'Événements',
+    icon: 'i-heroicons-calendar-days',
+    to: '/dashboard/events',
+  })
+
+  if (userRole.value === 'admin') {
+    // Admin : Categories, Demandes, Historique, Profil
+    items.push(
+      {
+        label: 'Categories',
+        icon: 'i-heroicons-tag',
+        to: '/dashboard/categories',
+      },
+      {
+        label: 'Demandes',
+        icon: 'i-heroicons-user-group',
+        to: '/dashboard/demandes',
+      },
+      {
+        label: 'Historique',
+        icon: 'i-heroicons-clock',
+        to: '/dashboard/historiques',
+      }
+    )
+  } else {
+    // Organisateur : Analytics
+    items.push({
+      label: 'Analytics',
+      icon: 'i-heroicons-chart-bar',
+      to: '/dashboard/analytic',
+    })
+  }
+
+  // Profil (toujours en dernier)
+  items.push({
+    label: 'Profil',
+    icon: 'i-heroicons-user-circle',
+    to: '/dashboard/profileDash',
+  })
+
+  // Limiter à 5 items max pour mobile
+  return items.slice(0, 5)
+})
+
 // Dropdown dynamique
 const dropdownItems = ref<DropdownMenuItem[][]>([
   [
@@ -50,7 +101,7 @@ const dropdownItems = ref<DropdownMenuItem[][]>([
     {
       label: 'Profile',
       icon: 'i-lucide-user',
-      to: '/profile',
+      to: '/dashboard/profileDash',
     },
   ],
 
@@ -102,6 +153,12 @@ const navItems = computed<NavigationMenuItem[][]>(() => {
         //badge: '5',
       },
       {
+        label: 'Villes ',
+        icon: 'i-heroicons-map-pin',
+        to: '/dashboard/villes',
+        //badge: '123',
+      },
+      {
         label: 'Organisateurs',
         icon: 'i-heroicons-chart-bar',
         to: '/dashboard/organizer',
@@ -115,10 +172,10 @@ const navItems = computed<NavigationMenuItem[][]>(() => {
       },
       {
         label: 'Historique',
-        icon: 'i-heroicons-chart-bar',
+        icon: 'i-heroicons-clock',
         to: '/dashboard/historiques',
         // badge: '5',
-      },
+      }
     )
   }
 
@@ -129,10 +186,17 @@ const navItems = computed<NavigationMenuItem[][]>(() => {
 
   return [mainMenu, bottomMenu]
 })
+
+// Vérifier si un lien est actif
+const isActive = (path: string) => {
+  return route.path === path
+}
 </script>
 
 <template>
+  <!-- DESKTOP: Sidebar classique (affichée sur desktop, masquée sur mobile) -->
   <UDashboardSidebar
+    class="hidden lg:block"
     collapsible
     resizable
     :ui="{
@@ -142,16 +206,16 @@ const navItems = computed<NavigationMenuItem[][]>(() => {
   >
     <!-- Header -->
     <template #header="{ collapsed }">
-      <div class="px-2 py-5">
+      <div class="px- py-5 -mb-3 mt-5">
         <div v-if="!collapsed" class="flex items-center gap-3">
           <NuxtLink to="/">
             <div>
               <h2
-                class="font-bold text-2xl bg-gradient-to-r from-orange-600 to-indigo-600 bg-clip-text text-transparent"
+                class="font-bold text-3xl bg-gradient-to-r from-orange-600 to-indigo-600 bg-clip-text text-transparent"
               >
                 WeLoveEvent
               </h2>
-              <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Dashboard Admin</p>
+              <p class="text-md text-gray-500 dark:text-gray-400 font-medium">Dashboard Admin</p>
             </div>
           </NuxtLink>
         </div>
@@ -159,7 +223,7 @@ const navItems = computed<NavigationMenuItem[][]>(() => {
           <div
             class="relative w-9 h-9 rounded-xl bg-gradient-to-br from-orange-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-orange-500/30"
           >
-            <span class="text-white font-bold text-sm relative z-10">LD</span>
+            <span class="text-white font-bold text-sm relative z-10">WLE</span>
           </div>
         </div>
       </div>
@@ -167,8 +231,8 @@ const navItems = computed<NavigationMenuItem[][]>(() => {
 
     <!-- Navigation principale -->
     <template #default="{ collapsed }">
-      <div class="px-2">
-       <!-- <UButton
+      <!--<div class="px-2">
+         <UButton
           :label="collapsed ? undefined : 'Rechercher...'"
           icon="i-heroicons-magnifying-glass"
           color="neutral"
@@ -184,10 +248,9 @@ const navItems = computed<NavigationMenuItem[][]>(() => {
               class="!bg-orange-100 dark:!bg-orange-900/50 !text-orange-700 dark:!text-orange-300 !border-orange-300 dark:!border-orange-700"
             />
           </template>
-        </UButton>-->
-      </div>
-
-      <div class="-mx-3 mt-2">
+        </UButton>
+      </div>-->
+      <div class="-mx-3 mt-5">
         <UNavigationMenu
           :collapsed="collapsed"
           :items="navItems[0]"
@@ -219,7 +282,7 @@ const navItems = computed<NavigationMenuItem[][]>(() => {
         />
       </div>
 
-      <div class="px-2 mt-auto -mx-3">
+      <div class="px-2 mt-65 -mx-3 ">
         <div
           v-if="!collapsed"
           class="h-px bg-gradient-to-r from-transparent via-orange-300 dark:via-orange-800 to-transparent mb-4"
@@ -254,7 +317,7 @@ const navItems = computed<NavigationMenuItem[][]>(() => {
     <template #footer="{ collapsed }">
       <UDropdownMenu :items="dropdownItems">
         <div
-          class="-mx-3 px-2 py-4 border-t border-orange-100 dark:border-orange-900/30 bg-gradient-to-t from-orange-50/50 to-transparent dark:from-orange-950/20"
+          class="-mx-3 px-2 py-4 mt-2 border-t border-orange-100 dark:border-orange-900/30 bg-gradient-to-t from-orange-50/50 to-transparent dark:from-orange-950/20"
         >
           <UButton
             :avatar="{ src: userAvatar }"
@@ -268,8 +331,63 @@ const navItems = computed<NavigationMenuItem[][]>(() => {
       </UDropdownMenu>
     </template>
   </UDashboardSidebar>
+
+  <!-- MOBILE: Bottom Navigation Bar (visible uniquement sur mobile) -->
+  <nav
+    class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 shadow-2xl"
+  >
+    <div class="flex items-center justify-around px-2 py-2 safe-area-inset-bottom">
+      <NuxtLink
+        v-for="item in mobileNavItems"
+        :key="item.to"
+        :to="item.to"
+        class="flex flex-col items-center justify-center flex-1 py-2 px-1 min-w-0 relative group"
+      >
+       
+        <!-- Icône avec background -->
+        <div
+          :class="[
+            'flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200',
+            isActive(item.to)
+              ? 'bg-gradient-to-r from-orange-600 to-indigo-600 shadow-lg shadow-orange-500/30'
+              : 'bg-transparent group-hover:bg-orange-50 dark:group-hover:bg-orange-950/30',
+          ]"
+        >
+          <UIcon
+            :name="item.icon"
+            :class="[
+              'w-5 h-5 transition-colors duration-200',
+              isActive(item.to)
+                ? 'text-white'
+                : 'text-gray-600 dark:text-gray-400 group-hover:text-orange-600 dark:group-hover:text-orange-400',
+            ]"
+          />
+        </div>
+
+        <!-- Label -->
+        <span
+          :class="[
+            'text-[10px] font-medium mt-1 truncate max-w-full transition-colors duration-200',
+            isActive(item.to)
+              ? 'text-orange-600 dark:text-orange-400 font-semibold'
+              : 'text-gray-600 dark:text-gray-400 group-hover:text-orange-600 dark:group-hover:text-orange-400',
+          ]"
+        >
+          {{ item.label }}
+        </span>
+      </NuxtLink>
+    </div>
+  </nav>
+
+  <!-- Spacer pour éviter que le contenu soit caché sous la bottom bar mobile -->
+  <div class="lg:hidden h-20"></div>
 </template>
 
 <style scoped>
 /* Styles personnalisés pour forcer les couleurs orange/indigo */
+
+/* Support pour le safe area sur iPhone */
+.safe-area-inset-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
 </style>

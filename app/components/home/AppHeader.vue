@@ -3,7 +3,6 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import type { NavigationMenuItem, DropdownMenuItem } from '@nuxt/ui'
 import { useAuth } from '../../../composables/useAuth'
 import { navigateTo, useRoute } from '#app'
-import { log } from 'node:console'
 
 const sessionLoaded = ref(false)
 
@@ -242,7 +241,9 @@ const dropdownitems = computed<DropdownMenuItem[][]>(() => {
             </button>
 
             <button
-              v-if="session?.user?.roleId === 1 || session?.user?.roleId === 2"
+              v-if="
+                session && session.user && (session.user.roleId === 1 || session.user.roleId === 2)
+              "
               @click="
                 navigateTo('/dashboard/events');
                 mobileMenuOpen = false

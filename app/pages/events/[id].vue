@@ -425,19 +425,20 @@ useHead(() => {
                 <div v-if="activeTab === 'location'">
                   <div class="bg-gray-50 rounded-xl p-6 mb-6">
                     <div class="flex items-start gap-4 mb-6">
-                      <svg
-                        class="w-6 h-6 text-orange-600 flex-shrink-0 mt-1"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                      </svg>
+                      <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
                       <div>
                         <h3 class="font-bold text-lg text-gray-900 mb-1">{{ event.location }}</h3>
                         <p class="text-gray-600">252 Rue du Faubourg Saint-Honoré, 75008 Paris</p>
@@ -555,19 +556,20 @@ useHead(() => {
                     </div>
 
                     <div class="flex items-center gap-3 text-sm">
-                      <svg
-                        class="w-5 h-5 text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                      </svg>
+                      <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
                       <span class="text-gray-700">{{ event.location }}</span>
                     </div>
                   </div>
@@ -730,3 +732,9 @@ useHead(() => {
     </div>
   </div>
 </template>
+<style>
+.meta-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+</style>

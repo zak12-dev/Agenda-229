@@ -4,13 +4,35 @@ import { ref, computed, watchEffect } from 'vue'
 import type { Event } from '../../../types/event'
 import { useAuth } from '../../../composables/useAuth'
 
+interface EventData {
+  id: string
+  title: string
+  category: { id: string; name: string }
+  images: { url: string }[]
+  user: { id: string; name: string; email: string; image: string | null }
+  views: number
+  similarEvents: {
+    id: string
+    title: string
+    category: { id: string; name: string }
+    images: { url: string }[]
+  }[]
+  description?: string
+  createdAt?: string
+  date?: string
+  price?: number
+}
+
+const isPastEvent = (date: string | Date | undefined): boolean => {
+  if (!date) return false
+  return new Date(date) < new Date()
+}
+
 const { session } = useAuth()
 const route = useRoute()
 const router = useRouter()
 
 const activeTab = ref('details')
-const similarEvents = ref<Event[]>([])
-
 const isFavorite = ref(false)
 const favoriteLoading = ref(false)
 
@@ -20,6 +42,7 @@ const checkFavorite = async () => {
   try {
     const data: any = await $fetch(`/api/favorites/check?eventId=${event.value.id}`)
     isFavorite.value = data.isFavorite
+    console.log('Favorite Check:', data)
   } catch (err) {
     console.error(err)
   }
@@ -50,8 +73,6 @@ const toggleFavorite = async () => {
   }
 }
 
-
-
 const id = computed(() => route.params.id as string) // l'id doit être string pour ton API
 
 const timeAgo = computed(() => {
@@ -79,12 +100,12 @@ const timeAgo = computed(() => {
 const {
   data,
   pending,
-  error: fetchError
+  error: fetchError,
 } = await useAsyncData(
   () => `event-${id.value}`,
   () => $fetch(`/api/events/${id.value}`),
   {
-    watch: [id]
+    watch: [id],
   }
 )
 
@@ -97,11 +118,20 @@ const event = computed(() => {
     category: data.value.category?.name ?? 'Autre',
   }
 })
-
-const loading = computed(() => pending.value)
-const error = computed(() =>
-  fetchError.value?.message || null
+const { data: similarData, pending: similarPending } = await useAsyncData<EventData>(
+  () => `similar-${id.value}`,
+  () => $fetch(`/api/events/${id.value}`),
+  {
+    watch: [id],
+  }
 )
+console.log('Similar Events Data:', similarData.value)
+
+const similarEvents = computed(() => {
+  return similarData.value?.similarEvents ?? []
+})
+const loading = computed(() => pending.value || similarPending.value)
+const error = computed(() => fetchError.value?.message || null)
 
 watch(event, (val) => {
   if (val) {
@@ -115,11 +145,9 @@ watch(
     if (!event?.id || !session.value) return
 
     try {
-     const response: any = await $fetch(
-  `/api/favorites/check?eventId=${event.id}`
-)
-console.log('Favorite Check Response:', response)
-isFavorite.value = response.isFavorite
+      const response: any = await $fetch(`/api/favorites/check?eventId=${event.id}`)
+      console.log('Favorite Check Response:', response)
+      isFavorite.value = response.isFavorite
     } catch (err) {
       console.error(err)
       isFavorite.value = false
@@ -426,19 +454,19 @@ useHead(() => {
                   <div class="bg-gray-50 rounded-xl p-6 mb-6">
                     <div class="flex items-start gap-4 mb-6">
                       <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                />
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                        />
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
                       <div>
                         <h3 class="font-bold text-lg text-gray-900 mb-1">{{ event.location }}</h3>
                         <p class="text-gray-600">252 Rue du Faubourg Saint-Honoré, 75008 Paris</p>
@@ -557,19 +585,19 @@ useHead(() => {
 
                     <div class="flex items-center gap-3 text-sm">
                       <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                />
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                        />
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
                       <span class="text-gray-700">{{ event.location }}</span>
                     </div>
                   </div>
@@ -654,50 +682,91 @@ useHead(() => {
         </div>
       </div>
 
-      <!-- Similar Events 
-      <div class="bg-gray-50 py-16">
+      <!-- Similar Events -->
+      <div v-if="!similarPending && similarEvents.length > 0" class="bg-gray-50 py-16">
         <div class="max-w-7xl mx-auto px-6 sm:px-12">
           <h2 class="text-3xl font-bold text-gray-900 mb-8">Événements similaires</h2>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">-->
-      <!-- Boucle sur similarEvents 
-            <div
-              v-for="event in similarEvents"
-              :key="event.id"
-              class="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all"
-            >-->
-      <!-- Image 
-              <div class="relative h-48 overflow-hidden">
-                <NuxtImg
-                  :src="event.image"
-                  :alt="event.title"
-                  class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-              </div>-->
-
-      <!-- Contenu 
-              <div class="p-5">
-                <span class="text-xs font-semibold text-orange-600 mb-2 block">
-                  {{ event.category }}
-                </span>
-                <h3 class="font-bold text-gray-900 mb-2 line-clamp-2">
-                  {{ event.title }}
-                </h3>
-                <div class="flex items-center justify-between text-sm text-gray-600">
-                  <span class="font-semibold">{{ event.price }}€</span>
-                  <span>{{
-                    new Date(event.date).toLocaleDateString('fr-FR', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                    })
-                  }}</span>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Skeleton pendant chargement -->
+            <template v-if="similarPending">
+              <div
+                v-for="n in 3"
+                :key="n"
+                class="animate-pulse bg-white rounded-xl overflow-hidden shadow-md"
+              >
+                <div class="h-48 bg-gray-300"></div>
+                <div class="p-5 space-y-3">
+                  <div class="h-4 bg-gray-300 rounded w-1/3"></div>
+                  <div class="h-5 bg-gray-300 rounded w-2/3"></div>
+                  <div class="h-4 bg-gray-300 rounded w-1/4"></div>
                 </div>
               </div>
-            </div>
+            </template>
+
+           
+            <template v-else>
+              <!-- Boucle sur similarEvents -->
+              <div
+                v-for="event in similarEvents"
+                :key="event.id"
+                class="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all"
+              >
+                <NuxtLink :to="`/events/${event.id}`" class="block relative">
+                  <!-- Badge -->
+                  <div class="absolute top-4 right-4 z-10">
+                    <div
+                      v-if="isPastEvent(event.eventDate)"
+                      class="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-bold shadow-lg"
+                    >
+                      Terminé
+                    </div>
+                  </div>
+
+                  <!-- Image -->
+                  <div class="relative h-48 overflow-hidden">
+                    <NuxtImg
+                      :src="event.images?.[0]?.url"
+                      :alt="event.title"
+                      class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  </div>
+
+                  <!-- Contenu -->
+                  <div class="p-5">
+                    <span class="text-xs font-semibold text-orange-600 mb-2 block">
+                      {{ event.category.name }}
+                    </span>
+
+                    <h3 class="font-bold text-gray-900 mb-2 line-clamp-2">
+                      {{ event.title }}
+                    </h3>
+
+                    <div class="flex items-center justify-between text-sm text-gray-600">
+                      <span>
+                        <template v-if="event?.price && Number(event.price) > 0">
+                          {{ event.price }} Fcfa
+                        </template>
+                        <template v-else>Gratuit</template>
+                      </span>
+
+                      <span>
+                        {{
+                          new Date(event.eventDate).toLocaleDateString('fr-FR', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          })
+                        }}
+                      </span>
+                    </div>
+                  </div>
+                </NuxtLink>
+              </div>
+            </template>
           </div>
         </div>
-      </div>-->
+      </div>
     </div>
 
     <!-- Error State -->

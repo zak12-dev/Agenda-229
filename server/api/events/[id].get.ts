@@ -1,5 +1,5 @@
 import { prisma } from "~~/server/utils/prisma";
-import { getRequestIP } from "h3";
+import { getRequestIP, getRouterParam, createError } from "h3";
 import { auth } from "~~/server/utils/auth"; // pour récupérer l'utilisateur connecté
 
 export default defineEventHandler(async (event) => {
@@ -54,5 +54,27 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: "Événement non trouvé" });
   }
 
-  return eventData;
-});
+   // 🔥 Récupérer événements similaires
+  const similarEvents = await prisma.event.findMany({
+    where: {
+      status: 'PUBLISHED',
+      categoryId: eventData.categoryId,
+      NOT: { id: eventId },
+    },
+    include: {
+      category: true,
+      images: true,
+    },
+    take: 3,
+    orderBy: {
+      eventDate: "asc",
+    },
+  });
+
+
+return {
+    ...eventData,
+    similarEvents
+  }});
+
+ 

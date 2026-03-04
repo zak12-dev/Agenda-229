@@ -67,7 +67,7 @@ const toggleFavorite = async () => {
     toast.add({
       title: 'Connexion requise',
       description: 'Vous devez être connecté pour ajouter aux favoris',
-      color: 'red'
+      color: 'red',
     })
     return
   }
@@ -85,17 +85,14 @@ const toggleFavorite = async () => {
     isFavorite.value = response.status === 'added'
 
     toast.add({
-      title: isFavorite.value
-        ? 'Ajouté aux favoris ❤️'
-        : 'Retiré des favoris',
-      color: isFavorite.value ? 'green' : 'orange'
+      title: isFavorite.value ? 'Ajouté aux favoris ❤️' : 'Retiré des favoris',
+      color: isFavorite.value ? 'green' : 'orange',
     })
-
   } catch (err) {
     toast.add({
       title: 'WeLoveEvents',
       description: 'Vous devez être connecté pour ajouter aux favoris',
-      color: 'red'
+      color: 'red',
     })
   } finally {
     favoriteLoading.value = false
@@ -108,11 +105,9 @@ watch(
     if (!event?.id || !session.value) return
 
     try {
-     const response: any = await $fetch(
-  `/api/favorites/check?eventId=${event.id}`
-)
-console.log('Favorite Check Response:', response)
-isFavorite.value = response.isFavorite
+      const response: any = await $fetch(`/api/favorites/check?eventId=${event.id}`)
+      console.log('Favorite Check Response:', response)
+      isFavorite.value = response.isFavorite
     } catch (err) {
       console.error(err)
       isFavorite.value = false
@@ -132,6 +127,18 @@ const categories = [
 function goToCategory(categoryId: string) {
   navigateTo(`/events?category=${categoryId}`)
 }
+
+const formattedDate = computed(() => {
+  const rawDate = currentEvent.value?.eventDate // ← utiliser eventDate
+  if (!rawDate) return '' // évite undefined
+  const date = new Date(rawDate)
+  if (isNaN(date.getTime())) return '' // date invalide
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(date)
+})
 
 const isReady = ref(false)
 onMounted(() => {
@@ -165,8 +172,6 @@ onMounted(() => {
       </div>
     </div>
 
-    <AppHeader />
-
     <!-- Contenu principal -->
     <div class="hero-content" :class="{ 'hero-content--ready': isReady }">
       <div class="container">
@@ -199,13 +204,7 @@ onMounted(() => {
                   d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                 />
               </svg>
-              {{
-                new Date(currentEvent?.startDate).toLocaleDateString('fr-FR', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })
-              }}
+              {{ formattedDate || 'Date non disponible' }}
             </div>
             <div class="meta-item">
               <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -252,19 +251,19 @@ onMounted(() => {
                 "
               >
                 <svg
-                      class="w-5 h-5"
-                      :class="isFavorite ? 'fill-red-600' : 'stroke-current'"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                      />
-                    </svg>
+                  class="w-5 h-5"
+                  :class="isFavorite ? 'fill-red-600' : 'stroke-current'"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
+                </svg>
                 <span class="text-sm font-medium">
                   {{ isFavorite ? 'En favori' : 'Favoris' }}
                 </span>
@@ -293,7 +292,7 @@ onMounted(() => {
               class="carousel-dot"
               :class="{ 'carousel-dot--active': currentSlide === index }"
               @click="goToSlide(index)"
-              :aria-label="`Aller à l'événement ${index + 1}`"
+              :aria-label="`Aller à l'événement ${Number(index) + 1}`"
             ></button>
           </div>
 
@@ -322,7 +321,7 @@ onMounted(() => {
               <span class="category-icon">{{ category.icon }}</span>
               <div class="category-info">
                 <span class="category-name">{{ category.name }}</span>
-               <!-- <span class="category-count">{{ category.count }} événements</span>-->
+                <!-- <span class="category-count">{{ category.count }} événements</span>-->
               </div>
               <svg class="category-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path

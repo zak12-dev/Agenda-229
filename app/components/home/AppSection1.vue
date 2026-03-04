@@ -479,7 +479,7 @@
         <div v-if="!loading" class="w-full sm:w-auto">
           <button
             @click="goToEvents()"
-            class="group relative w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-gray-900 text-white font-semibold rounded-full overflow-hidden transition-all duration-300 shadow-lg hover:shadow-2xl hover:bg-gray-800"
+            class="group relative  w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-gray-900 text-white font-semibold rounded-full overflow-hidden transition-all duration-300 shadow-lg hover:shadow-2xl hover:bg-gray-800"
           >
             <!-- Effet shine -->
             <span

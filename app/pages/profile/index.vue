@@ -216,7 +216,8 @@ onMounted(() => {
                 <span>Profil</span>
               </button>
 
-              <button
+             
+            <!-- <button
                 @click="
                   activeTab = 'security';
                   isEditing = false
@@ -230,7 +231,7 @@ onMounted(() => {
               >
                 <UIcon name="i-heroicons-lock-closed" class="w-5 h-5" />
                 <span>Sécurité</span>
-              </button>
+              </button>-->
             </div>
 
             <!-- Stats -->

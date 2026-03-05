@@ -5,6 +5,7 @@
     <!-- Résultats des événements -->
     <div class="px-10 mt-">
       <!-- Header résultats -->
+
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <div>
           <h3 class="text-2xl sm:text-5xl font-semibold text-gray-900">Événements passés</h3>
@@ -243,6 +244,7 @@
         </button>
       </div>
     </div>
+
     <section class="py-20 text-white mt-5">
       <div class="max-w-5xl mx-auto px-6">
         <!-- Header -->
@@ -289,6 +291,7 @@
             </div>
             <div>
               <h3 class="font-bold text-lg mb-2">{{ advantage.title }}</h3>
+
               <p class="text-white">{{ advantage.description }}</p>
             </div>
           </div>
@@ -298,6 +301,7 @@
         <div class="text-center">
           <NuxtLink
             to="/organizerForm"
+
             class="inline-block -20 px-8 py-4 bg-indigo-600 border border-gray-300 text-white font-bold rounded-xl hover:bg-indigo-500 transition-all shadow-xl hover:shadow-2xl"
           >
             <span class="flex items-center gap-2 leading-none">
@@ -320,6 +324,7 @@
 <script setup>
 import { NuxtImg } from '#components'
 import { ref, computed, onMounted, watch } from 'vue'
+
 import { ArrowRight } from 'lucide-vue-next'
 
 function goToEvents() {

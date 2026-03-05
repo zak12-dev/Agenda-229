@@ -469,11 +469,11 @@ useHead(() => {
                       </svg>
                       <div>
                         <h3 class="font-bold text-lg text-gray-900 mb-1">{{ event.location }}</h3>
-                        <p class="text-gray-600">252 Rue du Faubourg Saint-Honoré, 75008 Paris</p>
+                      <!--  <p class="text-gray-600">252 Rue du Faubourg Saint-Honoré, 75008 Paris</p> -->
                       </div>
                     </div>
                     <div class="grid sm:grid-cols-2 gap-4">
-                      <div class="flex items-center gap-3 p-4 bg-white rounded-lg">
+                      <!--<div class="flex items-center gap-3 p-4 bg-white rounded-lg">
                         <svg
                           class="w-5 h-5 text-orange-600"
                           fill="none"
@@ -491,7 +491,7 @@ useHead(() => {
                           <p class="text-sm font-medium text-gray-900">Métro</p>
                           <p class="text-xs text-gray-600">Saint-Philippe-du-Roule</p>
                         </div>
-                      </div>
+                      </div> -->
                       <div class="flex items-center gap-3 p-4 bg-white rounded-lg">
                         <svg
                           class="w-5 h-5 text-orange-600"
@@ -563,7 +563,7 @@ useHead(() => {
                   <div class="space-y-3 mb-6">
                     <div class="flex items-center gap-3 text-sm">
                       <svg
-                        class="w-5 h-5 text-gray-400"
+                        class="w-5 h-5 text-black"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -598,7 +598,7 @@ useHead(() => {
                           d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                         />
                       </svg>
-                      <span class="text-gray-700">{{ event.location }}</span>
+                      <span class="text-black">{{ event.location }}</span>
                     </div>
                   </div>
 
@@ -639,13 +639,20 @@ useHead(() => {
                 <div class="bg-gray-50 rounded-xl p-6">
                   <h3 class="font-semibold text-gray-900 mb-4">Organisateur</h3>
                   <div class="flex items-start gap-3 mb-4">
+                    <img
+  v-if="event.user.organizerProfile?.logo"
+  :src="event.user.organizerProfile.logo"
+  class="w-8 h-8 rounded-full"
+/>
                     <div
+                    v-else
                       class="w-12 h-12 rounded-full bg-gradient-to-br from-orange-600 to-indigo-600 flex items-center justify-center text-white font-bold flex-shrink-0"
                     >
-                      {{ event.organizer?.charAt(0) }}
+                      {{ event.user.organizerProfile?.name?.charAt(0) || event.user.name?.charAt(0) }}
                     </div>
                     <div>
-                      <p class="font-semibold text-gray-900 mb-1">{{ event.organizer }}</p>
+                      <p class="font-semibold text-gray-900 mb-1">  {{ event.user.organizerProfile?.name || event.user.name }}
+</p>
                       <div class="flex items-center gap-1">
                         <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                           <path

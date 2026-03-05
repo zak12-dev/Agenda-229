@@ -46,7 +46,23 @@ export default defineEventHandler(async (event) => {
       ville: true,
       category: true,
       images: true,
-      user: { select: { id: true, name: true, email: true, image: true } },
+          user: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        organizerProfile: {
+          select: {
+            name: true,
+            logo: true,
+            phone: true,
+            website: true
+          }
+        }
+      }
+    }
+,
     },
   });
 

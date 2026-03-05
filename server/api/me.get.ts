@@ -1,30 +1,30 @@
-import { auth } from "~~/server/utils/auth";
-import { prisma } from "~~/server/utils/prisma";
+import { auth } from '~~/server/utils/auth'
+import { prisma } from '~~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
-  const user = event.context.user;
-  const session = event.context.session;
+  const user = event.context.user
+  const session = event.context.session
 
-  console.log("USER FROM /api/me =>", user)
+  console.log('USER FROM /api/me =>', user)
   if (!user || !session) {
     return {
       user: null,
       session: null,
-    };
+    }
   }
 
   const userWithRole = await prisma.user.findUnique({
     where: { id: user.id },
 
-    include: { role: true },
-  });
+    include: { role: true, organizerProfile: true },
+  })
 
   return {
-
     user: {
       ...user,
       role: userWithRole?.role.role,
+      organizerProfile: userWithRole?.organizerProfile,
     },
     session,
-  };
-});
+  }
+})

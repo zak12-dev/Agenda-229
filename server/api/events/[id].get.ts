@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
     visitorId = generateVisitorId();
 
     setCookie(event, "visitor_id", visitorId, {
-      maxAge: 60 * 60 * 24 * 365, // 1 an
+      maxAge: 60 * 60 * 24 , // 1 jour
       httpOnly: false,
       sameSite: "lax",
       path: "/",

@@ -1,3 +1,4 @@
+
 import { auth } from "~~/server/utils/auth";
 
 export default defineEventHandler(async (event) => {
@@ -25,3 +26,4 @@ export default defineEventHandler(async (event) => {
     event.context.user = null;
   }
 });
+

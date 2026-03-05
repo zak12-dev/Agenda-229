@@ -1,106 +1,165 @@
-import { createAuthClient } from "better-auth/client";
+// composables/useAuth.ts
+import { createAuthClient } from 'better-auth/client'
+import { ref, computed } from 'vue'
 
+// =====================
+// TYPES
+// =====================
+export interface CustomSession {
+  user: {
+    id: string
+    name: string
+    email: string
+    emailVerified: boolean
+    image: string | null
+    roleId: number
+    status: string
+    createdAt: string
+    updatedAt: string
+  }
+
+  expires?: string
+}
+
+type Role = 'user' | 'organizer' | 'admin'
+
+// =====================
+// COMPOSABLE
+// =====================
 export const useAuth = () => {
   const authClient = createAuthClient({
-    baseURL: "http://localhost:3000",
+    baseURL: useRuntimeConfig().public.apiBase,
+    fetchOptions: { credentials: 'include' },
+  })
 
-    fetchOptions: {
-      credentials: "include", // indispensable pour les cookies
-    },
+  // Session globale
+  const session = useState<CustomSession | null>('session', () => null)
 
-  });
-
-  const session = useState<any | null>("session", () => null);
-
+  /* =====================
+     AUTH SOCIAL
+  ===================== */
   const loginWithGoogle = async () => {
-    await authClient.signIn.social({
-      provider: "google",
-    });
-  };
-  
-  const loginWithGithub = async () => {
-    await authClient.signIn.social({ provider: "github" });
-  };
-const createUser = async (
+    return authClient.signIn.social({ provider: 'google' })
+  }
+
+  const loginWithFacebook = async () => {
+    return authClient.signIn.social({ provider: 'facebook' })
+  }
+
+  /* =====================
+     INSCRIPTION
+  ===================== */
+  const createUser = async (
     name: string,
     email: string,
     password: string,
     confirmPassword: string
   ) => {
-
     if (password !== confirmPassword) {
       throw new Error('Passwords do not match')
     }
 
-    try {
+    const result = await authClient.signUp.email({
+      email,
+      password,
+      name,
+      callbackURL: '/auth/login', // Important
+    })
 
-      const result = await authClient.signUp.email({
-        name,
-        email,
-        password
-      })
+    if (result?.error) throw new Error(result.error.message)
+    return result
+  }
 
-      console.log('Utilisateur créé :', result)
+  const tokenReady = ref(false)
 
-      return result
-
-    } catch (error) {
-      console.error('Erreur inscription :', error)
-      throw error
+  const refreshCaptcha = () => {
+    if ((window as any).turnstile) {
+      ;(window as any).turnstile.reset()
+      tokenReady.value = false
+      setTimeout(() => {
+        tokenReady.value = true
+      }, 100) // attendre que le token soit prêt
     }
   }
 
+  /* =====================
+     LOGIN EMAIL
+  ===================== */
+  const loginWithEmail = async (email: string, password: string, rememberMe = true) => {
+    const result = await authClient.signIn.email({ email, password, rememberMe })
+    if (result?.error) throw new Error(result.error.message)
 
-  const loginWithEmail = async (
-    email: string,
-    password: string,
-    rememberMe: boolean = true
-  ) => {
-    const result = await authClient.signIn.email({
-      email,
-      password,
-      rememberMe,
-    });
-    console.log("Erreur de connexion :", result.error);
-    console.log("Erreur de connexion :", result);
+    // Recharge la session
+    await fetchSession()
 
+    // Redirection accueil
+    await navigateTo('/')
+  }
 
-    if (result?.error) {
-      throw new Error(result.error.message || "Email ou mot de passe incorrect");
-
-    }
-
-    return result;
-  };
-
-
-
+  /* =====================
+     LOGOUT
+  ===================== */
   const logout = async () => {
-    await authClient.signOut();
-    session.value = null;
-  };
+    await authClient.signOut()
+    session.value = null
+    refreshCaptcha()
+    await navigateTo('/')
+  }
 
+  /* =====================
+     FETCH SESSION
+  ===================== */
   const fetchSession = async () => {
     try {
-      const res: any = await $fetch("/api/me", {
-        credentials: "include",
-      });
+      const user: CustomSession | null = await $fetch('/api/me', {
+        credentials: 'include',
+      })
 
-      session.value = res.user || null;
-    } catch (error) {
-      session.value = null;
+      session.value = user || null
+    } catch {
+      session.value = null
     }
-  };
+  }
+
+  /* =====================
+     ROLES HELPERS
+  ===================== */
+  const role = computed<Role | null>(() => {
+    if (!session.value) return null
+    switch (session.value.user.roleId) {
+      case 1:
+        return 'admin'
+      case 2:
+        return 'organizer'
+      case 3:
+        return 'user'
+      default:
+        return 'user'
+    }
+  })
+
+  const isUser = computed(() => role.value === 'user')
+  const isOrganizer = computed(() => role.value === 'organizer')
+  const isAdmin = computed(() => role.value === 'admin')
 
   return {
+    // State
     session,
+
+    // Auth
     loginWithGoogle,
+    loginWithFacebook,
     loginWithEmail,
     logout,
-    fetchSession,
     createUser,
-  };
-  return { session, loginWithGoogle, logout, fetchSession };
 
+    // Session
+    fetchSession,
 
-};
+    // Roles
+    role,
+    isUser,
+    isOrganizer,
+    isAdmin,
+  }
+}

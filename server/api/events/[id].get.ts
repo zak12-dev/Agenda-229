@@ -1,5 +1,6 @@
 import { prisma } from "~~/server/utils/prisma";
-import { getCookie, setCookie } from "h3";
+
+import { getCookie, setCookie, getRouterParam, createError } from "h3";
 import { auth } from "~~/server/utils/auth";
 
 function generateVisitorId() {
@@ -94,5 +95,27 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  return eventData;
-});
+   // 🔥 Récupérer événements similaires
+  const similarEvents = await prisma.event.findMany({
+    where: {
+      status: 'PUBLISHED',
+      categoryId: eventData.categoryId,
+      NOT: { id: eventId },
+    },
+    include: {
+      category: true,
+      images: true,
+    },
+    take: 3,
+    orderBy: {
+      eventDate: "asc",
+    },
+  });
+
+
+return {
+    ...eventData,
+    similarEvents
+  }});
+
+ 

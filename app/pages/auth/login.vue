@@ -1,5 +1,333 @@
-<script>
+<script setup lang="ts">
+definePageMeta({
+  layout: 'auth',
+})
+import * as z from 'zod'
+import type { FormSubmitEvent } from '@nuxt/ui'
+import { useAuth } from '../../../composables/useAuth'
+import { onMounted, ref } from 'vue'
+import { useToast } from '#imports'
+
+const showPassword = ref(false)
+const config = useRuntimeConfig()
+const toast = useToast()
+const loadingProvider = ref<string | null>(null)
+const loading = ref(false)
+
+const { loginWithGoogle, loginWithFacebook, loginWithEmail, fetchSession } = useAuth()
+
+const schema = z.object({
+  email: z.string().email('Email invalide'),
+  password: z.string().min(8, 'Doit contenir au moins 8 caractères'),
+  remember: z.boolean().optional(),
+})
+
+type Schema = z.output<typeof schema>
+
+const state = ref({
+  email: '',
+  password: '',
+  remember: false,
+})
+
+/* ======================
+   SOCIAL LOGIN
+====================== */
+const providers = [
+  {
+    label: 'Google',
+    icon: 'i-simple-icons-google',
+    onClick: async () => {
+      loadingProvider.value = 'Google'
+      try {
+        await loginWithGoogle()
+      } catch (err) {
+        console.error('Login error:', err)
+        toast.add({ title: 'Erreur de connexion', color: 'red' })
+      } finally {
+        loadingProvider.value = null
+      }
+    },
+  },
+  {
+    label: 'Facebook',
+    icon: 'i-simple-icons-facebook',
+    onClick: async () => {
+      loadingProvider.value = 'Facebook'
+      try {
+        await loginWithFacebook()
+      } catch (err) {
+        console.error('Login error:', err)
+        toast.add({ title: 'Erreur de connexion', color: 'red' })
+      } finally {
+        loadingProvider.value = null
+      }
+    },
+  },
+]
+
+const tokenReady = ref(false)
+
+async function onSubmit(event: FormSubmitEvent<Schema>) {
+  if (!tokenReady.value) {
+    toast.add({ title: 'Captcha en cours de génération, veuillez patienter.', color: 'red' })
+    return
+  }
+
+  const token = (window as any).turnstile?.getResponse()
+  if (!token) {
+    toast.add({ title: 'Veuillez valider le captcha avant de continuer.', color: 'red' })
+    return
+  }
+
+  loading.value = true
+  try {
+    await $fetch('/api/cloudeflare/verify-turnstile', { method: 'POST', body: { token } })
+    await loginWithEmail(event.data.email, event.data.password, event.data.remember)
+    await fetchSession()
+
+    toast.add({ title: 'Connexion réussie', color: 'green' })
+    await navigateTo('/dashboard/events')
+  } catch (error: any) {
+    toast.add({
+      title: error?.data?.message || error.message || 'Erreur de connexion',
+      color: 'red',
+    })
+    refreshCaptcha() // reset en cas d'erreur
+  } finally {
+    loading.value = false
+  }
+}
+
+let turnstileWidgetId: number | null = null
+
+const refreshCaptcha = () => {
+  const container = document.querySelector('.cf-turnstile')
+  if ((window as any).turnstile && container) {
+    if (turnstileWidgetId !== null) {
+      ;(window as any).turnstile.reset(turnstileWidgetId)
+    } else {
+      // Render la première fois
+      turnstileWidgetId = (window as any).turnstile.render(container, {
+        sitekey: config.public.turnstileSiteKey,
+        callback: () => {
+          tokenReady.value = true
+        },
+        'expired-callback': () => {
+          tokenReady.value = false
+        },
+      })
+    }
+  }
+}
+
+onMounted(() => {
+  fetchSession()
+  refreshCaptcha()
+})
 </script>
+
 <template>
-    hello world
+  <div class="min-h-screen relative flex items-center justify-center p-4 overflow-hidden">
+    <!-- Animated Background -->
+    <div
+      class="absolute inset-0 bg-gradient-to-br from-slate-50 via-orange-50 to-indigo-50 dark:from-slate-950 dark:via-orange-950 dark:to-indigo-950"
+    ></div>
+
+    <!-- Animated Blobs -->
+    <div
+      class="absolute top-0 left-0 w-96 h-96 bg-orange-400/30 rounded-full blur-3xl animate-blob"
+    ></div>
+    <div
+      class="absolute top-0 right-0 w-96 h-96 bg-indigo-400/30 rounded-full blur-3xl animate-blob animation-delay-2000"
+    ></div>
+    <div
+      class="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-400/30 rounded-full blur-3xl animate-blob animation-delay-4000"
+    ></div>
+
+    <!-- Login Card -->
+    <div class="relative z-10 w-full max-w-md">
+      <div
+        class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200/50 dark:border-gray-800/50 p-8 md:p-10"
+      >
+        <!-- Logo -->
+        <div class="text-center mb-8 -mt-5">
+          <NuxtLink to="/" class="flex items-center justify-center gap-2 sm:gap-3 z-50">
+            <div
+              class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-xs sm:text-sm font-semibold transition-all duration-500 bg-gradient-to-br from-orange-600 to-indigo-600 text-white shadow-lg shadow-orange-500/20"
+            >
+              WLE
+            </div>
+          </NuxtLink>
+          <h1
+            class="text-3xl font-bold bg-gradient-to-r from-orange-600 to-indigo-600 bg-clip-text text-transparent mb-2"
+          >
+            Bienvenue
+          </h1>
+          <p class="text-gray-600 dark:text-gray-400">Connectez-vous à votre compte</p>
+        </div>
+
+        <!-- Social Buttons -->
+        <div class="grid grid-cols-2 gap-3 mb-6">
+          <UButton
+            v-for="provider in providers"
+            :key="provider.label"
+            :icon="provider.icon"
+            variant="outline"
+            size="lg"
+            :loading="loadingProvider === provider.label"
+            @click="provider.onClick"
+            class="justify-center"
+          >
+            {{ provider.label }}
+          </UButton>
+        </div>
+
+        <!-- Divider -->
+        <div class="relative my-6">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300 dark:border-gray-700"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-3 bg-white/80 dark:bg-gray-900/80 text-gray-500 dark:text-gray-400">
+              OU
+            </span>
+          </div>
+        </div>
+
+        <!-- Form -->
+        <UForm :schema="schema" :state="state" validate-on="input" @submit="onSubmit">
+          <div class="grid gap-4">
+            <UFormField label="Email " name="email" required class=" " aria-required="true">
+              <UInput
+                v-model="state.email"
+                type="email"
+                placeholder="votre@email.com"
+                icon="i-heroicons-at-symbol"
+                size="xl"
+                :ui="{ icon: { trailing: { pointer: '' } } }"
+                class="w-full border border-gray-100 dark:border-gray-700 rounded-full focus:ring-2 focus:ring-orange-500 dark:focus:ring-indigo-400"
+                autocomplete="email"
+                :disabled="loading"
+                aria-label="Email"
+                autofocus
+                @focus="refreshCaptcha"
+              />
+            </UFormField>
+
+            <UFormField label="Mot de passe" name="password" required>
+              <UInput
+                v-model="state.password"
+                :type="showPassword ? 'text' : 'password'"
+                class="w-full mb-4"
+                placeholder="Mot de passe"
+                icon="i-heroicons-key"
+                size="lg"
+                :ui="{ icon: { trailing: { pointer: '' } } }"
+              >
+                <!-- Icône à droite -->
+                <template #trailing>
+                  <button
+                    type="button"
+                    @click="showPassword = !showPassword"
+                    class="text-gray-500 hover:text-orange-600"
+                  >
+                    <UIcon
+                      :name="showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                      class="w-5 h-5"
+                    />
+                  </button>
+                </template>
+              </UInput>
+            </UFormField>
+          </div>
+          <div class="flex items-center justify-between">
+            <UCheckbox v-model="state.remember">
+              <template #label>
+                <span class="text-sm">Se souvenir</span>
+              </template>
+            </UCheckbox>
+            <NuxtLink
+              to="/forgot"
+              class="text-sm font-medium text-orange-600 dark:text-indigo-400 hover:underline"
+            >
+              Mot de passe oublié ?
+            </NuxtLink>
+          </div>
+          <div class="cf-turnstile mt-3" :data-sitekey="config.public.turnstileSiteKey"></div>
+
+          <UButton
+            type="submit"
+            color="primary"
+            size="lg"
+            block
+            :loading="loading"
+            class="font-semibold shadow-lg shadow-orange-500/40 mt-5"
+          >
+            <span v-if="!loading">Se connecter</span>
+            <span v-else>Connexion...</span>
+          </UButton>
+        </UForm>
+
+        <!-- Sign Up -->
+        <div class="mt-6 text-center">
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Nouveau ici ?
+            <NuxtLink
+              to="/auth/signup"
+              class="font-semibold text-orange-600 dark:text-indigo-400 hover:underline"
+            >
+              Créer un compte
+            </NuxtLink>
+          </p>
+        </div>
+      </div>
+
+      <!-- Footer Links -->
+      <div class="mt-8 text-center">
+        <div
+          class="flex items-center justify-center gap-4 text-sm text-gray-600 dark:text-gray-400"
+        >
+          <NuxtLink to="/helps/faq" class="hover:text-orange-600 dark:hover:text-indigo-400">
+            Confidentialité
+          </NuxtLink>
+          <span>•</span>
+          <NuxtLink to="/terms" class="hover:text-orange-600 dark:hover:text-indigo-400">
+            Conditions
+          </NuxtLink>
+          <span>•</span>
+          <NuxtLink to="/help" class="hover:text-orange-600 dark:hover:text-indigo-400">
+            Aide
+          </NuxtLink>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
+
+<style scoped>
+@keyframes blob {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+</style>

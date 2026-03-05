@@ -1,5 +1,5 @@
 {
-  "name": "agenda-229",
+  "name": "welove-event",
   "type": "module",
   "private": true,
   "scripts": {
@@ -7,7 +7,8 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare",
+    "postinstall": "prisma generate ",
+
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write ."
@@ -16,23 +17,32 @@
     "@nuxt/image": "^2.0.0",
     "@nuxt/ui": "^4.4.0",
     "@pinia/nuxt": "^0.11.3",
-    "@prisma/client": "6.19.2",
+    "@prisma/client": "^6.19.2",
+    "@tailwindcss/typography": "^0.5.19",
     "better-auth": "^1.4.17",
     "cloudinary": "^2.9.0",
+    "lodash-es": "^4.17.23",
+    "lucide": "^0.563.0",
+    "lucide-vue-next": "^0.575.0",
     "nodemailer": "^8.0.1",
     "nuxt": "^4.3.0",
     "pinia": "^3.0.4",
+    "prisma": "6.19.2",
     "tailwindcss": "^4.1.18",
     "vue": "^3.5.27",
     "vue-router": "^4.6.4",
+    "vue-toastification": "^1.7.14",
     "zod": "^4.3.6"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "devDependencies": {
+    "@iconify-json/heroicons": "^1.2.3",
+    "@iconify-json/lucide": "^1.2.87",
     "@nuxt/eslint": "^1.13.0",
     "@nuxt/eslint-config": "^1.13.0",
+    "@types/lodash": "^4.17.23",
     "@types/node": "^25.0.10",
     "@types/nodemailer": "^7.0.10",
     "eslint": "^9.39.2",

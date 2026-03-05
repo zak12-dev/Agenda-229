@@ -1,3 +1,4 @@
+// fichier : api/admin/organizer/validate.post.ts
 import { prisma } from "~~/server/utils/prisma";
 import { requireAdmin } from "~~/server/utils/protect";
 
@@ -23,6 +24,7 @@ export default defineEventHandler(async (event) => {
   const isApproved = action === "approve";
   const newStatus = isApproved ? "approved" : "rejected";
 
+
   await prisma.$transaction([
     // mise à jour le statut de l'utilisateur
     prisma.user.update({
@@ -47,5 +49,6 @@ export default defineEventHandler(async (event) => {
     }),
   ]);
 
-  return { success: true };
+
+  return { success: true, status: isApproved ? "approved" : "rejected" };
 });

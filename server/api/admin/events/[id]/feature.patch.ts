@@ -6,9 +6,13 @@ export default defineEventHandler(async (event) => {
 
   const id = getRouterParam(event, "id");
 
+  const existingEvent = await prisma.event.findUnique({
+    where: { id },
+  });
+
   const updatedEvent = await prisma.event.update({
     where: { id },
-    data: { privilege: true },
+    data: { privilege: !existingEvent?.privilege }, 
   });
 
   return updatedEvent;

@@ -1,16 +1,22 @@
-export default defineNuxtRouteMiddleware(async (to, from) => {
+import { useAuth } from "~~/composables/useAuth";
+
+export default defineNuxtRouteMiddleware(async () => {
+  if (process.server) return;
+
   const { session, fetchSession } = useAuth();
 
-  if (!session.value) {
+  if (!session.value?.user) {
     await fetchSession();
   }
 
-  if (!session.value) {
-    return navigateTo("/auth/login");
+  if (!session.value?.user) {
+    return navigateTo('/auth/login');
   }
 
-  const role = session.value.role;
-  if (role !== "admin" && role !== "moderator") {
-    return navigateTo("/");
+ const roleId = session.value?.user.roleId
+
+   // Rôles autorisés : admin(1), organizer(2)
+  if (![1, 2].includes(roleId)) {
+    return navigateTo('/')
   }
 });

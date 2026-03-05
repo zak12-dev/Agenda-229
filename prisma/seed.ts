@@ -4,7 +4,8 @@ import { hashPassword } from "better-auth/crypto";
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('Start seeding...')
+  console.log('Start seeding super admin...')
+
 
   // 1. Create Roles
   const roles = [
@@ -32,16 +33,14 @@ async function main() {
   })
 
   if (!existingAdmin) {
-    const hashedPassword = await hashPassword(adminPassword);
+    const hashedPassword = await hashPassword(adminPassword)
 
     const adminUser = await prisma.user.create({
       data: {
-        name: 'Super Admin',
+        name: 'Admin Zak',
         email: adminEmail,
-        // password: hashedPassword, // Stored in User table
-        roleId: 1, // admin
+        roleId: 1, // Assure-toi que "1" correspond bien au rôle admin dans ta table Role
         status: 'active',
-        // organizerStatus: 'approved',
         emailVerified: true,
       },
     })
@@ -55,7 +54,7 @@ async function main() {
       }
     })
 
-    console.log('Super user created: admin@example.com / Password123!')
+    console.log(`Super user created: ${adminEmail} / ${adminPassword}`)
   } else {
     console.log('Super user already exists.')
   }
@@ -64,9 +63,7 @@ async function main() {
 }
 
 main()
-  .then(async () => {
-    await prisma.$disconnect()
-  })
+  .then(async () => await prisma.$disconnect())
   .catch(async (e) => {
     console.error(e)
     await prisma.$disconnect()

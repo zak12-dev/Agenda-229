@@ -17,6 +17,7 @@ export default defineNuxtConfig({
       title: 'WeLoveEvent',
       htmlAttrs: { lang: 'fr' },
       link: [
+        {rel: 'icon', type:'image/png', href: '/favicon.png'},
         {
           rel: 'stylesheet',
           href: 'https://fonts.googleapis.com/css2?family=Gravitas+One&display=swap',
@@ -29,7 +30,7 @@ export default defineNuxtConfig({
           rel: 'stylesheet',
           href: 'https://fonts.googleapis.com/css2?family=Nova+Square&display=swap',
         },
-        { rel: 'icon', href: '/favicon.ico' },
+        // { rel: 'icon', href: '/favicon.ico' },
       ],
        script: [
         {

@@ -193,14 +193,14 @@ model EventView {
   id        String   @id @default(cuid())
   eventId   String
   userId    String?   // null si visiteur non connecté
-  ipAddress String?   // pour visiteurs anonymes
+  visitorId String?   // pour visiteurs anonymes
   createdAt DateTime @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user  User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, userId])
-  @@unique([eventId, ipAddress])
+  @@unique([eventId, visitorId])
 }
 
 enum OrganizerRequestStatus {

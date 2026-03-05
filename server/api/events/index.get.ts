@@ -1,9 +1,8 @@
-import { prisma } from "~~/server/utils/prisma"
-import { auth } from "../../../server/utils/auth" 
+import { prisma } from '~~/server/utils/prisma'
+import { auth } from '../../../server/utils/auth'
 
 export default defineEventHandler(async (event) => {
   try {
-    
     // 1️⃣ récupérer headers et filtrer undefined
     const rawHeaders = getRequestHeaders(event)
     const headers: Record<string, string> = {}
@@ -19,7 +18,7 @@ export default defineEventHandler(async (event) => {
     if (!session?.user) {
       throw createError({
         statusCode: 401,
-        statusMessage: "Non autorisé",
+        statusMessage: 'Non autorisé',
       })
     }
 
@@ -51,23 +50,23 @@ export default defineEventHandler(async (event) => {
             id: true,
             name: true,
             email: true,
-            image: true
-          }
-        }
+            image: true,
+           
+          },
+        },
       },
       orderBy: {
-        createdAt: 'desc'
-      }
-    });
+        createdAt: 'desc',
+      },
+    })
 
-    
     //  console.log("EVENTS:", events);
-    return events;
+    return events
   } catch (error) {
     console.error(error)
     throw createError({
       statusCode: 500,
-      statusMessage: "Erreur lors de la récupération des événements",
+      statusMessage: 'Erreur lors de la récupération des événements',
     })
   }
 })

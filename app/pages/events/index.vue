@@ -2,7 +2,6 @@
   <div
     class="w-full bg-gradient-to-br from-orange-200 via-white to-indigo-200 py-12 sm:py-16 lg:py-20 mt-10"
   >
-    <AppHeader />
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Titre -->
       <div class="text-center mb-8 sm:mb-10">
@@ -717,6 +716,7 @@
     </div>
 
     <!-- Résultats des événements -->
+    <PastEvent />
   </div>
   
 </template>
@@ -726,6 +726,7 @@ import { useNuxtApp, navigateTo } from '#app'
 import { NuxtImg } from '#components'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import PastEvent from '~/components/home/PastEvent.vue'
 
 const route = useRoute()
 const router = useRouter()

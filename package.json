@@ -8,7 +8,6 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "prisma generate ",
-
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write ."
@@ -31,7 +30,7 @@
     "tailwindcss": "^4.1.18",
     "vue": "^3.5.27",
     "vue-router": "^4.6.4",
-    "vue-toastification": "^1.7.14",
+    "vue-toastification": "^2.0.0-rc.5",
     "zod": "^4.3.6"
   },
   "prisma": {

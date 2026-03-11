@@ -619,7 +619,7 @@
               </div>
 
               <!-- Description - Cachée sur très petit écran -->
-              <p class="text-sm text-gray-600 line-clamp-2 mb-4">
+              <p class="text-sm text-gray-600 line-clamp-2 mb-4 max-h-1/2">
                 {{ event.description }}
               </p>
 

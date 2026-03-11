@@ -16,5 +16,4 @@ const isAdmin = computed(() => session.value?.user.roleId === 1)
 
 <template>
   <EventTable />
-  <CreateEventModal v-if="!isAdmin" />
 </template>

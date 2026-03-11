@@ -12,7 +12,6 @@ definePageMeta({
 
 <template>
   <CategorieTable />
-  <CreateCategoriesModal />
 </template>
 
 name: 'admin-categories', 

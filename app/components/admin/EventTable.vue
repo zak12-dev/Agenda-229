@@ -1,44 +1,36 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAuth } from '../../../composables/useAuth'
-import admin from '~~/middleware/admin'
-import { watch } from 'vue'
 
-interface EventImage {
-  id: string
-  url: string
-}
+// ─── Types ───
+interface EventImage { id: string; url: string }
 
 interface CustomEvent {
-  id: number
-  title: string
-  categoryId: string
-  date: string
-  location: string
-  price: number | 'Free'
-  duration: string
-  description: string
-  image: string | null
-  images: EventImage[]
-  privilege: boolean
-  organizer: {
-    name: string
-    contact: string
-  }
-  views: number
-  createdAt: string
-  updatedAt: string
-  status: string
-  category: {
-    name: string
-    id: string
-  }
+  id: number; title: string; categoryId: string; date: string
+  location: string; price: number | 'Free'; duration: string
+  description: string; image: string | null; images: EventImage[]
+  privilege: boolean; organizer: { name: string; contact: string }
+  views: number; createdAt: string; updatedAt: string
+  status: string; category: { name: string; id: string }
 }
 
+interface Category { id: string; name: string; icon?: string }
+interface Ville { id: string; name: string }
+
+interface EventForm {
+  title: string; description: string; location: string; details: string
+  eventDate: string; startDate: string; endDate: string
+  villeId: string; categoryId: string; images: File[]
+  priceType: 'FREE' | 'PAID'; price: string; status: 'DRAFT' | 'PUBLISHED'
+}
+
+// ─── Auth ───
 const { session } = useAuth()
+const isAdmin = computed(() => session.value?.user.roleId === 1)
+
+// ─── État liste ───
 const searchQuery = ref('')
 const filterStatus = ref<'all' | 'Publié' | 'Brouillon' | 'Recherche'>('all')
-const isAdmin = computed(() => session.value?.user.roleId === 1)
 const events = ref<CustomEvent[]>([])
 const loading = ref(true)
 const error = ref('')
@@ -46,718 +38,609 @@ const isEditModalOpen = ref(false)
 const isPreviewModalOpen = ref(false)
 const selectedEvent = ref<CustomEvent | null>(null)
 const modalLoading = ref(false)
-const viewMode = ref<'grid' | 'list'>('list')
 
+// ─── État création ───
+const isCreateModalOpen = ref(false)
+const categories = ref<Category[]>([])
+const villes = ref<Ville[]>([])
+const isPublishing = ref(false)
+const isSavingDraft = ref(false)
+const draftId = ref<string | null>(null)
+const titleMaxLength = 100
+const descriptionMaxLength = 250
+
+const form = reactive<EventForm>({
+  title: '', description: '', location: '', details: '',
+  eventDate: '', startDate: '', endDate: '',
+  villeId: '', categoryId: '', images: [],
+  priceType: 'FREE', price: '', status: 'DRAFT',
+})
+
+const isFormValid = computed(() =>
+  form.title && form.description && form.location && form.details &&
+  form.eventDate && form.startDate && form.villeId && form.images.length > 0 &&
+  form.categoryId && (form.priceType === 'FREE' || (form.priceType === 'PAID' && form.price))
+)
+
+// ─── Filtres liste ───
 const filteredEvents = computed(() => {
-  const query = searchQuery.value.toLowerCase()
-
-  return events.value.filter((event) => {
-    const matchesQuery = event.title.toLowerCase().includes(query)
-    const matchesStatus = filterStatus.value === 'all' || event.status === filterStatus.value
-    return matchesQuery && matchesStatus
+  const q = searchQuery.value.toLowerCase()
+  return events.value.filter(e => {
+    const matchQ = e.title.toLowerCase().includes(q)
+    const matchS = filterStatus.value === 'all' || e.status === filterStatus.value
+    return matchQ && matchS
   })
 })
 
+// ─── Stats ───
+const stats = computed(() => [
+  { label: 'Total',       value: events.value.length,                                   icon: 'i-heroicons-calendar-days', bg: 'bg-orange-50',  border: 'border-orange-100',  iconColor: 'text-[#ea6c1e]' },
+  { label: 'Publiés',    value: events.value.filter(e => e.status === 'Publié').length,  icon: 'i-heroicons-check-circle',  bg: 'bg-emerald-50', border: 'border-emerald-100', iconColor: 'text-emerald-600' },
+  { label: 'Brouillons', value: events.value.filter(e => e.status === 'Brouillon').length, icon: 'i-heroicons-document-text', bg: 'bg-amber-50',   border: 'border-amber-100',   iconColor: 'text-amber-600' },
+])
+
+// ─── Fetch liste ───
 const fetchEvents = async () => {
   loading.value = true
   error.value = ''
   try {
     const data = await $fetch<any[]>('/api/events')
-
-    if (!Array.isArray(data)) {
-      throw new Error('Les données reçues ne sont pas un tableau.')
-    }
-
-    events.value = data.map((event) => ({
-      id: event.id,
-      title: event.title,
-      categoryId: event.categoryId || 'Sans catégorie',
-      date: new Date(event.createdAt).toISOString(),
-      status:
-        event.status === 'PUBLISHED' ? 'Publié' : event.status === 'DRAFT' ? 'Brouillon' : 'Publié',
-      views: event.views || 0,
-      location: event.location || 'Non spécifié',
-      price: event.price || 'Free',
-      duration: event.duration || 'Non spécifié',
-      description: event.description || 'Pas de description',
-      image: event.images.length ? event.images[0].url : 'default.jpg',
-      images: event.images,
-      organizer: event.organizer || { name: 'Inconnu', contact: 'Non spécifié' },
-      createdAt: event.createdAt,
-      updatedAt: event.updatedAt || event.createdAt,
-      category: event.category,
-      privilege: event.privilege ?? false,
+    if (!Array.isArray(data)) throw new Error()
+    events.value = data.map(e => ({
+      id: e.id, title: e.title,
+      categoryId: e.categoryId || 'Sans catégorie',
+      date: new Date(e.createdAt).toISOString(),
+      status: e.status === 'PUBLISHED' ? 'Publié' : e.status === 'DRAFT' ? 'Brouillon' : 'Publié',
+      views: e.views || 0, location: e.location || 'Non spécifié',
+      price: e.price || 'Free', duration: e.duration || 'Non spécifié',
+      description: e.description || '',
+      image: e.images?.length ? e.images[0].url : null,
+      images: e.images || [],
+      organizer: e.organizer || { name: 'Inconnu', contact: '' },
+      createdAt: e.createdAt, updatedAt: e.updatedAt || e.createdAt,
+      category: e.category, privilege: e.privilege ?? false,
     }))
-    console.log('Event:', events.value)
-  } catch (err: any) {
-    console.error('Erreur lors de la récupération des événements:', err)
-    error.value = 'Impossible de récupérer les événements.'
-    events.value = []
-  } finally {
-    loading.value = false
-  }
+  } catch { events.value = [] }
+  finally { loading.value = false }
 }
 
+// ─── Fetch catégories + villes ───
+const loadFormData = async () => {
+  try {
+    const [catsRes, villesRes] = await Promise.all([
+      fetch('/api/categories'), fetch('/api/villes')
+    ])
+    const catsData = await catsRes.json()
+    const villesData = await villesRes.json()
+    categories.value = catsData.map((c: any) => ({ id: c.id, name: c.name, icon: c.icon || 'i-heroicons-tag' }))
+    villes.value = villesData.map((v: any) => ({ id: v.id, name: v.nomVille }))
+  } catch (e) { console.error(e) }
+}
+
+// ─── Actions liste ───
 const togglePrivilege = async (eventItem: any) => {
   try {
-    const updated = await $fetch(`/api/admin/events/${eventItem.id}/feature`, {
-      method: 'PATCH',
-    })
-
-    // 🔥 mise à jour visuelle instantanée
+    const updated = await $fetch(`/api/admin/events/${eventItem.id}/feature`, { method: 'PATCH' })
     eventItem.privilege = updated.privilege
-  } catch (error) {
-    console.error('Erreur privilège:', error)
-  }
+  } catch (e) { console.error(e) }
 }
 
-onMounted(() => {
-  fetchEvents() // fetch initial
-
-  const interval = setInterval(fetchEvents, 30000) // toutes les 30 secondes
-  onUnmounted(() => clearInterval(interval)) // nettoyage
-})
-
-let timeout: ReturnType<typeof setTimeout>
-
-watch([searchQuery, filterStatus], () => {
-  clearTimeout(timeout)
-
-  timeout = setTimeout(() => {
-    fetchEvents()
-  }, 500)
-})
-
 const deleteEvent = async (id: number) => {
+  if (!confirm('Voulez-vous vraiment supprimer cet événement ?')) return
   try {
-    const confirmed = confirm('Voulez-vous vraiment supprimer cet événement ?')
-    if (!confirmed) return
-
-    const response = await fetch(`/api/events/${id}`, { method: 'DELETE' })
-    if (!response.ok) throw new Error('Erreur lors de la suppression')
-
-    events.value = events.value.filter((a) => a.id !== id)
-    alert('Événement supprimé avec succès ✅')
-  } catch (error) {
-    console.error(error)
-    alert("Impossible de supprimer l'événement ❌")
-  }
+    const res = await fetch(`/api/events/${id}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error()
+    events.value = events.value.filter(e => e.id !== id)
+  } catch { alert("Impossible de supprimer l'événement ❌") }
 }
 
 const updateEvent = async () => {
   if (!selectedEvent.value) return
-
-  const payload = {
-    title: selectedEvent.value.title,
-    description: selectedEvent.value.description,
-    status: selectedEvent.value.status === 'Publié' ? 'published' : 'draft',
-  }
-
   try {
     await $fetch(`/api/events/${selectedEvent.value.id}`, {
       method: 'patch',
-      body: payload,
+      body: { title: selectedEvent.value.title, description: selectedEvent.value.description, status: selectedEvent.value.status === 'Publié' ? 'published' : 'draft' },
     })
     isEditModalOpen.value = false
     await fetchEvents()
-    alert('Événement mis à jour ✅')
-  } catch (e) {
-    console.error(e)
-    alert('Erreur lors de la mise à jour ❌')
-  }
+  } catch (e) { console.error(e) }
 }
 
 const loadEventById = async (id: number) => {
   modalLoading.value = true
+  try { selectedEvent.value = await $fetch<any>(`/api/events/${id}`) }
+  catch (e) { console.error(e) }
+  finally { modalLoading.value = false }
+}
+
+// ─── Actions création ───
+const handleImageUpload = (e: Event) => {
+  const files = (e.target as HTMLInputElement).files
+  if (!files) return
+  form.images = [...form.images, ...Array.from(files)].slice(0, 3)
+}
+
+const removeImageAt = (i: number) => form.images.splice(i, 1)
+
+const resetForm = () => {
+  Object.assign(form, { title: '', description: '', location: '', details: '', eventDate: '', startDate: '', endDate: '', villeId: '', categoryId: '', images: [], priceType: 'FREE', price: '' })
+  draftId.value = null
+}
+
+const submit = async (status: 'DRAFT' | 'PUBLISHED') => {
+  if (!isFormValid.value && status === 'PUBLISHED') return
+  status === 'PUBLISHED' ? (isPublishing.value = true) : (isSavingDraft.value = true)
+
+  const fd = new FormData()
+  fd.append('title', form.title); fd.append('description', form.description)
+  fd.append('location', form.location); fd.append('details', form.details)
+  fd.append('eventDate', form.eventDate); fd.append('startDate', form.startDate)
+  fd.append('endDate', form.endDate || ''); fd.append('villeId', form.villeId)
+  fd.append('categoryId', form.categoryId); fd.append('priceType', form.priceType)
+  fd.append('status', status)
+  if (form.priceType === 'PAID') fd.append('price', form.price)
+  form.images.forEach(f => fd.append('images', f))
+
   try {
-    const event = await $fetch<any>(`/api/events/${id}`)
-    selectedEvent.value = event
-  } catch (e) {
-    console.error(e)
-    alert("Impossible de charger l'événement")
+    const url = draftId.value && status === 'DRAFT' ? `/api/events/${draftId.value}` : '/api/events'
+    const method = draftId.value && status === 'DRAFT' ? 'PUT' : 'POST'
+    const res = await fetch(url, { method, body: fd, credentials: 'include' })
+    if (!res.ok) { const err = await res.json(); throw new Error(err.statusMessage) }
+    const data = await res.json()
+    if (status === 'DRAFT') draftId.value = data.event.id
+    if (status === 'PUBLISHED') { resetForm(); draftId.value = null }
+    isCreateModalOpen.value = false
+    await fetchEvents()
+  } catch (err) {
+    alert(err instanceof Error ? err.message : 'Une erreur est survenue')
   } finally {
-    modalLoading.value = false
+    isPublishing.value = false
+    isSavingDraft.value = false
   }
 }
 
-const stats = computed(() => [
-  {
-    label: 'Total',
-    value: events.value.length,
-    icon: 'i-heroicons-calendar-days',
-    color: 'orange',
-  },
-  {
-    label: 'Publiés',
-    value: events.value.filter((a) => a.status === 'Publié').length,
-    icon: 'i-heroicons-check-circle',
-    color: 'green',
-  },
-  {
-    label: 'Brouillons',
-    value: events.value.filter((a) => a.status === 'Brouillon').length,
-    icon: 'i-heroicons-document-text',
-    color: 'amber',
-  },
-])
+const openCreateModal = () => { resetForm(); loadFormData(); isCreateModalOpen.value = true }
 
-const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-}
+// ─── Helpers ───
+const formatDate = (d: string) =>
+  new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+
+const formatDateLong = (d: string) =>
+  new Date(d).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+
+const getStatusClasses = (s: string) =>
+  s === 'Publié' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+
+const getDot = (s: string) => s === 'Publié' ? 'bg-emerald-500' : 'bg-amber-500'
+
+// ─── Lifecycle ───
+onMounted(() => {
+  fetchEvents()
+  const interval = setInterval(fetchEvents, 30000)
+  onUnmounted(() => clearInterval(interval))
+})
+
+let timeout: ReturnType<typeof setTimeout>
+watch([searchQuery, filterStatus], () => {
+  clearTimeout(timeout)
+  timeout = setTimeout(fetchEvents, 500)
+})
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 -mt-2 overflow-auto">
-    <div class="max-w-7xl mx-auto space-y-6">
-      <!-- Header -->
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <!--<div class="flex bg-white border border-gray-200 rounded-lg p-1">
-            <button
-              @click="viewMode = 'grid'"
-              :class="[
-                'px-3 py-1.5 rounded text-sm font-medium transition-all',
-                viewMode === 'grid'
-                  ? 'bg-orange-600 text-white'
-                  : 'text-gray-600 hover:text-gray-900',
-              ]"
-            >
-              <UIcon name="i-heroicons-squares-2x2" class="w-4 h-4" />
-            </button>
-            <button
-              @click="viewMode = 'list'"
-              :class="[
-                'px-3 py-1.5 rounded text-sm font-medium transition-all',
-                viewMode === 'list'
-                  ? 'bg-orange-600 text-white'
-                  : 'text-gray-600 hover:text-gray-900',
-              ]"
-            >
-              <UIcon name="i-heroicons-list-bullet" class="w-4 h-4" />
-            </button>
-          </div> 
-          <button
-            @click="fetchEvents"
-            class="px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-all"
-          >
-            <UIcon name="i-heroicons-arrow-path" class="w-4 h-4" />
-          </button>-->
-        </div>
-      </div>
+  <div class="bg-[#f5f3ef] px-4 pt-4 pb-32 sm:px-6 sm:pb-12 font-outfit w-full min-h-screen overflow-y-auto mb-10">
+    <div class="max-w-7xl mx-auto space-y-5">
 
-      <!-- Stats Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- ── Stats ── -->
+      <div class="grid grid-cols-3 gap-3">
         <div
-          v-for="(stat, index) in stats"
-          :key="index"
-          class="bg-white rounded-xl p-2 border border-gray-200 shadow-sm"
+          v-for="stat in stats" :key="stat.label"
+          class="bg-white rounded-2xl border border-[#ede8e0] p-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)]"
         >
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-sm font-medium text-gray-600">{{ stat.label }}</span>
-            <div
-              :class="[
-                'w-10 h-10 rounded-lg flex items-center justify-center',
-                stat.color === 'orange'
-                  ? 'bg-orange-100'
-                  : stat.color === 'green'
-                    ? 'bg-green-100'
-                    : stat.color === 'amber'
-                      ? 'bg-amber-100'
-                      : 'bg-blue-100',
-              ]"
-            >
-              <UIcon
-                :name="stat.icon"
-                :class="[
-                  'w-5 h-5',
-                  stat.color === 'orange'
-                    ? 'text-orange-600'
-                    : stat.color === 'green'
-                      ? 'text-green-600'
-                      : stat.color === 'amber'
-                        ? 'text-amber-600'
-                        : 'text-blue-600',
-                ]"
-              />
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-[11px] font-medium text-[#b0a898] uppercase tracking-wide leading-tight">{{ stat.label }}</p>
+            <div :class="['w-7 h-7 rounded-lg border flex items-center justify-center flex-shrink-0', stat.bg, stat.border]">
+              <UIcon :name="stat.icon" :class="['w-3.5 h-3.5', stat.iconColor]" />
             </div>
           </div>
-          <p class="text-2xl font-bold text-gray-900">{{ stat.value }}</p>
+          <p class="text-2xl font-bold text-[#1a1612] tracking-tight">{{ stat.value }}</p>
         </div>
       </div>
 
-      <!-- Search & Filter -->
-      <div class="flex flex-col sm:flex-row gap-4">
-        <!-- Search -->
-        <div class="flex-1 relative">
-          <UIcon
-            name="i-heroicons-magnifying-glass"
-            class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-          />
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Rechercher par nom d'évènements"
-            class="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          />
+      <!-- ── Recherche + Filtres + Bouton créer ── -->
+      <div class="flex items-stretch gap-3">
+
+        <!-- Bloc recherche + filtres -->
+        <div class="flex-1 bg-white rounded-2xl border border-[#ede8e0] p-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)] space-y-3">
+          <!-- Search -->
+          <div class="relative">
+            <UIcon
+              name="i-heroicons-magnifying-glass"
+              class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#c0b8ad]"
+            />
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Rechercher un événement…"
+              class="w-full pl-10 pr-4 py-2.5 bg-[#faf8f5] border border-[#ede8e0] rounded-xl
+                     text-[13.5px] text-[#1a1612] placeholder:text-[#c0b8ad]
+                     focus:outline-none focus:border-[#ea6c1e] focus:ring-2 focus:ring-[#ea6c1e]/10
+                     transition-all font-outfit"
+            />
+          </div>
+
+          <!-- Filtres pills -->
+          <div class="flex gap-2 overflow-x-auto pb-0.5 scrollbar-none">
+            <template v-if="isAdmin">
+              <button @click="filterStatus = 'Recherche'" :class="['filter-pill', filterStatus === 'Recherche' ? 'filter-pill--indigo' : 'filter-pill--off']">
+                Recherche
+              </button>
+            </template>
+            <template v-else>
+              <button @click="filterStatus = 'all'" :class="['filter-pill', filterStatus === 'all' ? 'filter-pill--orange' : 'filter-pill--off']">
+                Tous <span class="ml-1.5 text-[10px] font-bold opacity-70">{{ events.length }}</span>
+              </button>
+              <button @click="filterStatus = 'Publié'" :class="['filter-pill', filterStatus === 'Publié' ? 'filter-pill--green' : 'filter-pill--off']">
+                <span class="w-1.5 h-1.5 rounded-full bg-current opacity-70" /> Publiés
+              </button>
+              <button @click="filterStatus = 'Brouillon'" :class="['filter-pill', filterStatus === 'Brouillon' ? 'filter-pill--amber' : 'filter-pill--off']">
+                <span class="w-1.5 h-1.5 rounded-full bg-current opacity-70" /> Brouillons
+              </button>
+            </template>
+          </div>
         </div>
 
-        <!-- Filters -->
-        <!-- Filters -->
-        <div class="flex gap-2 overflow-x-auto">
-          <!-- Si admin, on affiche seulement le bouton Recherche -->
-          <button
-            v-if="isAdmin"
-            @click="filterStatus = 'Recherche'"
-            :class="[
-              'px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all',
-              filterStatus === 'Recherche'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 border border-gray-200 hover:border-blue-300',
-            ]"
-          >
-            Recherche
+        <!-- Bouton créer — même hauteur que le bloc recherche, masqué admin -->
+        <button
+          v-if="!isAdmin"
+          @click="openCreateModal"
+          class="btn-create-aside flex-shrink-0"
+        >
+          <UIcon name="i-heroicons-plus" class="w-5 h-5" />
+          <span class="hidden sm:block text-[12.5px] font-semibold leading-tight">Créer<br>un événement</span>
+        </button>
+
+      </div>
+
+      <!-- ── Liste événements ── -->
+      <div class="bg-white rounded-2xl border border-[#ede8e0] overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+
+        <!-- Header -->
+        <div class="px-5 py-3.5 border-b border-[#ede8e0] flex items-center justify-between bg-[#faf8f5]">
+          <p class="text-[13px] font-semibold text-[#1a1612]">
+            {{ filteredEvents.length }} événement{{ filteredEvents.length > 1 ? 's' : '' }}
+          </p>
+          <button @click="fetchEvents" class="flex items-center gap-1.5 text-[11.5px] font-medium text-[#b0a898] hover:text-[#ea6c1e] transition-colors">
+            <UIcon name="i-heroicons-arrow-path" class="w-3.5 h-3.5" />
+            Actualiser
           </button>
-
-          <!-- Si pas admin, on affiche les autres boutons -->
-          <template v-else>
-            <button
-              @click="filterStatus = 'all'"
-              :class="[
-                'px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all',
-                filterStatus === 'all'
-                  ? 'bg-orange-600 text-white'
-                  : 'bg-white text-gray-700 border border-gray-200 hover:border-orange-300',
-              ]"
-            >
-              Tous
-            </button>
-
-            <button
-              @click="filterStatus = 'Publié'"
-              :class="[
-                'px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all',
-                filterStatus === 'Publié'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white text-gray-700 border border-gray-200 hover:border-green-300',
-              ]"
-            >
-              Publié
-            </button>
-
-            <button
-              @click="filterStatus = 'Brouillon'"
-              :class="[
-                'px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all',
-                filterStatus === 'Brouillon'
-                  ? 'bg-amber-600 text-white'
-                  : 'bg-white text-gray-700 border border-gray-200 hover:border-amber-300',
-              ]"
-            >
-              Brouillon
-            </button>
-          </template>
-        </div>
-      </div>
-
-      <!-- Events Grid/List -->
-      <div class="max-h-[500px] overflow-y-auto">
-        <!-- Grid View -->
-        <div
-          v-if="viewMode === 'grid'"
-          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-        >
-          <!-- Loading -->
-          <div
-            v-if="loading"
-            v-for="i in 6"
-            :key="'load-' + i"
-            class="bg-white rounded-xl border border-gray-200 p-5"
-          >
-            <USkeleton class="h-40 w-full rounded-lg mb-4" />
-            <USkeleton class="h-5 w-3/4 mb-2" />
-            <USkeleton class="h-4 w-1/2" />
-          </div>
-
-          <!-- Cards -->
-          <div
-            v-else
-            v-for="event in filteredEvents"
-            :key="event.id"
-            class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all group"
-          >
-            <div
-              class="h-40 bg-gradient-to-br from-orange-400 to-indigo-400 relative overflow-hidden"
-            >
-              <div class="absolute inset-0 bg-black/20"></div>
-              <div class="absolute top-3 right-3">
-                <span
-                  :class="[
-                    'px-2 py-1 rounded-full text-xs font-semibold',
-                    event.status === 'Publié'
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-amber-500 text-white',
-                  ]"
-                >
-                  {{ event.status }}
-                </span>
-              </div>
-              <div class="absolute bottom-3 left-3 text-white">
-                <p class="text-xs opacity-80">{{ formatDate(event.createdAt) }}</p>
-              </div>
-            </div>
-
-            <div class="p-5">
-              <h3 class="font-bold text-gray-900 mb-2 line-clamp-2">{{ event.title }}</h3>
-              <p class="text-sm text-gray-600 mb-3">{{ event.category }}</p>
-              <p class="text-sm text-gray-600 mb-4 line-clamp-2">{{ event.description }}</p>
-
-              <div class="flex items-center justify-between pt-4 border-t border-gray-100">
-                <div class="flex items-center gap-1 text-sm text-gray-500">
-                  <UIcon name="i-heroicons-eye" class="w-4 h-4" />
-                  <span>{{ event.views }}</span>
-                </div>
-
-                <div class="flex items-center gap-1">
-                  <button
-                    @click="
-                      loadEventById(event.id);
-                      isPreviewModalOpen = true
-                    "
-                    class="p-1.5 hover:bg-blue-50 rounded text-blue-600 transition-all"
-                    title="Voir"
-                  >
-                    <UIcon name="i-heroicons-eye" class="w-4 h-4" />
-                  </button>
-                  <button
-                    @click="
-                      loadEventById(event.id);
-                      isPreviewModalOpen = true
-                    "
-                    class="p-1.5 hover:bg-orange-50 rounded text-orange-600 transition-all"
-                    title="Modifier"
-                  >
-                    <UIcon name="i-heroicons-pencil-square" class="w-4 h-4" />
-                  </button>
-                  <button
-                    @click="deleteEvent(event.id)"
-                    class="p-1.5 hover:bg-red-50 rounded text-red-600 transition-all"
-                    title="Supprimer"
-                  >
-                    <UIcon name="i-heroicons-trash" class="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Empty State -->
-          <div v-if="!loading && events.length === 0" class="col-span-full text-center py-16">
-            <UIcon name="i-heroicons-inbox" class="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p class="text-gray-600">Aucun événement</p>
-          </div>
         </div>
 
-        <!-- List View -->
-        <div v-else class="bg-white rounded-xl border border-gray-200 divide-y divide-gray-200">
-          <!-- Loading -->
-          <div v-if="loading" v-for="i in 5" :key="'list-load-' + i" class="p-5">
-            <div class="flex items-center gap-4">
-              <USkeleton class="h-12 w-12 rounded" />
-              <div class="flex-1 space-y-2">
-                <USkeleton class="h-4 w-1/2" />
-                <USkeleton class="h-3 w-1/3" />
+        <!-- MOBILE cards -->
+        <div class="sm:hidden divide-y divide-[#ede8e0]">
+          <div v-if="loading" v-for="i in 5" :key="'m-sk-' + i" class="p-4 space-y-2.5 animate-pulse">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-[#f0ede8] flex-shrink-0" />
+              <div class="flex-1 space-y-1.5">
+                <USkeleton class="h-3.5 w-3/4 rounded" />
+                <USkeleton class="h-3 w-1/2 rounded" />
               </div>
             </div>
           </div>
 
-          <!-- List Items -->
-          <div
-            v-else
-            v-for="event in filteredEvents"
-            :key="event.id"
-            class="p-5 hover:bg-gray-50 transition-colors"
-          >
-            <div class="flex items-center gap-4">
-              <div
-                class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0"
-              >
-                <UIcon name="i-heroicons-calendar" class="w-6 h-6 text-orange-600" />
+          <div v-else v-for="event in filteredEvents" :key="event.id" class="p-4 hover:bg-[#faf5ee] transition-colors">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <UIcon name="i-heroicons-calendar-days" class="w-4.5 h-4.5 text-[#ea6c1e]" />
               </div>
-
               <div class="flex-1 min-w-0">
-                <h3 class="font-semibold text-gray-900">{{ event.title }}</h3>
-                <p class="text-sm text-gray-600">
-                  {{ event.category.name }} • {{ formatDate(event.createdAt) }}
-                </p>
-              </div>
-
-              <div class="flex items-center gap-3">
-                <span
-                  v-if="!isAdmin"
-                  :class="[
-                    'px-2 py-1 rounded-full text-xs font-semibold',
-                    event.status === 'Publié'
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-amber-100 text-amber-700',
-                  ]"
-                >
-                  {{ event.status }}
-                </span>
-
-                <div class="flex items-center gap-1">
-<div v-if="isAdmin" class="relative group">
-  <button
-    @click="togglePrivilege(event)"
-    :class="[
-      'relative p-2 rounded-full transition-all duration-300',
-      event.privilege
-        ? 'bg-amber-50 border-2 border-amber-400 text-amber-600 hover:bg-amber-100'
-        : 'bg-white border-2 border-gray-200 text-gray-400 hover:border-amber-300 hover:text-amber-500'
-    ]"
-  >
-    <!-- Étoile avec rotation -->
-    <svg
-      class="w-5 h-5 transition-all duration-500"
-      :class="event.privilege ? 'rotate-0 scale-110' : 'rotate-180 scale-100'"
-      fill="currentColor"
-      viewBox="0 0 20 20"
-    >
-      <path
-        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-      />
-    </svg>
-
-    <!-- Badge count (optionnel - si plusieurs privilèges) -->
-    <span
-      v-if="event.privilege"
-      class="absolute -top-1 -right-1 flex items-center justify-center w-4 h-4 bg-amber-500 text-white text-[9px] font-bold rounded-full shadow-lg"
-    >
-      ✓
-    </span>
-  </button>
-
-  <!-- Tooltip -->
-  <div
-    class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10"
-  >
-    <span v-if="event.privilege">Retirer le privilège</span>
-    <span v-else>Marquer comme privilégié</span>
-    <!-- Arrow -->
-    <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-px">
-      <div class="w-2 h-2 bg-gray-900 rotate-45"></div>
-    </div>
-  </div>
-</div>
-<button
-  @click="
-    loadEventById(event.id);
-    isPreviewModalOpen = true
-  "
-  class="group relative w-9 h-9 rounded-full bg-white border border-gray-200 hover:border-blue-400 shadow-sm hover:shadow-lg transition-all duration-300 flex items-center justify-center hover:bg-blue-50"
-  title="Voir"
->
-  <UIcon 
-    name="i-heroicons-eye" 
-    class="w-4 h-4 text-gray-600 group-hover:text-blue-600 transition-colors" 
-  />
-  <!-- Ring animé -->
-  <span class="absolute inset-0 rounded-full border-2 border-blue-400 opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-110 transition-all duration-300"></span>
-</button>
-                  <button
-  v-if="!isAdmin"
-  @click="
-    loadEventById(event.id);
-    isEditModalOpen = true
-  "
-  class="group relative w-9 h-9 rounded-full bg-white border border-gray-200 hover:border-orange-400 shadow-sm hover:shadow-lg transition-all duration-300 flex items-center justify-center hover:bg-orange-50"
-  title="Modifier"
->
-  <UIcon 
-    name="i-heroicons-pencil-square" 
-    class="w-4 h-4 text-gray-600 group-hover:text-orange-600 transition-colors" 
-  />
-  <span class="absolute inset-0 rounded-full border-2 border-orange-400 opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-110 transition-all duration-300"></span>
-</button>
-
-                 <button
-  @click="deleteEvent(event.id)"
-  class="group relative w-9 h-9 rounded-full bg-white border border-gray-200 hover:border-red-400 shadow-sm hover:shadow-lg transition-all duration-300 flex items-center justify-center hover:bg-red-50"
-  title="Supprimer"
->
-  <UIcon 
-    name="i-heroicons-trash" 
-    class="w-4 h-4 text-gray-600 group-hover:text-red-600 transition-colors" 
-  />
-  <span class="absolute inset-0 rounded-full border-2 border-red-400 opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-110 transition-all duration-300"></span>
-</button>
+                <div class="flex items-start justify-between gap-2 mb-1">
+                  <p class="font-semibold text-[13px] text-[#1a1612] leading-tight truncate">{{ event.title }}</p>
+                  <span :class="['status-badge flex-shrink-0', getStatusClasses(event.status)]">
+                    <span :class="['w-1.5 h-1.5 rounded-full', getDot(event.status)]" />
+                    {{ event.status }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-2.5 text-[11px] text-[#b0a898] mb-3">
+                  <span>{{ event.category?.name }}</span><span>·</span>
+                  <span>{{ formatDate(event.createdAt) }}</span>
+                  <span class="flex items-center gap-1 ml-auto font-semibold text-[#ea6c1e]">
+                    <UIcon name="i-heroicons-eye" class="w-3 h-3" />{{ event.views }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button v-if="isAdmin" @click="togglePrivilege(event)" :class="['action-btn-sm', event.privilege ? 'text-amber-500 bg-amber-50 border-amber-200' : 'text-[#c0b8ad] bg-[#faf8f5] border-[#ede8e0]']">
+                    <UIcon name="i-heroicons-star" class="w-3.5 h-3.5" />
+                  </button>
+                  <button @click="loadEventById(event.id); isPreviewModalOpen = true" class="action-btn-sm text-indigo-500 bg-indigo-50 border-indigo-100">
+                    <UIcon name="i-heroicons-eye" class="w-3.5 h-3.5" />
+                  </button>
+                  <button v-if="!isAdmin" @click="loadEventById(event.id); isEditModalOpen = true" class="action-btn-sm text-[#ea6c1e] bg-orange-50 border-orange-100">
+                    <UIcon name="i-heroicons-pencil-square" class="w-3.5 h-3.5" />
+                  </button>
+                  <button @click="deleteEvent(event.id)" class="action-btn-sm text-red-500 bg-red-50 border-red-100">
+                    <UIcon name="i-heroicons-trash" class="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Empty State -->
-          <div v-if="!loading && events.length === 0" class="p-12 text-center">
-            <UIcon name="i-heroicons-inbox" class="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p class="text-gray-600">Aucun événement</p>
+          <div v-if="!loading && filteredEvents.length === 0" class="py-14 text-center">
+            <UIcon name="i-heroicons-inbox" class="w-10 h-10 text-[#d4cec5] mx-auto mb-3" />
+            <p class="text-[#b0a898] text-sm">Aucun événement trouvé</p>
           </div>
+        </div>
+
+        <!-- DESKTOP tableau -->
+        <div class="hidden sm:block overflow-x-auto overflow-y-auto max-h-[600px] mb-4">
+          <table class="w-full">
+            <thead class="bg-[#f5f0e8] border-b border-[#ede8e0]">
+              <tr>
+                <th class="th">Événement</th>
+                <th class="th hidden md:table-cell">Catégorie</th>
+                <th class="th hidden lg:table-cell">Lieu</th>
+                <th class="th text-center">Vues</th>
+                <th class="th text-center hidden md:table-cell">Statut</th>
+                <th class="th hidden md:table-cell">Date</th>
+                <th class="th text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#ede8e0]">
+              <tr v-if="loading" v-for="i in 6" :key="'sk-' + i" class="animate-pulse">
+                <td class="px-5 py-4"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl bg-[#f0ede8]" /><div class="space-y-1.5"><USkeleton class="h-3.5 w-40 rounded" /><USkeleton class="h-3 w-24 rounded" /></div></div></td>
+                <td class="px-5 py-4 hidden md:table-cell"><USkeleton class="h-3.5 w-24 rounded" /></td>
+                <td class="px-5 py-4 hidden lg:table-cell"><USkeleton class="h-3.5 w-24 rounded" /></td>
+                <td class="px-5 py-4 text-center"><USkeleton class="h-3.5 w-10 mx-auto rounded" /></td>
+                <td class="px-5 py-4 text-center hidden md:table-cell"><USkeleton class="h-5 w-20 mx-auto rounded-full" /></td>
+                <td class="px-5 py-4 hidden md:table-cell"><USkeleton class="h-3.5 w-20 rounded" /></td>
+                <td class="px-5 py-4"><USkeleton class="h-7 w-24 ml-auto rounded-lg" /></td>
+              </tr>
+
+              <tr v-else v-for="event in filteredEvents" :key="event.id" class="hover:bg-[#faf5ee] transition-colors group">
+                <td class="px-5 py-3.5">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center flex-shrink-0">
+                      <UIcon name="i-heroicons-calendar-days" class="w-4 h-4 text-[#ea6c1e]" />
+                    </div>
+                    <div class="min-w-0">
+                      <p class="font-semibold text-[13px] text-[#1a1612] leading-tight truncate max-w-[200px]">{{ event.title }}</p>
+                      <p class="text-[11px] text-[#b0a898] line-clamp-1">{{ event.description }}</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-5 py-3.5 hidden md:table-cell"><span class="text-[12.5px] text-[#8a8078]">{{ event.category?.name }}</span></td>
+                <td class="px-5 py-3.5 hidden lg:table-cell">
+                  <span class="flex items-center gap-1 text-[12.5px] text-[#8a8078]">
+                    <UIcon name="i-heroicons-map-pin" class="w-3 h-3 text-[#c0b8ad]" />{{ event.location }}
+                  </span>
+                </td>
+                <td class="px-5 py-3.5 text-center"><span class="font-bold text-[13px] text-[#ea6c1e]">{{ event.views }}</span></td>
+                <td class="px-5 py-3.5 text-center hidden md:table-cell">
+                  <span v-if="!isAdmin" :class="['status-badge', getStatusClasses(event.status)]">
+                    <span :class="['w-1.5 h-1.5 rounded-full', getDot(event.status)]" />{{ event.status }}
+                  </span>
+                  <span v-else class="text-[12px] text-[#b0a898]">—</span>
+                </td>
+                <td class="px-5 py-3.5 hidden md:table-cell"><span class="text-[12px] text-[#8a8078]">{{ formatDate(event.createdAt) }}</span></td>
+                <td class="px-5 py-3.5">
+                  <div class="flex items-center justify-end gap-1.5">
+                    <div v-if="isAdmin" class="relative group/tip">
+                      <button @click="togglePrivilege(event)" :class="['action-btn', event.privilege ? 'text-amber-500 bg-amber-50 border-amber-200 hover:bg-amber-100' : 'text-[#c0b8ad] bg-white border-[#ede8e0] hover:border-amber-300 hover:text-amber-500 hover:bg-amber-50']">
+                        <UIcon name="i-heroicons-star" class="w-3.5 h-3.5" />
+                      </button>
+                      <div class="tooltip">{{ event.privilege ? 'Retirer' : 'Privilégier' }}</div>
+                    </div>
+                    <div class="relative group/tip">
+                      <button @click="loadEventById(event.id); isPreviewModalOpen = true" class="action-btn text-indigo-500 bg-white border-[#ede8e0] hover:bg-indigo-50 hover:border-indigo-200">
+                        <UIcon name="i-heroicons-eye" class="w-3.5 h-3.5" />
+                      </button>
+                      <div class="tooltip">Voir</div>
+                    </div>
+                    <div v-if="!isAdmin" class="relative group/tip">
+                      <button @click="loadEventById(event.id); isEditModalOpen = true" class="action-btn text-[#ea6c1e] bg-white border-[#ede8e0] hover:bg-orange-50 hover:border-orange-200">
+                        <UIcon name="i-heroicons-pencil-square" class="w-3.5 h-3.5" />
+                      </button>
+                      <div class="tooltip">Modifier</div>
+                    </div>
+                    <div class="relative group/tip">
+                      <button @click="deleteEvent(event.id)" class="action-btn text-red-400 bg-white border-[#ede8e0] hover:bg-red-50 hover:border-red-200">
+                        <UIcon name="i-heroicons-trash" class="w-3.5 h-3.5" />
+                      </button>
+                      <div class="tooltip">Supprimer</div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <tr v-if="!loading && filteredEvents.length === 0">
+                <td colspan="7" class="py-14 text-center">
+                  <UIcon name="i-heroicons-inbox" class="w-10 h-10 text-[#d4cec5] mx-auto mb-3" />
+                  <p class="text-[#b0a898] text-sm">Aucun événement trouvé</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
 
-    <!-- ✅ MODAL PREVIEW - Vrai Modal Centré -->
-    <Transition
-      enter-active-class="transition-opacity duration-300"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition-opacity duration-200"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
-    >
+    <!-- ══════════════════════════════════
+         MODAL CRÉER UN ÉVÉNEMENT
+    ══════════════════════════════════ -->
+    <Transition name="fade">
       <div
-        v-if="isPreviewModalOpen"
-        class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-        @click.self="isPreviewModalOpen = false"
+        v-if="isCreateModalOpen"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+        @click.self="isCreateModalOpen = false"
       >
-        <Transition
-          enter-active-class="transition-all duration-300"
-          enter-from-class="opacity-0 scale-95"
-          enter-to-class="opacity-100 scale-100"
-          leave-active-class="transition-all duration-200"
-          leave-from-class="opacity-100 scale-100"
-          leave-to-class="opacity-0 scale-95"
-        >
-          <div
-            v-if="selectedEvent"
-            class="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl"
-          >
+        <Transition name="slide-up">
+          <div class="modal-sheet sm:max-w-3xl">
+
             <!-- Header -->
-            <div class="bg-gradient-to-r from-orange-600 to-indigo-600 px-6 py-5 sticky top-0 z-10">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                  <div
-                    class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center"
-                  >
-                    <UIcon name="i-heroicons-eye" class="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 class="text-xl font-bold text-white">Aperçu de l'événement</h3>
-                    <p class="text-sm text-orange-100">Détails complets</p>
-                  </div>
+            <div class="modal-header">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center">
+                  <UIcon name="i-heroicons-calendar-days" class="w-5 h-5 text-white" />
                 </div>
-                <button
-                  @click="isPreviewModalOpen = false"
-                  class="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center text-white transition-all"
-                >
-                  <UIcon name="i-heroicons-x-mark" class="w-5 h-5" />
-                </button>
+                <div>
+                  <h3 class="text-base font-bold text-white">Créer un événement</h3>
+                  <p class="text-xs text-orange-100/70">Partagez votre événement avec la communauté</p>
+                </div>
               </div>
+              <button @click="isCreateModalOpen = false" class="modal-close">
+                <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
+              </button>
             </div>
 
             <!-- Body -->
-            <div class="p-6">
-              <div v-if="modalLoading" class="space-y-4">
-                <USkeleton class="h-6 w-full rounded" />
-                <USkeleton class="h-4 w-2/3 rounded" />
-                <USkeleton class="h-4 w-3/4 rounded" />
+            <div class="p-5 sm:p-6 space-y-5 overflow-y-auto flex-1">
+
+              <!-- Titre -->
+              <div class="field">
+                <div class="flex items-center justify-between">
+                  <label class="field-label">Titre <span class="text-red-400">*</span></label>
+                  <span class="text-[11px] text-[#b0a898]">{{ form.title.length }}/{{ titleMaxLength }}</span>
+                </div>
+                <input v-model="form.title" :maxlength="titleMaxLength" type="text" placeholder="Ex: Concert Jazz au clair de lune" class="field-input" />
               </div>
 
-              <div v-else class="space-y-6">
-                <!-- Image si disponible -->
-                <!-- Si plusieurs images -->
-                <div v-if="selectedEvent.images && selectedEvent.images.length" class="space-y-2">
-                  <div
-                    v-for="img in selectedEvent.images"
-                    :key="img.id"
-                    class="rounded-xl overflow-hidden"
-                  >
-                    <img
-                      :src="img.url"
-                      :alt="selectedEvent.title"
-                      class="w-full h-64 object-cover"
-                    />
-                  </div>
+              <!-- Description -->
+              <div class="field">
+                <div class="flex items-center justify-between">
+                  <label class="field-label">Description courte <span class="text-red-400">*</span></label>
+                  <span class="text-[11px] text-[#b0a898]">{{ form.description.length }}/{{ descriptionMaxLength }}</span>
                 </div>
+                <textarea v-model="form.description" :maxlength="descriptionMaxLength" rows="3" placeholder="Décrivez votre événement en quelques mots…" class="field-input resize-none" />
+              </div>
 
-                <!-- Informations principales -->
-                <div class="grid gap-4">
-                  <div class="bg-gray-50 rounded-xl p-4">
-                    <div class="flex items-center gap-2 text-gray-600 mb-2">
-                      <UIcon name="i-heroicons-document-text" class="w-4 h-4" />
-                      <span class="text-xs font-semibold uppercase tracking-wide">Titre</span>
-                    </div>
-                    <p class="text-lg font-bold text-gray-900">{{ selectedEvent.title }}</p>
-                  </div>
+              <!-- Détails -->
+              <div class="field">
+                <div class="flex items-center justify-between">
+                  <label class="field-label">Détails <span class="text-red-400">*</span></label>
+                  <span class="text-[11px] text-[#b0a898]">{{ form.details?.length || 0 }}/500</span>
+                </div>
+                <textarea v-model="form.details" rows="3" placeholder="Informations supplémentaires sur l'événement…" class="field-input resize-none" />
+              </div>
 
-                  <div class="bg-gray-50 rounded-xl p-4">
-                    <div class="flex items-center gap-2 text-gray-600 mb-2">
-                      <UIcon name="i-heroicons-bars-3-bottom-left" class="w-4 h-4" />
-                      <span class="text-xs font-semibold uppercase tracking-wide">Description</span>
-                    </div>
-                    <p class="text-gray-700 leading-relaxed">{{ selectedEvent.description }}</p>
-                  </div>
+              <!-- Prix -->
+              <div class="field">
+                <label class="field-label">Type de prix</label>
+                <div class="flex gap-4 mt-1">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" value="FREE" v-model="form.priceType" class="accent-[#ea6c1e]" />
+                    <span class="text-[13px] text-[#4a3f32]">Gratuit</span>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" value="PAID" v-model="form.priceType" class="accent-[#ea6c1e]" />
+                    <span class="text-[13px] text-[#4a3f32]">Payant</span>
+                  </label>
+                </div>
+              </div>
 
-                  <!-- Grille d'infos -->
-                  <div class="grid sm:grid-cols-2 gap-4">
-                    <div class="bg-gray-50 rounded-xl p-4">
-                      <div class="flex items-center gap-2 text-gray-600 mb-2">
-                        <UIcon name="i-heroicons-calendar" class="w-4 h-4" />
-                        <span class="text-xs font-semibold uppercase tracking-wide">Date</span>
-                      </div>
-                      <p class="text-gray-900 font-semibold">
-                        {{ formatDate(selectedEvent.createdAt) }}
-                      </p>
-                    </div>
+              <div v-if="form.priceType === 'PAID'" class="field">
+                <label class="field-label">Prix (FCFA) <span class="text-red-400">*</span></label>
+                <input v-model="form.price" type="number" min="0" step="500" placeholder="Ex: 5000" class="field-input" />
+              </div>
 
-                    <div class="bg-gray-50 rounded-xl p-4">
-                      <div class="flex items-center gap-2 text-gray-600 mb-2">
-                        <UIcon name="i-heroicons-tag" class="w-4 h-4" />
-                        <span class="text-xs font-semibold uppercase tracking-wide">Catégorie</span>
-                      </div>
-                      <p class="text-gray-900 font-semibold">{{ selectedEvent.category.name }}</p>
-                    </div>
+              <!-- Lieu + Ville -->
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div class="field">
+                  <label class="field-label">Lieu <span class="text-red-400">*</span></label>
+                  <input v-model="form.location" type="text" placeholder="Ex: Palais des Congrès" class="field-input" />
+                </div>
+                <div class="field">
+                  <label class="field-label">Ville <span class="text-red-400">*</span></label>
+                  <select v-model="form.villeId" class="field-input">
+                    <option value="" disabled>Sélectionnez une ville</option>
+                    <option v-for="v in villes" :key="v.id" :value="v.id">{{ v.name }}</option>
+                  </select>
+                </div>
+              </div>
 
-                    <div class="bg-gray-50 rounded-xl p-4">
-                      <div class="flex items-center gap-2 text-gray-600 mb-2">
-                        <UIcon name="i-heroicons-check-circle" class="w-4 h-4" />
-                        <span class="text-xs font-semibold uppercase tracking-wide">Statut</span>
-                      </div>
-                      <span
-                        :class="[
-                          'inline-flex px-3 py-1 rounded-full text-sm font-semibold',
-                          selectedEvent.status === 'PUBLISHED'
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-amber-100 text-amber-700',
-                        ]"
-                      >
-                        {{ selectedEvent.status }}
-                      </span>
-                    </div>
+              <!-- Date + Horaires -->
+              <div class="grid sm:grid-cols-3 gap-4">
+                <div class="field">
+                  <label class="field-label">Date <span class="text-red-400">*</span></label>
+                  <input v-model="form.eventDate" type="date" class="field-input" />
+                </div>
+                <div class="field">
+                  <label class="field-label">Heure début <span class="text-red-400">*</span></label>
+                  <input v-model="form.startDate" type="time" class="field-input" />
+                </div>
+                <div class="field">
+                  <label class="field-label">Heure fin</label>
+                  <input v-model="form.endDate" type="time" class="field-input" />
+                </div>
+              </div>
 
-                    <div class="bg-gray-50 rounded-xl p-4">
-                      <div class="flex items-center gap-2 text-gray-600 mb-2">
-                        <UIcon name="i-heroicons-eye" class="w-4 h-4" />
-                        <span class="text-xs font-semibold uppercase tracking-wide">Vues</span>
-                      </div>
-                      <p class="text-gray-900 font-semibold">
-                        {{ selectedEvent.views.toLocaleString() }}
-                      </p>
-                    </div>
-                  </div>
+              <!-- Catégorie -->
+              <div class="field">
+                <label class="field-label">Catégorie <span class="text-red-400">*</span></label>
+                <select v-model="form.categoryId" class="field-input">
+                  <option value="" disabled>Sélectionnez une catégorie</option>
+                  <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+                </select>
+              </div>
+
+              <!-- Aperçu images -->
+              <div v-if="form.images.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div
+                  v-for="(img, idx) in form.images" :key="idx"
+                  class="relative bg-[#faf8f5] border border-[#ede8e0] rounded-xl p-3 group"
+                >
+                  <p class="text-[12px] font-medium text-[#1a1612] truncate">{{ img.name }}</p>
+                  <p class="text-[11px] text-[#b0a898]">{{ (img.size / 1024 / 1024).toFixed(2) }} MB</p>
+                  <button
+                    @click="removeImageAt(idx)" type="button"
+                    class="absolute top-1.5 right-1.5 w-5 h-5 bg-red-50 border border-red-100 rounded-full flex items-center justify-center text-red-400 hover:bg-red-100 transition-all"
+                  >
+                    <UIcon name="i-heroicons-x-mark" class="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+
+              <!-- Upload zone -->
+              <label v-if="form.images.length < 3" class="group cursor-pointer block">
+                <div class="border-2 border-dashed border-[#d4cec5] rounded-xl p-7 text-center
+                            hover:border-[#ea6c1e] hover:bg-orange-50/30 transition-all duration-200">
+                  <UIcon name="i-heroicons-photo" class="w-9 h-9 mx-auto text-[#c0b8ad] group-hover:text-[#ea6c1e] transition-colors mb-2" />
+                  <p class="text-[13px] font-medium text-[#8a8078] group-hover:text-[#ea6c1e]">
+                    Cliquez pour ajouter jusqu'à 3 images
+                  </p>
+                  <p class="text-[11px] text-[#b0a898] mt-1">PNG, JPG jusqu'à 10MB</p>
+                </div>
+                <input type="file" accept="image/*" multiple class="hidden" @change="handleImageUpload" />
+              </label>
+
+              <!-- Aperçu date -->
+              <div v-if="form.eventDate" class="flex items-start gap-3 p-4 rounded-xl bg-orange-50/50 border border-orange-100">
+                <UIcon name="i-heroicons-calendar-days" class="w-4 h-4 text-[#ea6c1e] flex-shrink-0 mt-0.5" />
+                <div>
+                  <p class="text-[13px] font-medium text-[#4a3f32]">
+                    Votre événement aura lieu le
+                    <span class="font-bold text-[#ea6c1e]">{{ formatDateLong(form.eventDate) }}</span>
+                  </p>
+                  <p v-if="form.startDate" class="text-[11px] text-[#b0a898] mt-0.5">
+                    De {{ form.startDate }}<span v-if="form.endDate"> à {{ form.endDate }}</span>
+                  </p>
                 </div>
               </div>
             </div>
 
             <!-- Footer -->
-            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
-              <button
-                @click="isPreviewModalOpen = false"
-                class="px-6 py-2.5 text-gray-700 hover:bg-gray-200 rounded-xl font-medium transition-all"
-              >
-                Fermer
+            <div class="modal-footer">
+              <p class="text-[11px] text-[#b0a898] mr-auto hidden sm:block"><span class="text-red-400">*</span> Champs obligatoires</p>
+              <button @click="isCreateModalOpen = false" class="btn-ghost">Annuler</button>
+              <button @click="submit('DRAFT')" :disabled="isSavingDraft" class="btn-draft">
+                <UIcon v-if="isSavingDraft" name="i-heroicons-arrow-path" class="w-3.5 h-3.5 animate-spin" />
+                <UIcon v-else name="i-heroicons-document-text" class="w-3.5 h-3.5" />
+                Brouillon
+              </button>
+              <button @click="submit('PUBLISHED')" :disabled="!isFormValid || isPublishing" class="btn-primary">
+                <UIcon v-if="isPublishing" name="i-heroicons-arrow-path" class="w-4 h-4 animate-spin" />
+                <UIcon v-else name="i-heroicons-check" class="w-4 h-4" />
+                {{ isPublishing ? 'Publication…' : 'Publier' }}
               </button>
             </div>
           </div>
@@ -765,302 +648,83 @@ const formatDate = (date: string) => {
       </div>
     </Transition>
 
-    <!-- ✅ MODAL EDIT - Vrai Modal Centré -->
-    <Transition
-      enter-active-class="transition-opacity duration-300"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition-opacity duration-200"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
-    >
-      <div
-        v-if="isEditModalOpen"
-        class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-        @click.self="isEditModalOpen = false"
-      >
-        <Transition
-          enter-active-class="transition-all duration-300"
-          enter-from-class="opacity-0 scale-95"
-          enter-to-class="opacity-100 scale-100"
-          leave-active-class="transition-all duration-200"
-          leave-from-class="opacity-100 scale-100"
-          leave-to-class="opacity-0 scale-95"
-        >
-          <div
-            v-if="selectedEvent"
-            class="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl"
-          >
-            <!-- Header -->
-            <div class="bg-gradient-to-r from-orange-600 to-indigo-600 px-6 py-5 sticky top-0 z-10">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                  <div
-                    class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center"
-                  >
-                    <UIcon name="i-heroicons-pencil-square" class="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 class="text-xl font-bold text-white">Modifier l'événement</h3>
-                    <p class="text-sm text-orange-100">Mettez à jour les informations</p>
+    <!-- ══════════════════════════════════
+         MODAL PREVIEW
+    ══════════════════════════════════ -->
+    <Transition name="fade">
+      <div v-if="isPreviewModalOpen" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" @click.self="isPreviewModalOpen = false">
+        <Transition name="slide-up">
+          <div v-if="selectedEvent" class="modal-sheet sm:max-w-2xl">
+            <div class="modal-header">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center">
+                  <UIcon name="i-heroicons-eye" class="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 class="text-base font-bold text-white">Aperçu de l'événement</h3>
+                  <p class="text-xs text-orange-100/70">Détails complets</p>
+                </div>
+              </div>
+              <button @click="isPreviewModalOpen = false" class="modal-close"><UIcon name="i-heroicons-x-mark" class="w-4 h-4" /></button>
+            </div>
+            <div class="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
+              <div v-if="modalLoading" class="space-y-3">
+                <USkeleton class="h-5 w-full rounded" /><USkeleton class="h-4 w-2/3 rounded" />
+              </div>
+              <template v-else>
+                <div v-if="selectedEvent.images?.length" class="space-y-2">
+                  <div v-for="img in selectedEvent.images" :key="img.id" class="rounded-xl overflow-hidden">
+                    <img :src="img.url" :alt="selectedEvent.title" class="w-full h-48 object-cover" />
                   </div>
                 </div>
-                <button
-                  @click="isEditModalOpen = false"
-                  class="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center text-white transition-all"
-                >
-                  <UIcon name="i-heroicons-x-mark" class="w-5 h-5" />
-                </button>
+                <div class="info-block"><div class="info-label"><UIcon name="i-heroicons-document-text" class="w-3.5 h-3.5" />Titre</div><p class="text-[14px] font-bold text-[#1a1612]">{{ selectedEvent.title }}</p></div>
+                <div class="info-block"><div class="info-label"><UIcon name="i-heroicons-bars-3-bottom-left" class="w-3.5 h-3.5" />Description</div><p class="text-[13px] text-[#4a3f32] leading-relaxed">{{ selectedEvent.description }}</p></div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="info-block"><div class="info-label"><UIcon name="i-heroicons-calendar" class="w-3.5 h-3.5" />Date</div><p class="text-[13px] font-semibold text-[#1a1612]">{{ formatDate(selectedEvent.createdAt) }}</p></div>
+                  <div class="info-block"><div class="info-label"><UIcon name="i-heroicons-tag" class="w-3.5 h-3.5" />Catégorie</div><p class="text-[13px] font-semibold text-[#1a1612]">{{ selectedEvent.category?.name }}</p></div>
+                  <div class="info-block"><div class="info-label"><UIcon name="i-heroicons-check-circle" class="w-3.5 h-3.5" />Statut</div><span :class="['status-badge', getStatusClasses(selectedEvent.status)]"><span :class="['w-1.5 h-1.5 rounded-full', getDot(selectedEvent.status)]" />{{ selectedEvent.status }}</span></div>
+                  <div class="info-block"><div class="info-label"><UIcon name="i-heroicons-eye" class="w-3.5 h-3.5" />Vues</div><p class="text-[13px] font-bold text-[#ea6c1e]">{{ selectedEvent.views?.toLocaleString() }}</p></div>
+                </div>
+              </template>
+            </div>
+            <div class="modal-footer"><button @click="isPreviewModalOpen = false" class="btn-ghost">Fermer</button></div>
+          </div>
+        </Transition>
+      </div>
+    </Transition>
+
+    <!-- ══════════════════════════════════
+         MODAL EDIT
+    ══════════════════════════════════ -->
+    <Transition name="fade">
+      <div v-if="isEditModalOpen" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" @click.self="isEditModalOpen = false">
+        <Transition name="slide-up">
+          <div v-if="selectedEvent" class="modal-sheet sm:max-w-2xl">
+            <div class="modal-header">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center">
+                  <UIcon name="i-heroicons-pencil-square" class="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 class="text-base font-bold text-white">Modifier l'événement</h3>
+                  <p class="text-xs text-orange-100/70">Mettez à jour les informations</p>
+                </div>
+              </div>
+              <button @click="isEditModalOpen = false" class="modal-close"><UIcon name="i-heroicons-x-mark" class="w-4 h-4" /></button>
+            </div>
+            <div class="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
+              <div class="field"><label class="field-label">Titre <span class="text-red-400">*</span></label><input v-model="selectedEvent.title" type="text" class="field-input" /></div>
+              <div class="field"><label class="field-label">Description <span class="text-red-400">*</span></label><textarea v-model="selectedEvent.description" rows="4" class="field-input resize-none" /><p class="text-[11px] text-[#b0a898] mt-1">{{ selectedEvent.description.length }} caractères</p></div>
+              <div class="field"><label class="field-label">Statut <span class="text-red-400">*</span></label><select v-model="selectedEvent.status" class="field-input"><option value="Publié">Publié</option><option value="Brouillon">Brouillon</option></select></div>
+              <div class="field"><label class="field-label">Lieu <span class="text-red-400">*</span></label><input v-model="selectedEvent.location" type="text" class="field-input" /></div>
+              <div class="flex gap-3 bg-blue-50 border border-blue-100 rounded-xl p-4">
+                <UIcon name="i-heroicons-information-circle" class="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                <p class="text-[12.5px] text-blue-700">Les modifications seront visibles immédiatement si le statut est <strong>Publié</strong>.</p>
               </div>
             </div>
-
-            <!-- Body -->
-            <div class="p-6 space-y-5">
-              <div>
-                <label class="block text-sm font-semibold text-gray-900 mb-2">
-                  Titre de l'événement <span class="text-red-500">*</span>
-                </label>
-                <input
-                  v-model="selectedEvent.title"
-                  type="text"
-                  placeholder="Ex: Concert Live Afrobeat"
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-semibold text-gray-900 mb-2">
-                  Description <span class="text-red-500">*</span>
-                </label>
-                <textarea
-                  v-model="selectedEvent.description"
-                  rows="5"
-                  placeholder="Décrivez votre événement..."
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all resize-none"
-                ></textarea>
-                <p class="text-xs text-gray-500 mt-1">
-                  {{ selectedEvent!.description.length }} caractères
-                </p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-semibold text-gray-900 mb-2">
-                  Statut de publication <span class="text-red-500">*</span>
-                </label>
-                <select
-                  v-model="selectedEvent.status"
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                >
-                  <option value="Publié">Publié</option>
-                  <option value="Brouillon">Brouillon</option>
-                </select>
-              </div>
-
-              <!-- Catégorie -->
-              <div>
-                <label class="block text-sm font-semibold text-gray-900 mb-2"
-                  >Catégorie <span class="text-red-500">*</span></label
-                >
-                <input
-                  v-model="selectedEvent.categoryId"
-                  type="text"
-                  placeholder="Ex: Concert, Sport, Théâtre..."
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                />
-              </div>
-
-              <!-- Date -->
-              <div>
-                <label class="block text-sm font-semibold text-gray-900 mb-2"
-                  >Date <span class="text-red-500">*</span></label
-                >
-                <input
-                  v-model="selectedEvent.date"
-                  type="date"
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                />
-              </div>
-              <!-- Image -->
-              <div class="space-y-2">
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                  Image principale <span class="text-red-500">*</span>
-                </label>
-
-                <!-- Si aucune image sélectionnée -->
-                <label v-if="!selectedEvent.image" class="group cursor-pointer block">
-                  <div
-                    class="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 text-center hover:border-orange-400 dark:hover:border-indigo-600 hover:bg-orange-50/30 dark:hover:bg-indigo-950/20 transition-all duration-200"
-                  >
-                    <svg
-                      class="w-10 h-10 mx-auto text-gray-400 group-hover:text-orange-500 dark:group-hover:text-indigo-400 transition-colors mb-2"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                    <p
-                      class="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-orange-600 dark:group-hover:text-indigo-400"
-                    >
-                      Cliquez pour choisir une image
-                    </p>
-                    <p class="text-xs text-gray-400 mt-1">PNG, JPG jusqu'à 10MB</p>
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    @change="selectedEvent.image = $event.target.files[0]"
-                    class="hidden"
-                  />
-                </label>
-
-                <!-- Si une image est sélectionnée -->
-                <div v-else class="relative group">
-                  <div
-                    class="border-2 border-orange-300 dark:border-indigo-700 rounded-xl p-4 bg-orange-50/30 dark:bg-indigo-950/20"
-                  >
-                    <div class="flex items-center gap-3">
-                      <svg
-                        class="w-8 h-8 text-orange-500 dark:text-indigo-400 flex-shrink-0"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                      <div class="flex-1">
-                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {{ selectedEvent.image.name || selectedEvent.image }}
-                        </p>
-                        <p
-                          v-if="selectedEvent.image.size"
-                          class="text-xs text-gray-500 dark:text-gray-400"
-                        >
-                          {{ (selectedEvent.image.size / 1024 / 1024).toFixed(2) }} MB
-                        </p>
-                      </div>
-                      <button
-                        @click="selectedEvent.image = null"
-                        type="button"
-                        class="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-all"
-                      >
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Image 
-              <div>
-                <label class="block text-sm font-semibold text-gray-900 mb-2">
-                  Image <span class="text-red-500">*</span>
-                </label>
-
-                <input
-                  type="file"
-                  accept="image/*"
-                  @change="handleImageUpload"
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                />-->
-
-              <!-- Aperçu de l'image sélectionnée 
-                <div v-if="selectedEvent.image" class="mt-3">
-                  <img
-                    :src="selectedEvent.image"
-                    alt="Aperçu"
-                    class="w-48 h-48 object-cover rounded-xl border"
-                  />
-                </div>
-              </div>-->
-
-              <!-- Lieu -->
-              <div>
-                <label class="block text-sm font-semibold text-gray-900 mb-2"
-                  >Lieu <span class="text-red-500">*</span></label
-                >
-                <input
-                  v-model="selectedEvent.location"
-                  type="text"
-                  placeholder="Ex: Palais des Congrès, Cotonou..."
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                />
-              </div>
-
-              <!-- Durée -->
-              <div>
-                <label class="block text-sm font-semibold text-gray-900 mb-2"
-                  >Durée <span class="text-red-500">*</span></label
-                >
-                <input
-                  v-model="selectedEvent.date"
-                  type="text"
-                  placeholder="Ex: 2 heures, 1 journée..."
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                />
-              </div>
-
-              <!-- Prix 
-              <div>
-                <label class="block text-sm font-semibold text-gray-900 mb-2">Prix</label>
-                <input
-                  v-model="selectedEvent.price"
-                  type="text"
-                  placeholder="Ex: 5000, Free..."
-                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                />
-              </div>-->
-
-              <!-- Info box -->
-              <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <div class="flex gap-3">
-                  <UIcon
-                    name="i-heroicons-information-circle"
-                    class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"
-                  />
-                  <div class="text-sm text-blue-700">
-                    <p class="font-medium mb-1">Note importante</p>
-                    <p>
-                      Les modifications seront visibles immédiatement si le statut est "Publié".
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
-              <button
-                @click="isEditModalOpen = false"
-                class="px-6 py-2.5 text-gray-700 hover:bg-gray-200 rounded-xl font-medium transition-all"
-              >
-                Annuler
-              </button>
-
-              <button
-                @click="updateEvent"
-                class="px-6 py-2.5 bg-gradient-to-r from-orange-600 to-indigo-600 hover:from-orange-700 hover:to-indigo-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-orange-500/30 flex items-center gap-2"
-              >
-                <UIcon name="i-heroicons-check" class="w-4 h-4" />
-                Enregistrer les modifications
-              </button>
+            <div class="modal-footer">
+              <button @click="isEditModalOpen = false" class="btn-ghost">Annuler</button>
+              <button @click="updateEvent" class="btn-primary"><UIcon name="i-heroicons-check" class="w-4 h-4" />Enregistrer</button>
             </div>
           </div>
         </Transition>
@@ -1068,3 +732,132 @@ const formatDate = (date: string) => {
     </Transition>
   </div>
 </template>
+
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
+
+/* ── Transitions ── */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.25s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+.slide-up-enter-active, .slide-up-leave-active { transition: all 0.3s cubic-bezier(0.34, 1.2, 0.64, 1); }
+.slide-up-enter-from { opacity: 0; transform: translateY(40px) scale(0.97); }
+.slide-up-leave-to  { opacity: 0; transform: translateY(20px) scale(0.97); }
+
+/* ── Modales ── */
+.modal-sheet {
+  background: #ffffff; border-radius: 24px 24px 0 0;
+  width: 100%; max-height: 92dvh;
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.15);
+}
+@media (min-width: 640px) {
+  .modal-sheet { border-radius: 20px; max-height: 90vh; box-shadow: 0 24px 80px rgba(0,0,0,0.18); }
+}
+
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, #ea6c1e, #5b47e0); flex-shrink: 0;
+}
+
+.modal-close {
+  width: 34px; height: 34px; background: rgba(255,255,255,0.15);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  color: white; transition: background 0.2s; cursor: pointer; border: none;
+}
+.modal-close:hover { background: rgba(255,255,255,0.25); }
+
+.modal-footer {
+  display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  padding: 14px 20px; border-top: 1px solid #ede8e0;
+  background: #faf8f5; flex-shrink: 0;
+}
+
+/* ── Boutons ── */
+.btn-create-aside {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 7px; padding: 0 22px; border-radius: 20px; align-self: stretch;
+  min-width: 80px; text-align: center; color: white;
+  background: linear-gradient(135deg, #ea6c1e, #5b47e0);
+  border: none; cursor: pointer; transition: opacity 0.15s;
+  font-family: 'Outfit', sans-serif;
+  box-shadow: 0 4px 18px rgba(234,108,30,0.28);
+}
+.btn-create-aside:hover { opacity: 0.9; }
+
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 18px; border-radius: 12px;
+  min-width: 80px; text-align: center; color: white;
+  background: linear-gradient(135deg, #ea6c1e, #5b47e0);
+  border: none; cursor: pointer; transition: opacity 0.15s;
+  font-family: 'Outfit', sans-serif;
+  box-shadow: 0 4px 18px rgba(234,108,30,0.28);
+}
+.btn-primary:hover:not(:disabled) { opacity: 0.9; }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn-draft {
+  display: inline-flex; align-items: center; gap: 7px;
+  gap: 7px; padding: 0 22px; border-radius: 20px; align-self: stretch;
+  font-size: 13px; font-weight: 500; color: #4a3f32;
+  background: #f5f0e8; border: 1px solid #ede8e0;
+  cursor: pointer; transition: background 0.15s;
+  font-family: 'Outfit', sans-serif;
+}
+.btn-draft:hover:not(:disabled) { background: #ede8e0; }
+.btn-draft:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-ghost {
+  padding: 9px 18px; border-radius: 12px;
+  font-size: 13px; font-weight: 500; color: #8a8078;
+  background: white; border: 1px solid #ede8e0;
+  transition: background 0.15s; font-family: 'Outfit', sans-serif; cursor: pointer;
+}
+.btn-ghost:hover { background: #f5f0e8; }
+
+/* ── Champs ── */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-label { font-size: 12.5px; font-weight: 600; color: #4a3f32; }
+.field-input {
+  width: 100%; padding: 10px 14px;
+  background: #faf8f5; border: 1px solid #ede8e0; border-radius: 12px;
+  font-size: 13.5px; color: #1a1612; font-family: 'Outfit', sans-serif;
+  transition: border-color 0.15s, box-shadow 0.15s; outline: none;
+}
+.field-input:focus { border-color: #ea6c1e; box-shadow: 0 0 0 3px rgba(234,108,30,0.1); }
+.field-input::placeholder { color: #c0b8ad; }
+
+/* ── Info blocks modal ── */
+.info-block { background: #faf8f5; border: 1px solid #ede8e0; border-radius: 12px; padding: 12px 14px; }
+.info-label { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #b0a898; margin-bottom: 6px; }
+
+/* ── Status badge ── */
+.status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+
+/* ── Action buttons ── */
+.action-btn { width: 32px; height: 32px; border-radius: 9px; border-width: 1px; border-style: solid; display: flex; align-items: center; justify-content: center; transition: all 0.15s; cursor: pointer; }
+.action-btn-sm { width: 30px; height: 30px; border-radius: 9px; border-width: 1px; border-style: solid; display: flex; align-items: center; justify-content: center; transition: all 0.15s; cursor: pointer; }
+
+/* ── Tooltip ── */
+.tooltip { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: #1a1612; color: white; font-size: 10px; font-weight: 500; font-family: 'Outfit', sans-serif; padding: 4px 8px; border-radius: 7px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 20; }
+.group\/tip:hover .tooltip { opacity: 1; }
+
+/* ── Table header ── */
+.th { padding: 10px 20px; font-size: 10px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: #8a8078; text-align: left; }
+
+/* ── Filter pills ── */
+.filter-pill { display: inline-flex; align-items: center; gap: 5px; padding: 6px 13px; border-radius: 20px; font-size: 12.5px; font-weight: 500; white-space: nowrap; border-width: 1px; border-style: solid; transition: all 0.15s; cursor: pointer; font-family: 'Outfit', sans-serif; }
+.filter-pill--off    { background: #faf8f5; color: #8a8078; border-color: #ede8e0; }
+.filter-pill--off:hover { border-color: #c0b8ad; color: #4a3f32; }
+.filter-pill--orange { background: #ea6c1e; color: white; border-color: #ea6c1e; }
+.filter-pill--green  { background: #16a34a; color: white; border-color: #16a34a; }
+.filter-pill--amber  { background: #d97706; color: white; border-color: #d97706; }
+.filter-pill--indigo { background: #5b47e0; color: white; border-color: #5b47e0; }
+
+/* ── Scrollbar ── */
+.scrollbar-none::-webkit-scrollbar { display: none; }
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d4cec5; border-radius: 10px; }
+</style>

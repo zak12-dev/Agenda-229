@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import AppHeader from './AppHeader.vue'
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { navigateTo } from '#app'
 import { useAuth } from '../../../composables/useAuth'
 
@@ -11,12 +10,9 @@ const { data, pending, error } = await useAsyncData('featured-events', () =>
   $fetch('/api/events/featured?featured=true')
 )
 
-const featuredEvents = computed(() => {
-  return Array.isArray(data.value) ? data.value : []
-})
-console.log('Featured Events:', featuredEvents.value)
+const featuredEvents = computed(() => Array.isArray(data.value) ? data.value : [])
 
-// Carousel
+// ── Carousel ──
 const currentSlide = ref(0)
 const isTransitioning = ref(false)
 
@@ -26,655 +22,269 @@ function goToSlide(index: number) {
   if (isTransitioning.value) return
   isTransitioning.value = true
   currentSlide.value = index
-  setTimeout(() => {
-    isTransitioning.value = false
-  }, 600)
+  setTimeout(() => { isTransitioning.value = false }, 600)
 }
-
 function nextSlide() {
-  const next = (currentSlide.value + 1) % featuredEvents.value.length
-  goToSlide(next)
+  goToSlide((currentSlide.value + 1) % featuredEvents.value.length)
 }
-
 function prevSlide() {
-  const prev = (currentSlide.value - 1 + featuredEvents.value.length) % featuredEvents.value.length
-  goToSlide(prev)
+  goToSlide((currentSlide.value - 1 + featuredEvents.value.length) % featuredEvents.value.length)
 }
 
-// Auto-play
 let autoPlayInterval: NodeJS.Timeout | null = null
-const startAutoPlay = () => {
-  autoPlayInterval = setInterval(nextSlide, 5000)
-}
-const stopAutoPlay = () => {
-  if (autoPlayInterval) {
-    clearInterval(autoPlayInterval)
-    autoPlayInterval = null
-  }
-}
+const startAutoPlay = () => { autoPlayInterval = setInterval(nextSlide, 5000) }
+const stopAutoPlay = () => { if (autoPlayInterval) { clearInterval(autoPlayInterval); autoPlayInterval = null } }
 
-onMounted(() => {
-  startAutoPlay()
-})
-
+// ── Favoris ──
 const isFavorite = ref(false)
 const favoriteLoading = ref(false)
 
 const toggleFavorite = async () => {
   if (!currentEvent.value?.id) return
-
   if (!session.value) {
-    toast.add({
-      title: 'Connexion requise',
-      description: 'Vous devez être connecté pour ajouter aux favoris',
-      color: 'red',
-    })
+    toast.add({ title: 'Connexion requise', description: 'Connectez-vous pour ajouter aux favoris', color: 'red' })
     return
   }
-
   favoriteLoading.value = true
-
   try {
     const response: any = await $fetch('/api/favorites', {
       method: 'POST',
-      body: {
-        eventId: currentEvent.value.id,
-      },
+      body: { eventId: currentEvent.value.id },
     })
-
     isFavorite.value = response.status === 'added'
-
     toast.add({
       title: isFavorite.value ? 'Ajouté aux favoris ❤️' : 'Retiré des favoris',
       color: isFavorite.value ? 'green' : 'orange',
     })
-  } catch (err) {
-    toast.add({
-      title: 'WeLoveEvents',
-      description: 'Vous devez être connecté pour ajouter aux favoris',
-      color: 'red',
-    })
-  } finally {
-    favoriteLoading.value = false
-  }
+  } catch {
+    toast.add({ title: 'WeLoveEvents', description: 'Vous devez être connecté', color: 'red' })
+  } finally { favoriteLoading.value = false }
 }
 
-watch(
-  currentEvent,
-  async (event) => {
-    if (!event?.id || !session.value) return
+watch(currentEvent, async (event) => {
+  if (!event?.id || !session.value) return
+  try {
+    const response: any = await $fetch(`/api/favorites/check?eventId=${event.id}`)
+    isFavorite.value = response.isFavorite
+  } catch { isFavorite.value = false }
+}, { immediate: true })
 
-    try {
-      const response: any = await $fetch(`/api/favorites/check?eventId=${event.id}`)
-      console.log('Favorite Check Response:', response)
-      isFavorite.value = response.isFavorite
-    } catch (err) {
-      console.error(err)
-      isFavorite.value = false
-    }
-  },
-  { immediate: true }
-)
-// Categories
+// ── Catégories ──
 const categories = [
-  { id: 'concerts', name: 'Concerts', icon: '🎵', count: 234 },
-  { id: 'festivals', name: 'Festivals', icon: '🎪', count: 89 },
-  { id: 'expos', name: 'Expositions', icon: '🎨', count: 156 },
-  { id: 'spectacles', name: 'Spectacles', icon: '🎭', count: 178 },
-  { id: 'sport', name: 'Sport', icon: '⚽', count: 92 },
+  { id: 'concerts',   name: 'Concerts',     icon: '🎵' },
+  { id: 'festivals',  name: 'Festivals',    icon: '🎪' },
+  { id: 'expos',      name: 'Expositions',  icon: '🎨' },
+  { id: 'spectacles', name: 'Spectacles',   icon: '🎭' },
+  { id: 'sport',      name: 'Sport',        icon: '⚽' },
 ]
+function goToCategory(categoryId: string) { navigateTo(`/events?category=${categoryId}`) }
 
-function goToCategory(categoryId: string) {
-  navigateTo(`/events?category=${categoryId}`)
-}
-
+// ── Date formatée ──
 const formattedDate = computed(() => {
-  const rawDate = currentEvent.value?.eventDate // ← utiliser eventDate
-  if (!rawDate) return '' // évite undefined
+  const rawDate = currentEvent.value?.eventDate
+  if (!rawDate) return ''
   const date = new Date(rawDate)
-  if (isNaN(date.getTime())) return '' // date invalide
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(date)
+  if (isNaN(date.getTime())) return ''
+  return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(date)
 })
 
+// ── Animation entrée ──
 const isReady = ref(false)
 onMounted(() => {
-  setTimeout(() => {
-    isReady.value = true
-  }, 100)
+  startAutoPlay()
+  setTimeout(() => { isReady.value = true }, 100)
 })
 </script>
 
 <template>
-  <section class="hero-carousel" @mouseenter="stopAutoPlay" @mouseleave="startAutoPlay">
-    <!-- Background avec transition -->
-    <div class="carousel-backgrounds h-max-[100px]">
+  <section
+    class="relative min-h-screen overflow-hidden font-outfit"
+    @mouseenter="stopAutoPlay"
+    @mouseleave="startAutoPlay"
+  >
+
+    <!-- ══ BACKGROUNDS CAROUSEL ══ -->
+    <div class="absolute inset-0 z-0">
       <div
-        v-for="(event, index) in featuredEvents"
-        :key="event.id"
-        class="carousel-bg"
-        :class="{ 'carousel-bg--active': currentSlide === index }"
+        v-for="(event, index) in featuredEvents" :key="event.id"
+        class="absolute inset-0 transition-opacity duration-700 ease-in-out"
+        :class="currentSlide === index ? 'opacity-100' : 'opacity-0'"
       >
         <NuxtImg
           v-if="event.image?.url"
           :src="event.image.url"
           :alt="event.title"
-          class="bg-image"
+          class="w-full h-full object-cover object-center"
+          :class="currentSlide === index ? 'animate-ken-burns' : ''"
           loading="eager"
           quality="85"
         />
-
-        <img v-else src="#" class="bg-image" />
-        <div class="bg-overlay"></div>
+        <img v-else src="#" class="w-full h-full object-cover" />
+        <!-- Overlay dégradé Cream Minimal : sombre + teinte chaude -->
+        <div class="absolute inset-0"
+          style="background: linear-gradient(135deg, rgba(26,22,18,0.72) 0%, rgba(26,22,18,0.40) 45%, rgba(26,22,18,0.65) 100%)" />
       </div>
     </div>
 
-    <!-- Contenu principal -->
-    <div class="hero-content" :class="{ 'hero-content--ready': isReady }">
-      <div class="container">
-        <!-- Event actuel -->
-        <div class="event-showcase">
-          <div class="event-badge">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-              />
-            </svg>
+    <!-- ══ CONTENU ══ -->
+    <div
+      class="relative z-10 min-h-screen flex items-center
+             px-4 sm:px-6 pt-24 pb-10 sm:pt-28 sm:pb-12
+             transition-all duration-1000 ease-out"
+      :class="isReady ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.97]'"
+    >
+      <div class="max-w-7xl mx-auto w-full">
+
+        <!-- ── EVENT SHOWCASE ── -->
+        <div class="max-w-2xl mb-10">
+
+          <!-- Badge catégorie -->
+          <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-5
+                      bg-white/10 backdrop-blur-md border border-white/20
+                      text-[11px] font-bold text-white uppercase tracking-widest">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#ea6c1e]" />
             {{ currentEvent?.category }}
           </div>
 
-          <h1 class="event-title">
+          <!-- Titre -->
+          <h1 class="text-[clamp(2.3rem,7vw,4.5rem)] font-black text-white leading-[1.08]
+                     tracking-tight mb-4 drop-shadow-[0_4px_20px_rgba(0,0,0,0.35)]">
             {{ currentEvent?.title }}
           </h1>
 
-          <p class="event-subtitle">
+          <!-- Sous-titre -->
+          <p class="text-[15px] sm:text-[17px] font-light text-white/80 leading-relaxed mb-6 max-w-lg">
             {{ currentEvent?.description }}
           </p>
 
-          <div class="event-meta">
-            <div class="meta-item">
-              <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-              {{ formattedDate || 'Date non disponible' }}
-            </div>
-            <div class="meta-item">
-              <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                />
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-              {{ currentEvent?.location }}
-            </div>
-          </div>
-          <div :to="`/events/${currentEvent?.id}`">
-            <div class="event-actions">
-              <NuxtLink :to="`/events/${currentEvent?.id}`">
-                <button class="btn-primary" @click="navigateTo(`/events/${currentEvent?.id}`)">
-                  Voir les détails
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M13 7l5 5m0 0l-5 5m5-5H6"
-                    />
-                  </svg>
-                </button>
-              </NuxtLink>
-
-              <button
-                @click="toggleFavorite"
-                :disabled="favoriteLoading"
-                class="btn-secondary"
-                :class="
-                  isFavorite
-                    ? 'bg-red-100 text-red-600'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                "
-              >
-                <svg
-                  class="w-5 h-5"
-                  :class="isFavorite ? 'fill-red-600' : 'stroke-current'"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                  />
-                </svg>
-                <span class="text-sm font-medium">
-                  {{ isFavorite ? 'En favori' : 'Favoris' }}
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Contrôles carousel -->
-        <div class="carousel-controls">
-          <button class="carousel-btn" @click="prevSlide" aria-label="Précédent">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-
-          <div class="carousel-dots">
-            <button
-              v-for="(event, index) in featuredEvents"
-              :key="event.id"
-              class="carousel-dot"
-              :class="{ 'carousel-dot--active': currentSlide === index }"
-              @click="goToSlide(index)"
-              :aria-label="`Aller à l'événement ${Number(index) + 1}`"
-            ></button>
-          </div>
-
-          <button class="carousel-btn" @click="nextSlide" aria-label="Suivant">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
-        </div>
-
-        <!-- Catégories -->
-        <div class="categories-section hidden sm:block">
-          <h3 class="categories-title">Explorer par catégorie</h3>
-          <div class="categories-grid">
-            <button
-              v-for="category in categories"
-              :key="category.id"
-              class="category-card"
-              @click="goToCategory(category.id)"
-            >
-              <span class="category-icon">{{ category.icon }}</span>
-              <div class="category-info">
-                <span class="category-name">{{ category.name }}</span>
-                <!-- <span class="category-count">{{ category.count }} événements</span>-->
+          <!-- Méta date + lieu -->
+          <div class="flex flex-wrap gap-4 mb-8">
+            <div class="flex items-center gap-2 text-[13px] text-white/90">
+              <div class="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20
+                          flex items-center justify-center flex-shrink-0">
+                <UIcon name="i-heroicons-calendar-days" class="w-3.5 h-3.5 text-[#ea6c1e]" />
               </div>
-              <svg class="category-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
+              <span>{{ formattedDate || 'Date non disponible' }}</span>
+            </div>
+            <div class="flex items-center gap-2 text-[13px] text-white/90">
+              <div class="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20
+                          flex items-center justify-center flex-shrink-0">
+                <UIcon name="i-heroicons-map-pin" class="w-3.5 h-3.5 text-[#5b47e0]" />
+              </div>
+              <span>{{ currentEvent?.location }}</span>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex flex-wrap gap-3">
+            <!-- Voir les détails -->
+            <NuxtLink :to="`/events/${currentEvent?.id}`"
+              class="inline-flex items-center gap-2.5 px-6 py-3 rounded-2xl
+                     bg-white text-[#1a1612] text-[13.5px] font-bold
+                     shadow-[0_8px_32px_rgba(255,255,255,0.25)]
+                     hover:shadow-[0_12px_40px_rgba(255,255,255,0.35)]
+                     hover:-translate-y-0.5 transition-all duration-200">
+              Voir les détails
+              <div class="w-6 h-6 rounded-lg bg-[#f0ede8] flex items-center justify-center">
+                <UIcon name="i-heroicons-arrow-right" class="w-3.5 h-3.5 text-[#ea6c1e]" />
+              </div>
+            </NuxtLink>
+
+            <!-- Favoris -->
+            <button
+              @click="toggleFavorite"
+              :disabled="favoriteLoading"
+              :class="[
+                'inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-[13.5px] font-semibold transition-all duration-200',
+                isFavorite
+                  ? 'bg-red-500/20 backdrop-blur-md border border-red-400/40 text-white'
+                  : 'bg-white/10 backdrop-blur-md border border-white/25 text-white hover:bg-white/20'
+              ]"
+            >
+              <UIcon
+                :name="isFavorite ? 'i-heroicons-heart-solid' : 'i-heroicons-heart'"
+                class="w-4.5 h-4.5"
+                :class="isFavorite ? 'text-red-400' : 'text-white'"
+              />
+              {{ isFavorite ? 'En favori' : 'Favoris' }}
             </button>
           </div>
         </div>
+
+        <!-- ── CONTRÔLES CAROUSEL ── -->
+        <div class="flex items-center justify-center gap-6 mb-10">
+          <!-- Précédent -->
+          <button @click="prevSlide" aria-label="Précédent"
+            class="w-11 h-11 flex items-center justify-center rounded-xl
+                   bg-white/10 backdrop-blur-md border border-white/20
+                   text-white hover:bg-white/20 hover:scale-110
+                   transition-all duration-200">
+            <UIcon name="i-heroicons-chevron-left" class="w-5 h-5" />
+          </button>
+
+          <!-- Dots -->
+          <div class="flex items-center gap-2">
+            <button
+              v-for="(event, index) in featuredEvents" :key="event.id"
+              @click="goToSlide(index)"
+              :aria-label="`Événement ${index + 1}`"
+              class="h-2 rounded-full border-none cursor-pointer transition-all duration-300"
+              :class="currentSlide === index
+                ? 'w-7 bg-white'
+                : 'w-2 bg-white/35 hover:bg-white/60'"
+            />
+          </div>
+
+          <!-- Suivant -->
+          <button @click="nextSlide" aria-label="Suivant"
+            class="w-11 h-11 flex items-center justify-center rounded-xl
+                   bg-white/10 backdrop-blur-md border border-white/20
+                   text-white hover:bg-white/20 hover:scale-110
+                   transition-all duration-200">
+            <UIcon name="i-heroicons-chevron-right" class="w-5 h-5" />
+          </button>
+        </div>
+
+        <!-- ── CATÉGORIES ── -->
+        <div class="hidden sm:block bg-white/8 backdrop-blur-xl border border-white/15
+                    rounded-2xl p-5">
+          <p class="text-[11px] font-semibold text-white/50 uppercase tracking-widest text-center mb-4">
+            Explorer par catégorie
+          </p>
+          <div class="grid grid-cols-5 gap-3">
+            <button
+              v-for="cat in categories" :key="cat.id"
+              @click="goToCategory(cat.id)"
+              class="group flex items-center gap-3 px-4 py-3 rounded-xl
+                     bg-white/6 border border-white/12
+                     hover:bg-white/15 hover:border-white/30
+                     hover:-translate-y-0.5
+                     transition-all duration-200"
+            >
+              <span class="text-xl leading-none">{{ cat.icon }}</span>
+              <span class="flex-1 text-[12.5px] font-semibold text-white text-left truncate">
+                {{ cat.name }}
+              </span>
+              <UIcon name="i-heroicons-chevron-right"
+                class="w-3.5 h-3.5 text-white/30 group-hover:text-white/70
+                       group-hover:translate-x-0.5 transition-all duration-200" />
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   </section>
 </template>
 
 <style scoped>
-.hero-carousel {
-  position: relative;
-  min-height: 100vh;
-  overflow: hidden;
-}
-
-/* Backgrounds */
-.carousel-backgrounds {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-}
-
-.carousel-bg {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transition: opacity 0.6s ease-in-out;
-}
-
-.carousel-bg--active {
-  opacity: 1;
-}
-
-.carousel-bg--active .bg-image {
-  animation: kenBurns 8s ease-out forwards;
-}
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap');
 
 @keyframes kenBurns {
-  0% {
-    transform: scale(1.1);
-  }
-  100% {
-    transform: scale(1);
-  }
+  0%   { transform: scale(1.08); }
+  100% { transform: scale(1); }
 }
-
-.bg-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-
-.bg-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.5) 0%,
-    rgba(0, 0, 0, 0.3) 40%,
-    rgba(0, 0, 0, 0.6) 100%
-  );
-}
-
-/* Content */
-.hero-content {
-  position: relative;
-  z-index: 10;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  padding: 8rem 2rem 4rem;
-  opacity: 0;
-  transform: scale(0.95);
-  transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.hero-content--ready {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.container {
-  max-width: 1400px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-/* Event Showcase */
-.event-showcase {
-  max-width: 700px;
-  margin-bottom: 3rem;
-}
-
-.event-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1.25rem;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 9999px;
-  color: white;
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 1.5rem;
-}
-
-.event-title {
-  font-size: clamp(2.5rem, 7vw, 5rem);
-  font-weight: 900;
-  line-height: 1.1;
-  color: white;
-  margin-bottom: 1rem;
-  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-.event-subtitle {
-  font-size: 1.5rem;
-  font-weight: 300;
-  color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 2rem;
-}
-
-.event-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2rem;
-  margin-bottom: 2.5rem;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  color: white;
-  font-size: 1rem;
-}
-
-.meta-icon {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
-.event-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.btn-primary,
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 2rem;
-  border-radius: 9999px;
-  font-size: 1rem;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-primary {
-  background: white;
-  color: #1f2937;
-  box-shadow: 0 10px 40px -10px rgba(255, 255, 255, 0.5);
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 15px 50px -10px rgba(255, 255, 255, 0.7);
-}
-
-.btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.5);
-}
-
-/* Carousel Controls */
-.carousel-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2rem;
-  margin-bottom: 4rem;
-}
-
-.carousel-btn {
-  width: 3rem;
-  height: 3rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  color: white;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.carousel-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.1);
-}
-
-.carousel-btn svg {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.carousel-dots {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.carousel-dot {
-  width: 0.75rem;
-  height: 0.75rem;
-  background: rgba(255, 255, 255, 0.3);
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.3s;
-  padding: 0;
-}
-
-.carousel-dot--active {
-  width: 2rem;
-  background: white;
-  border-radius: 9999px;
-}
-
-/* Categories */
-.categories-section {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 1.5rem;
-  padding: 2rem;
-}
-
-.categories-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: white;
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
-
-.categories-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-}
-
-.category-card {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.25rem;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 1rem;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.category-card:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
-}
-
-.category-icon {
-  font-size: 2rem;
-}
-
-.category-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.category-name {
-  font-size: 1rem;
-  font-weight: 600;
-  color: white;
-}
-
-.category-count {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.category-arrow {
-  width: 1.25rem;
-  height: 1.25rem;
-  color: rgba(255, 255, 255, 0.5);
-  transition: transform 0.3s;
-}
-
-.category-card:hover .category-arrow {
-  color: white;
-  transform: translateX(4px);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .hero-content {
-    padding: 6rem 1.5rem 3rem;
-  }
-
-  .event-actions {
-    flex-direction: column;
-  }
-
-  .btn-primary,
-  .btn-secondary {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .categories-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .carousel-controls {
-    gap: 1rem;
-  }
+.animate-ken-burns {
+  animation: kenBurns 8s ease-out forwards;
 }
 </style>

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import AppSkeleton from '../../components/home/Appskeleton.vue'
+
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -345,8 +347,8 @@ const navSections = [
 </script>
 
 <template>
-  <div class="bg-[#f5f3ef] px-4 pt-4 pb-32 sm:px-6 sm:pb-12 font-outfit w-full min-h-screen overflow-y-auto" >
-    <div class="max-w-7xl mx-auto space-y-5">
+  <div class="bg-[#f5f3ef] px-4 pt-4 pb-32 sm:px-6 sm:pb-12 font-outfit w-full min-h-screen">
+    <div class="max-w-6xl mx-auto space-y-5">
 
       <!-- ══ NAV SECTIONS ══ -->
       <div class="bg-white rounded-2xl border border-[#ede8e0] p-1.5 flex justify-between gap-1
@@ -372,7 +374,10 @@ const navSections = [
       <template v-if="activeSection === 'overview'">
 
         <!-- KPI Cards -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div v-if="loading" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <AppSkeleton v-for="i in 4" :key="i" variant="dashboard-stat" />
+        </div>
+        <div v-else class="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div class="kpi-card">
             <div class="flex items-start justify-between mb-2">
               <p class="kpi-label">Événements</p>
@@ -463,11 +468,10 @@ const navSections = [
             <p class="text-[13.5px] font-bold text-[#1a1612]">Top événements</p>
             <p class="text-[11px] text-[#b0a898] mt-0.5">Classés par nombre de vues</p>
           </div>
-          <div class="p-5 space-y-3.5 overflow-y-auto max-h-[400px]">
-            <div v-if="loading" v-for="i in 5" :key="i" class="space-y-1.5 animate-pulse">
-              <USkeleton class="h-3 w-1/3 rounded" />
-              <USkeleton class="h-5 rounded-lg" :style="`width:${40+i*10}%`" />
-            </div>
+          <div class="p-5 space-y-3.5">
+            <template v-if="loading">
+              <AppSkeleton v-for="i in 5" :key="i" variant="dashboard-event-row" />
+            </template>
             <div v-else v-for="ev in topEvents" :key="ev.id" class="group">
               <div class="flex items-center justify-between mb-1.5">
                 <div class="flex items-center gap-2 min-w-0">
@@ -522,15 +526,13 @@ const navSections = [
             <!-- Pic détecté -->
             <div v-if="peakDay" class="mb-4 flex items-center gap-3 px-4 py-3 bg-orange-50 border border-orange-100 rounded-xl">
               <p class="text-[12.5px] text-[#ea6c1e] font-medium">
-                Pic détecté le <strong>{{ peakDay.label }}</strong> : {{ formatNumber(peakDay.value) }} vues.
+                Pic détecté le <strong>{{ peakDay.label }}</strong> :{{ formatNumber(peakDay.value) }} vues.
                 Une publication sur les réseaux pourrait expliquer ce pic.
               </p>
             </div>
 
             <!-- Graphique barres verticales -->
-            <div v-if="loading" class="flex items-end gap-2 h-48 animate-pulse">
-              <div v-for="i in 14" :key="i" class="flex-1 bg-[#ede8e0] rounded-t-lg" :style="`height:${20+i*4}%`" />
-            </div>
+            <AppSkeleton v-if="loading" variant="dashboard-chart" />
 
             <div v-else class="overflow-x-auto pb-2">
               <div class="flex items-end gap-1.5 min-w-max" style="height: 200px">
@@ -557,7 +559,6 @@ const navSections = [
                       }"
                     >
                       <!-- Étiquette pic -->
-                      <div v-if="m.isPeak" class="absolute top-1 left-1/2 -translate-x-1/2 text-[8px]">🔥</div>
                     </div>
                   </div>
                   <span class="text-[9px] font-medium text-[#b0a898] text-center leading-tight">
@@ -627,12 +628,9 @@ const navSections = [
             <p class="text-[13.5px] font-bold text-[#1a1612] mb-1">Détail par source</p>
             <p class="text-[11px] text-[#b0a898] mb-4">Concentrez votre marketing où ça marche</p>
 
-            <div v-if="loading" class="space-y-3 animate-pulse">
-              <div v-for="i in 5" :key="i" class="space-y-1">
-                <USkeleton class="h-3 w-24 rounded" />
-                <USkeleton class="h-5 rounded-lg" :style="`width:${30+i*12}%`" />
-              </div>
-            </div>
+            <template v-if="loading">
+              <AppSkeleton v-for="i in 5" :key="i" variant="dashboard-event-row" />
+            </template>
 
             <div v-else-if="sourceData.length === 0" class="py-8 text-center text-[#b0a898] text-[12px]">
               Aucune donnée de source disponible
@@ -672,7 +670,7 @@ const navSections = [
                 avec <strong class="text-[#ea6c1e]">{{ sourceData[0]?.pct }}%</strong> des vues.
                 Continuez à publier régulièrement sur ce canal.
                 <span v-if="sourceData[1]">
-                  <strong class="text-[#1a1612]">{{ sourceData[1].label }}</strong> est votre 2ème source —
+                  <strong class="text-[#1a1612]">{{ sourceData[1].label }}</strong> est votre 2ème source 
                   investissez-y davantage pour booster votre visibilité.
                 </span>
               </p>
@@ -694,12 +692,9 @@ const navSections = [
               <p class="text-[11px] text-[#b0a898] mt-0.5">Où se trouvent vos visiteurs</p>
             </div>
             <div class="p-5">
-              <div v-if="loading" class="space-y-3 animate-pulse">
-                <div v-for="i in 5" :key="i" class="space-y-1">
-                  <USkeleton class="h-3 w-32 rounded" />
-                  <USkeleton class="h-4 rounded-lg" :style="`width:${40+i*8}%`" />
-                </div>
-              </div>
+              <template v-if="loading">
+                <AppSkeleton v-for="i in 5" :key="i" variant="dashboard-event-row" />
+              </template>
               <div v-else-if="cityData.length === 0" class="py-10 text-center text-[#b0a898] text-[12px]">
                 Aucune donnée géographique disponible
               </div>
@@ -731,12 +726,9 @@ const navSections = [
               <p class="text-[11px] text-[#b0a898] mt-0.5">Rayonnement international</p>
             </div>
             <div class="p-5">
-              <div v-if="loading" class="space-y-3 animate-pulse">
-                <div v-for="i in 4" :key="i" class="space-y-1">
-                  <USkeleton class="h-3 w-28 rounded" />
-                  <USkeleton class="h-4 rounded-lg" :style="`width:${50+i*10}%`" />
-                </div>
-              </div>
+              <template v-if="loading">
+                <AppSkeleton v-for="i in 4" :key="i" variant="dashboard-event-row" />
+              </template>
               <div v-else-if="countryData.length === 0" class="py-10 text-center text-[#b0a898] text-[12px]">
                 Aucune donnée de pays disponible
               </div>
@@ -769,8 +761,8 @@ const navSections = [
               <p class="text-[13px] font-bold text-[#1a1612] mb-1">Conseil géographique</p>
               <p class="text-[12.5px] text-[#8a8078] leading-relaxed">
                 <span v-if="cityData.length > 0">
-                  <strong class="text-[#1a1612]">{{ cityData[0]?.city }}</strong> représente
-                  <strong class="text-[#ea6c1e]">{{ cityData[0]?.pct }}%</strong> de vos visiteurs.
+                  <strong class="text-[#1a1612]">{{ cityData[0].city }}</strong> représente
+                  <strong class="text-[#ea6c1e]">{{ cityData[0].pct }}%</strong> de vos visiteurs.
                   Planifiez vos prochains événements dans cette zone pour maximiser l'audience.
                 </span>
                 <span v-else>Collectez plus de données pour obtenir des insights géographiques.</span>
@@ -865,11 +857,7 @@ const navSections = [
 
         <!-- Chargement / pas de données -->
         <div v-if="!platformComparison" class="bg-white rounded-2xl border border-[#ede8e0] p-10 text-center shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
-          <div v-if="loading" class="space-y-3 animate-pulse flex flex-col items-center">
-            <USkeleton class="h-20 w-20 rounded-full" />
-            <USkeleton class="h-4 w-48 rounded" />
-            <USkeleton class="h-3 w-64 rounded" />
-          </div>
+          <AppSkeleton v-if="loading" variant="dashboard-chart" />
           <div v-else>
             <div class="w-14 h-14 rounded-2xl bg-[#f5f0e8] border border-[#ede8e0] flex items-center justify-center mx-auto mb-4">
               <UIcon name="i-heroicons-trophy" class="w-6 h-6 text-[#c0b8ad]" />
@@ -987,7 +975,8 @@ const navSections = [
               <div v-for="ev in platformComparison.ranked" :key="ev.id"
                 class="px-5 py-3.5 flex items-center gap-4 hover:bg-[#faf5ee] transition-colors">
 
-              
+                <!-- Médaille ou rang -->
+               
 
                 <!-- Titre -->
                 <div class="flex-1 min-w-0">

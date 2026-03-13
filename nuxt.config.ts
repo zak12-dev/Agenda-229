@@ -47,6 +47,7 @@ export default defineNuxtConfig({
     public: {
       apiBase: 'https://weloveevent.vercel.app',
 
+
       turnstileSiteKey: process.env.TURNSTILE_SITE_KEY,
     },
   },

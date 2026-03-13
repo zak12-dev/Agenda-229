@@ -40,7 +40,7 @@ const selectedEvent = ref<CustomEvent | null>(null)
 const modalLoading = ref(false)
 
 // ─── État création ───
-const isCreateModalOpen = ref(false)
+const isWizardOpen = ref(false)
 const categories = ref<Category[]>([])
 const villes = ref<Ville[]>([])
 const isPublishing = ref(false)
@@ -189,7 +189,7 @@ const submit = async (status: 'DRAFT' | 'PUBLISHED') => {
     const data = await res.json()
     if (status === 'DRAFT') draftId.value = data.event.id
     if (status === 'PUBLISHED') { resetForm(); draftId.value = null }
-    isCreateModalOpen.value = false
+    isWizardOpen.value = false
     await fetchEvents()
   } catch (err) {
     alert(err instanceof Error ? err.message : 'Une erreur est survenue')
@@ -199,7 +199,7 @@ const submit = async (status: 'DRAFT' | 'PUBLISHED') => {
   }
 }
 
-const openCreateModal = () => { resetForm(); loadFormData(); isCreateModalOpen.value = true }
+const openCreateModal = () => { isWizardOpen.value = true }
 
 // ─── Helpers ───
 const formatDate = (d: string) =>
@@ -228,11 +228,11 @@ watch([searchQuery, filterStatus], () => {
 </script>
 
 <template>
-  <div class="bg-[#f5f3ef] px-4 pt-4 pb-32 sm:px-6 sm:pb-12 font-outfit w-full min-h-screen overflow-y-auto mb-10">
+  <div class="bg-[#f5f3ef] px-4 pt-4 pb-32 sm:px-6 sm:pb-12 font-outfit w-full min-h-screen">
     <div class="max-w-7xl mx-auto space-y-5">
 
       <!-- ── Stats ── -->
-      <div class="grid grid-cols-3 gap-3">
+      <div class="hidden sm:grid grid-cols-3 gap-3">
         <div
           v-for="stat in stats" :key="stat.label"
           class="bg-white rounded-2xl border border-[#ede8e0] p-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)]"
@@ -290,6 +290,7 @@ watch([searchQuery, filterStatus], () => {
           </div>
         </div>
 
+        <!-- Bouton créer — mobile : pill fixe en bas / desktop : bloc à droite -->
         <!-- Bouton créer — même hauteur que le bloc recherche, masqué admin -->
         <button
           v-if="!isAdmin"
@@ -299,7 +300,6 @@ watch([searchQuery, filterStatus], () => {
           <UIcon name="i-heroicons-plus" class="w-5 h-5" />
           <span class="hidden sm:block text-[12.5px] font-semibold leading-tight">Créer<br>un événement</span>
         </button>
-
       </div>
 
       <!-- ── Liste événements ── -->
@@ -373,7 +373,7 @@ watch([searchQuery, filterStatus], () => {
         </div>
 
         <!-- DESKTOP tableau -->
-        <div class="hidden sm:block overflow-x-auto overflow-y-auto max-h-[600px] mb-4">
+        <div class="hidden sm:block overflow-x-auto">
           <table class="w-full">
             <thead class="bg-[#f5f0e8] border-b border-[#ede8e0]">
               <tr>
@@ -465,269 +465,444 @@ watch([searchQuery, filterStatus], () => {
       </div>
     </div>
 
-    <!-- ══════════════════════════════════
-         MODAL CRÉER UN ÉVÉNEMENT
-    ══════════════════════════════════ -->
-    <Transition name="fade">
-      <div
-        v-if="isCreateModalOpen"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
-        @click.self="isCreateModalOpen = false"
-      >
-        <Transition name="slide-up">
-          <div class="modal-sheet sm:max-w-3xl">
+    <!-- ══ FAB mobile créer ══ -->
+    <button v-if="!isAdmin"
+      @click="openCreateModal"
+      class="sm:hidden fixed bottom-24 right-4 z-40 flex items-center gap-2.5
+             pl-4 pr-5 py-3.5 rounded-2xl text-white font-semibold text-[13.5px]
+             shadow-[0_8px_28px_rgba(234,108,30,0.40)] active:scale-95 transition-all"
+      style="background: linear-gradient(135deg, #ea6c1e, #5b47e0)">
+      <div class="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+        <UIcon name="i-heroicons-plus" class="w-4 h-4" />
+      </div>
+      Créer un événement
+    </button>
 
-            <!-- Header -->
-            <div class="modal-header">
+    <!-- ══ WIZARD CRÉATION ══ -->
+    <EventWizard v-model="isWizardOpen" @created="fetchEvents" />
+
+        <!-- ══════════════════════════════════
+         MODAL PREVIEW — design wizard
+    ══════════════════════════════════ -->
+
+    <!-- Overlay -->
+    <Transition enter-active-class="transition-opacity duration-300" enter-from-class="opacity-0" enter-to-class="opacity-100"
+      leave-active-class="transition-opacity duration-200" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="isPreviewModalOpen" class="fixed inset-0 z-50 bg-[#1a1612]/40 backdrop-blur-sm" @click="isPreviewModalOpen = false" />
+    </Transition>
+
+    <!-- MOBILE — bottom sheet -->
+    <Transition enter-active-class="transition-transform duration-300 ease-out" enter-from-class="translate-y-full" enter-to-class="translate-y-0"
+      leave-active-class="transition-transform duration-200 ease-in" leave-from-class="translate-y-0" leave-to-class="translate-y-full">
+      <div v-if="isPreviewModalOpen && selectedEvent"
+        class="sm:hidden fixed inset-x-0 bottom-0 z-[60] flex flex-col font-outfit bg-[#faf8f5] rounded-t-3xl overflow-hidden"
+        style="max-height: 95dvh">
+        <!-- Drag handle -->
+        <div class="flex justify-center pt-3 pb-1 flex-shrink-0">
+          <div class="w-10 h-1 rounded-full bg-[#d4cec5]" />
+        </div>
+        <!-- Header -->
+        <div class="flex-shrink-0 px-5 pt-3 pb-4 bg-white border-b border-[#ede8e0]">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                style="background: #5b47e015; border: 1.5px solid #5b47e030">
+                <UIcon name="i-heroicons-eye" class="w-4 h-4" style="color: #5b47e0" />
+              </div>
+              <div>
+                <p class="text-[10px] font-semibold text-[#c0b8ad] uppercase tracking-widest leading-none mb-0.5">Aperçu</p>
+                <p class="text-[15px] font-bold text-[#1a1612] leading-tight truncate max-w-[220px]">{{ selectedEvent.title }}</p>
+              </div>
+            </div>
+            <button @click="isPreviewModalOpen = false"
+              class="w-8 h-8 rounded-xl bg-[#f5f3ef] border border-[#ede8e0] flex items-center justify-center hover:border-[#c0b8ad] transition-all">
+              <UIcon name="i-heroicons-x-mark" class="w-4 h-4 text-[#8a8078]" />
+            </button>
+          </div>
+        </div>
+        <!-- Corps -->
+        <div class="flex-1 overflow-y-auto p-5 space-y-3">
+          <div v-if="modalLoading" class="space-y-3">
+            <div class="h-36 rounded-2xl bg-[#f0ede8] animate-pulse" />
+            <div class="h-4 w-3/4 rounded bg-[#f0ede8] animate-pulse" />
+            <div class="h-3 w-1/2 rounded bg-[#f0ede8] animate-pulse" />
+          </div>
+          <template v-else>
+            <!-- Images -->
+            <div v-if="selectedEvent.images?.length" class="grid gap-2" :class="selectedEvent.images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'">
+              <div v-for="(img, i) in selectedEvent.images" :key="img.id"
+                class="rounded-2xl overflow-hidden" :class="i === 0 && selectedEvent.images.length > 1 ? 'col-span-2' : ''">
+                <img :src="img.url" :alt="selectedEvent.title" class="w-full object-cover" :class="i === 0 ? 'h-40' : 'h-24'" />
+              </div>
+            </div>
+            <!-- Infos clés -->
+            <div class="grid grid-cols-2 gap-2">
+              <div class="bg-white rounded-xl border border-[#ede8e0] p-3">
+                <p class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-1 flex items-center gap-1">
+                  <UIcon name="i-heroicons-calendar-days" class="w-3 h-3" />Date
+                </p>
+                <p class="text-[12.5px] font-bold text-[#1a1612]">{{ formatDate(selectedEvent.createdAt) }}</p>
+              </div>
+              <div class="bg-white rounded-xl border border-[#ede8e0] p-3">
+                <p class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-1 flex items-center gap-1">
+                  <UIcon name="i-heroicons-tag" class="w-3 h-3" />Catégorie
+                </p>
+                <p class="text-[12.5px] font-bold text-[#1a1612]">{{ selectedEvent.category?.name || '—' }}</p>
+              </div>
+              <div class="bg-white rounded-xl border border-[#ede8e0] p-3">
+                <p class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-1 flex items-center gap-1">
+                  <UIcon name="i-heroicons-check-circle" class="w-3 h-3" />Statut
+                </p>
+                <span :class="['status-badge', getStatusClasses(selectedEvent.status)]">
+                  <span :class="['w-1.5 h-1.5 rounded-full', getDot(selectedEvent.status)]" />{{ selectedEvent.status }}
+                </span>
+              </div>
+              <div class="bg-white rounded-xl border border-[#ede8e0] p-3">
+                <p class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-1 flex items-center gap-1">
+                  <UIcon name="i-heroicons-eye" class="w-3 h-3" />Vues
+                </p>
+                <p class="text-[12.5px] font-bold text-[#ea6c1e]">{{ selectedEvent.views?.toLocaleString() }}</p>
+              </div>
+            </div>
+            <!-- Lieu -->
+            <div class="bg-white rounded-xl border border-[#ede8e0] p-3 flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center flex-shrink-0">
+                <UIcon name="i-heroicons-map-pin" class="w-3.5 h-3.5 text-[#5b47e0]" />
+              </div>
+              <p class="text-[13px] font-medium text-[#1a1612]">{{ selectedEvent.location || '—' }}</p>
+            </div>
+            <!-- Description -->
+            <div class="bg-white rounded-xl border border-[#ede8e0] p-3">
+              <p class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-2 flex items-center gap-1">
+                <UIcon name="i-heroicons-bars-3-bottom-left" class="w-3 h-3" />Description
+              </p>
+              <p class="text-[13px] text-[#4a3f32] leading-relaxed">{{ selectedEvent.description }}</p>
+            </div>
+          </template>
+        </div>
+        <!-- Footer -->
+        <div class="flex-shrink-0 px-5 py-4 border-t border-[#ede8e0] bg-white">
+          <button @click="isPreviewModalOpen = false"
+            class="w-full py-3 rounded-xl bg-[#faf8f5] border border-[#ede8e0] text-[13px] font-medium text-[#8a8078] hover:border-[#c0b8ad] transition-all">
+            Fermer
+          </button>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- DESKTOP — modal centrée -->
+    <Transition enter-active-class="transition-all duration-300 ease-out" enter-from-class="opacity-0 scale-95 translate-y-4" enter-to-class="opacity-100 scale-100 translate-y-0"
+      leave-active-class="transition-all duration-200 ease-in" leave-from-class="opacity-100 scale-100 translate-y-0" leave-to-class="opacity-0 scale-95 translate-y-2">
+      <div v-if="isPreviewModalOpen && selectedEvent"
+        class="hidden sm:flex fixed inset-0 z-[60] items-center justify-center p-4 font-outfit">
+        <div class="bg-white rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.18)] w-full max-w-lg flex flex-col overflow-hidden" style="max-height: 90vh">
+
+          <!-- Header desktop -->
+          <div class="flex-shrink-0 bg-white border-b border-[#ede8e0] px-6 py-4">
+            <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center">
-                  <UIcon name="i-heroicons-calendar-days" class="w-5 h-5 text-white" />
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style="background: #5b47e012; border: 1.5px solid #5b47e025">
+                  <UIcon name="i-heroicons-eye" class="w-4 h-4" style="color: #5b47e0" />
                 </div>
                 <div>
-                  <h3 class="text-base font-bold text-white">Créer un événement</h3>
-                  <p class="text-xs text-orange-100/70">Partagez votre événement avec la communauté</p>
+                  <p class="text-[10px] font-semibold uppercase tracking-widest leading-none mb-0.5" style="color: #5b47e0">Aperçu</p>
+                  <h2 class="text-[17px] font-bold text-[#1a1612] leading-tight truncate max-w-[320px]">{{ selectedEvent.title }}</h2>
                 </div>
               </div>
-              <button @click="isCreateModalOpen = false" class="modal-close">
-                <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
+              <button @click="isPreviewModalOpen = false"
+                class="w-8 h-8 rounded-xl bg-[#f5f3ef] border border-[#ede8e0] flex items-center justify-center hover:border-[#c0b8ad] hover:bg-[#ede8e0] transition-all">
+                <UIcon name="i-heroicons-x-mark" class="w-4 h-4 text-[#8a8078]" />
               </button>
             </div>
+          </div>
 
-            <!-- Body -->
-            <div class="p-5 sm:p-6 space-y-5 overflow-y-auto flex-1">
-
-              <!-- Titre -->
-              <div class="field">
-                <div class="flex items-center justify-between">
-                  <label class="field-label">Titre <span class="text-red-400">*</span></label>
-                  <span class="text-[11px] text-[#b0a898]">{{ form.title.length }}/{{ titleMaxLength }}</span>
-                </div>
-                <input v-model="form.title" :maxlength="titleMaxLength" type="text" placeholder="Ex: Concert Jazz au clair de lune" class="field-input" />
+          <!-- Corps desktop -->
+          <div class="flex-1 overflow-y-auto p-6 space-y-4">
+            <div v-if="modalLoading" class="space-y-3">
+              <div class="h-44 rounded-2xl bg-[#f0ede8] animate-pulse" />
+              <div class="grid grid-cols-2 gap-3">
+                <div v-for="i in 4" :key="i" class="h-16 rounded-xl bg-[#f0ede8] animate-pulse" />
               </div>
-
+            </div>
+            <template v-else>
+              <!-- Images -->
+              <div v-if="selectedEvent.images?.length" class="grid gap-2.5" :class="selectedEvent.images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'">
+                <div v-for="(img, i) in selectedEvent.images" :key="img.id"
+                  class="rounded-2xl overflow-hidden" :class="i === 0 && selectedEvent.images.length > 1 ? 'col-span-2' : ''">
+                  <img :src="img.url" :alt="selectedEvent.title" class="w-full object-cover" :class="i === 0 ? 'h-48' : 'h-28'" />
+                </div>
+              </div>
+              <!-- KPIs -->
+              <div class="grid grid-cols-2 gap-3">
+                <div class="bg-[#faf8f5] rounded-xl border border-[#ede8e0] p-3.5">
+                  <p class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+                    <UIcon name="i-heroicons-calendar-days" class="w-3.5 h-3.5" />Date
+                  </p>
+                  <p class="text-[13px] font-bold text-[#1a1612]">{{ formatDate(selectedEvent.createdAt) }}</p>
+                </div>
+                <div class="bg-[#faf8f5] rounded-xl border border-[#ede8e0] p-3.5">
+                  <p class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+                    <UIcon name="i-heroicons-tag" class="w-3.5 h-3.5" />Catégorie
+                  </p>
+                  <p class="text-[13px] font-bold text-[#1a1612]">{{ selectedEvent.category?.name || '—' }}</p>
+                </div>
+                <div class="bg-[#faf8f5] rounded-xl border border-[#ede8e0] p-3.5">
+                  <p class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+                    <UIcon name="i-heroicons-check-circle" class="w-3.5 h-3.5" />Statut
+                  </p>
+                  <span :class="['status-badge', getStatusClasses(selectedEvent.status)]">
+                    <span :class="['w-1.5 h-1.5 rounded-full', getDot(selectedEvent.status)]" />{{ selectedEvent.status }}
+                  </span>
+                </div>
+                <div class="bg-[#faf8f5] rounded-xl border border-[#ede8e0] p-3.5">
+                  <p class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+                    <UIcon name="i-heroicons-eye" class="w-3.5 h-3.5" />Vues
+                  </p>
+                  <p class="text-[13px] font-bold text-[#ea6c1e]">{{ selectedEvent.views?.toLocaleString() }}</p>
+                </div>
+              </div>
+              <!-- Lieu -->
+              <div class="bg-[#faf8f5] rounded-xl border border-[#ede8e0] p-3.5 flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center flex-shrink-0">
+                  <UIcon name="i-heroicons-map-pin" class="w-4 h-4 text-[#5b47e0]" />
+                </div>
+                <p class="text-[13px] font-medium text-[#1a1612]">{{ selectedEvent.location || '—' }}</p>
+              </div>
               <!-- Description -->
-              <div class="field">
-                <div class="flex items-center justify-between">
-                  <label class="field-label">Description courte <span class="text-red-400">*</span></label>
-                  <span class="text-[11px] text-[#b0a898]">{{ form.description.length }}/{{ descriptionMaxLength }}</span>
-                </div>
-                <textarea v-model="form.description" :maxlength="descriptionMaxLength" rows="3" placeholder="Décrivez votre événement en quelques mots…" class="field-input resize-none" />
+              <div class="bg-[#faf8f5] rounded-xl border border-[#ede8e0] p-3.5">
+                <p class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                  <UIcon name="i-heroicons-bars-3-bottom-left" class="w-3.5 h-3.5" />Description
+                </p>
+                <p class="text-[13px] text-[#4a3f32] leading-relaxed">{{ selectedEvent.description }}</p>
               </div>
-
-              <!-- Détails -->
-              <div class="field">
-                <div class="flex items-center justify-between">
-                  <label class="field-label">Détails <span class="text-red-400">*</span></label>
-                  <span class="text-[11px] text-[#b0a898]">{{ form.details?.length || 0 }}/500</span>
-                </div>
-                <textarea v-model="form.details" rows="3" placeholder="Informations supplémentaires sur l'événement…" class="field-input resize-none" />
-              </div>
-
-              <!-- Prix -->
-              <div class="field">
-                <label class="field-label">Type de prix</label>
-                <div class="flex gap-4 mt-1">
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" value="FREE" v-model="form.priceType" class="accent-[#ea6c1e]" />
-                    <span class="text-[13px] text-[#4a3f32]">Gratuit</span>
-                  </label>
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" value="PAID" v-model="form.priceType" class="accent-[#ea6c1e]" />
-                    <span class="text-[13px] text-[#4a3f32]">Payant</span>
-                  </label>
-                </div>
-              </div>
-
-              <div v-if="form.priceType === 'PAID'" class="field">
-                <label class="field-label">Prix (FCFA) <span class="text-red-400">*</span></label>
-                <input v-model="form.price" type="number" min="0" step="500" placeholder="Ex: 5000" class="field-input" />
-              </div>
-
-              <!-- Lieu + Ville -->
-              <div class="grid sm:grid-cols-2 gap-4">
-                <div class="field">
-                  <label class="field-label">Lieu <span class="text-red-400">*</span></label>
-                  <input v-model="form.location" type="text" placeholder="Ex: Palais des Congrès" class="field-input" />
-                </div>
-                <div class="field">
-                  <label class="field-label">Ville <span class="text-red-400">*</span></label>
-                  <select v-model="form.villeId" class="field-input">
-                    <option value="" disabled>Sélectionnez une ville</option>
-                    <option v-for="v in villes" :key="v.id" :value="v.id">{{ v.name }}</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Date + Horaires -->
-              <div class="grid sm:grid-cols-3 gap-4">
-                <div class="field">
-                  <label class="field-label">Date <span class="text-red-400">*</span></label>
-                  <input v-model="form.eventDate" type="date" class="field-input" />
-                </div>
-                <div class="field">
-                  <label class="field-label">Heure début <span class="text-red-400">*</span></label>
-                  <input v-model="form.startDate" type="time" class="field-input" />
-                </div>
-                <div class="field">
-                  <label class="field-label">Heure fin</label>
-                  <input v-model="form.endDate" type="time" class="field-input" />
-                </div>
-              </div>
-
-              <!-- Catégorie -->
-              <div class="field">
-                <label class="field-label">Catégorie <span class="text-red-400">*</span></label>
-                <select v-model="form.categoryId" class="field-input">
-                  <option value="" disabled>Sélectionnez une catégorie</option>
-                  <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
-                </select>
-              </div>
-
-              <!-- Aperçu images -->
-              <div v-if="form.images.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <div
-                  v-for="(img, idx) in form.images" :key="idx"
-                  class="relative bg-[#faf8f5] border border-[#ede8e0] rounded-xl p-3 group"
-                >
-                  <p class="text-[12px] font-medium text-[#1a1612] truncate">{{ img.name }}</p>
-                  <p class="text-[11px] text-[#b0a898]">{{ (img.size / 1024 / 1024).toFixed(2) }} MB</p>
-                  <button
-                    @click="removeImageAt(idx)" type="button"
-                    class="absolute top-1.5 right-1.5 w-5 h-5 bg-red-50 border border-red-100 rounded-full flex items-center justify-center text-red-400 hover:bg-red-100 transition-all"
-                  >
-                    <UIcon name="i-heroicons-x-mark" class="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-
-              <!-- Upload zone -->
-              <label v-if="form.images.length < 3" class="group cursor-pointer block">
-                <div class="border-2 border-dashed border-[#d4cec5] rounded-xl p-7 text-center
-                            hover:border-[#ea6c1e] hover:bg-orange-50/30 transition-all duration-200">
-                  <UIcon name="i-heroicons-photo" class="w-9 h-9 mx-auto text-[#c0b8ad] group-hover:text-[#ea6c1e] transition-colors mb-2" />
-                  <p class="text-[13px] font-medium text-[#8a8078] group-hover:text-[#ea6c1e]">
-                    Cliquez pour ajouter jusqu'à 3 images
-                  </p>
-                  <p class="text-[11px] text-[#b0a898] mt-1">PNG, JPG jusqu'à 10MB</p>
-                </div>
-                <input type="file" accept="image/*" multiple class="hidden" @change="handleImageUpload" />
-              </label>
-
-              <!-- Aperçu date -->
-              <div v-if="form.eventDate" class="flex items-start gap-3 p-4 rounded-xl bg-orange-50/50 border border-orange-100">
-                <UIcon name="i-heroicons-calendar-days" class="w-4 h-4 text-[#ea6c1e] flex-shrink-0 mt-0.5" />
-                <div>
-                  <p class="text-[13px] font-medium text-[#4a3f32]">
-                    Votre événement aura lieu le
-                    <span class="font-bold text-[#ea6c1e]">{{ formatDateLong(form.eventDate) }}</span>
-                  </p>
-                  <p v-if="form.startDate" class="text-[11px] text-[#b0a898] mt-0.5">
-                    De {{ form.startDate }}<span v-if="form.endDate"> à {{ form.endDate }}</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="modal-footer">
-              <p class="text-[11px] text-[#b0a898] mr-auto hidden sm:block"><span class="text-red-400">*</span> Champs obligatoires</p>
-              <button @click="isCreateModalOpen = false" class="btn-ghost">Annuler</button>
-              <button @click="submit('DRAFT')" :disabled="isSavingDraft" class="btn-draft">
-                <UIcon v-if="isSavingDraft" name="i-heroicons-arrow-path" class="w-3.5 h-3.5 animate-spin" />
-                <UIcon v-else name="i-heroicons-document-text" class="w-3.5 h-3.5" />
-                Brouillon
-              </button>
-              <button @click="submit('PUBLISHED')" :disabled="!isFormValid || isPublishing" class="btn-primary">
-                <UIcon v-if="isPublishing" name="i-heroicons-arrow-path" class="w-4 h-4 animate-spin" />
-                <UIcon v-else name="i-heroicons-check" class="w-4 h-4" />
-                {{ isPublishing ? 'Publication…' : 'Publier' }}
-              </button>
-            </div>
+            </template>
           </div>
-        </Transition>
+
+          <!-- Footer desktop -->
+          <div class="flex-shrink-0 px-6 py-4 border-t border-[#ede8e0] bg-[#faf8f5]">
+            <button @click="isPreviewModalOpen = false"
+              class="w-full py-2.5 rounded-xl bg-white border border-[#ede8e0] text-[13px] font-medium text-[#8a8078] hover:border-[#c0b8ad] transition-all">
+              Fermer
+            </button>
+          </div>
+
+        </div>
       </div>
     </Transition>
 
     <!-- ══════════════════════════════════
-         MODAL PREVIEW
+         MODAL EDIT — design wizard
     ══════════════════════════════════ -->
-    <Transition name="fade">
-      <div v-if="isPreviewModalOpen" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" @click.self="isPreviewModalOpen = false">
-        <Transition name="slide-up">
-          <div v-if="selectedEvent" class="modal-sheet sm:max-w-2xl">
-            <div class="modal-header">
+
+    <!-- Overlay -->
+    <Transition enter-active-class="transition-opacity duration-300" enter-from-class="opacity-0" enter-to-class="opacity-100"
+      leave-active-class="transition-opacity duration-200" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="isEditModalOpen" class="fixed inset-0 z-50 bg-[#1a1612]/40 backdrop-blur-sm" @click="isEditModalOpen = false" />
+    </Transition>
+
+    <!-- MOBILE — bottom sheet -->
+    <Transition enter-active-class="transition-transform duration-300 ease-out" enter-from-class="translate-y-full" enter-to-class="translate-y-0"
+      leave-active-class="transition-transform duration-200 ease-in" leave-from-class="translate-y-0" leave-to-class="translate-y-full">
+      <div v-if="isEditModalOpen && selectedEvent"
+        class="sm:hidden fixed inset-x-0 bottom-0 z-[60] flex flex-col font-outfit bg-[#faf8f5] rounded-t-3xl overflow-hidden"
+        style="max-height: 95dvh">
+        <!-- Drag handle -->
+        <div class="flex justify-center pt-3 pb-1 flex-shrink-0">
+          <div class="w-10 h-1 rounded-full bg-[#d4cec5]" />
+        </div>
+        <!-- Header -->
+        <div class="flex-shrink-0 px-5 pt-3 pb-4 bg-white border-b border-[#ede8e0]">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                style="background: #ea6c1e15; border: 1.5px solid #ea6c1e30">
+                <UIcon name="i-heroicons-pencil-square" class="w-4 h-4" style="color: #ea6c1e" />
+              </div>
+              <div>
+                <p class="text-[10px] font-semibold text-[#c0b8ad] uppercase tracking-widest leading-none mb-0.5">Modification</p>
+                <p class="text-[15px] font-bold text-[#1a1612] leading-tight truncate max-w-[220px]">{{ selectedEvent.title }}</p>
+              </div>
+            </div>
+            <button @click="isEditModalOpen = false"
+              class="w-8 h-8 rounded-xl bg-[#f5f3ef] border border-[#ede8e0] flex items-center justify-center hover:border-[#c0b8ad] transition-all">
+              <UIcon name="i-heroicons-x-mark" class="w-4 h-4 text-[#8a8078]" />
+            </button>
+          </div>
+        </div>
+        <!-- Corps -->
+        <div class="flex-1 overflow-y-auto p-5 space-y-4">
+          <div class="field">
+            <label class="field-label">Titre <span class="text-red-400">*</span></label>
+            <input v-model="selectedEvent.title" type="text" class="field-input" placeholder="Titre de l'événement" />
+          </div>
+          <div class="field">
+            <div class="flex items-center justify-between">
+              <label class="field-label">Description <span class="text-red-400">*</span></label>
+              <span class="text-[11px] text-[#b0a898]">{{ selectedEvent.description.length }} car.</span>
+            </div>
+            <textarea v-model="selectedEvent.description" rows="4" class="field-input resize-none" />
+          </div>
+          <div class="field">
+            <label class="field-label">Lieu <span class="text-red-400">*</span></label>
+            <div class="relative">
+              <UIcon name="i-heroicons-map-pin" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#c0b8ad] pointer-events-none" />
+              <input v-model="selectedEvent.location" type="text" class="field-input pl-10" placeholder="Lieu de l'événement" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">Statut <span class="text-red-400">*</span></label>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" @click="selectedEvent.status = 'Publié'"
+                :class="['flex items-center gap-2.5 px-3.5 py-3 rounded-xl border transition-all',
+                  selectedEvent.status === 'Publié' ? 'bg-emerald-50 border-emerald-200' : 'bg-[#faf8f5] border-[#ede8e0]']">
+                <div :class="['w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all',
+                  selectedEvent.status === 'Publié' ? 'bg-emerald-500' : 'bg-[#ede8e0]']">
+                  <UIcon name="i-heroicons-check" class="w-2.5 h-2.5 text-white" />
+                </div>
+                <span class="text-[13px] font-semibold" :class="selectedEvent.status === 'Publié' ? 'text-emerald-700' : 'text-[#8a8078]'">Publié</span>
+              </button>
+              <button type="button" @click="selectedEvent.status = 'Brouillon'"
+                :class="['flex items-center gap-2.5 px-3.5 py-3 rounded-xl border transition-all',
+                  selectedEvent.status === 'Brouillon' ? 'bg-amber-50 border-amber-200' : 'bg-[#faf8f5] border-[#ede8e0]']">
+                <div :class="['w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all',
+                  selectedEvent.status === 'Brouillon' ? 'bg-amber-400' : 'bg-[#ede8e0]']">
+                  <UIcon name="i-heroicons-pencil" class="w-2.5 h-2.5 text-white" />
+                </div>
+                <span class="text-[13px] font-semibold" :class="selectedEvent.status === 'Brouillon' ? 'text-amber-700' : 'text-[#8a8078]'">Brouillon</span>
+              </button>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3.5 rounded-xl bg-indigo-50 border border-indigo-100">
+            <UIcon name="i-heroicons-information-circle" class="w-4 h-4 text-[#5b47e0] flex-shrink-0 mt-0.5" />
+            <p class="text-[12px] text-[#5b47e0]/80 leading-relaxed">Modifications visibles immédiatement si le statut est <strong>Publié</strong>.</p>
+          </div>
+        </div>
+        <!-- Footer -->
+        <div class="flex-shrink-0 px-5 py-4 border-t border-[#ede8e0] bg-white flex gap-2.5">
+          <button @click="isEditModalOpen = false"
+            class="flex-1 py-3 rounded-xl bg-[#faf8f5] border border-[#ede8e0] text-[13px] font-medium text-[#8a8078] hover:border-[#c0b8ad] transition-all">
+            Annuler
+          </button>
+          <button @click="updateEvent"
+            class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[13.5px] font-bold text-white transition-all"
+            style="background: linear-gradient(135deg, #ea6c1e, #5b47e0)">
+            <UIcon name="i-heroicons-check" class="w-4 h-4" />
+            Enregistrer
+          </button>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- DESKTOP — modal centrée -->
+    <Transition enter-active-class="transition-all duration-300 ease-out" enter-from-class="opacity-0 scale-95 translate-y-4" enter-to-class="opacity-100 scale-100 translate-y-0"
+      leave-active-class="transition-all duration-200 ease-in" leave-from-class="opacity-100 scale-100 translate-y-0" leave-to-class="opacity-0 scale-95 translate-y-2">
+      <div v-if="isEditModalOpen && selectedEvent"
+        class="hidden sm:flex fixed inset-0 z-[60] items-center justify-center p-4 font-outfit">
+        <div class="bg-white rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.18)] w-full max-w-lg flex flex-col overflow-hidden">
+
+          <!-- Header desktop -->
+          <div class="flex-shrink-0 bg-white border-b border-[#ede8e0] px-6 py-4">
+            <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center">
-                  <UIcon name="i-heroicons-eye" class="w-5 h-5 text-white" />
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style="background: #ea6c1e12; border: 1.5px solid #ea6c1e25">
+                  <UIcon name="i-heroicons-pencil-square" class="w-4 h-4" style="color: #ea6c1e" />
                 </div>
                 <div>
-                  <h3 class="text-base font-bold text-white">Aperçu de l'événement</h3>
-                  <p class="text-xs text-orange-100/70">Détails complets</p>
+                  <p class="text-[10px] font-semibold uppercase tracking-widest leading-none mb-0.5" style="color: #ea6c1e">Modification</p>
+                  <h2 class="text-[17px] font-bold text-[#1a1612] leading-tight truncate max-w-[320px]">{{ selectedEvent.title }}</h2>
                 </div>
               </div>
-              <button @click="isPreviewModalOpen = false" class="modal-close"><UIcon name="i-heroicons-x-mark" class="w-4 h-4" /></button>
+              <button @click="isEditModalOpen = false"
+                class="w-8 h-8 rounded-xl bg-[#f5f3ef] border border-[#ede8e0] flex items-center justify-center hover:border-[#c0b8ad] hover:bg-[#ede8e0] transition-all">
+                <UIcon name="i-heroicons-x-mark" class="w-4 h-4 text-[#8a8078]" />
+              </button>
             </div>
-            <div class="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
-              <div v-if="modalLoading" class="space-y-3">
-                <USkeleton class="h-5 w-full rounded" /><USkeleton class="h-4 w-2/3 rounded" />
+          </div>
+
+          <!-- Corps desktop -->
+          <div class="flex-1 overflow-y-auto p-6 space-y-4">
+            <div class="field">
+              <label class="field-label">Titre <span class="text-red-400">*</span></label>
+              <input v-model="selectedEvent.title" type="text" class="field-input" placeholder="Titre de l'événement" />
+            </div>
+            <div class="field">
+              <div class="flex items-center justify-between">
+                <label class="field-label">Description <span class="text-red-400">*</span></label>
+                <span class="text-[11px] text-[#b0a898]">{{ selectedEvent.description.length }} caractères</span>
               </div>
-              <template v-else>
-                <div v-if="selectedEvent.images?.length" class="space-y-2">
-                  <div v-for="img in selectedEvent.images" :key="img.id" class="rounded-xl overflow-hidden">
-                    <img :src="img.url" :alt="selectedEvent.title" class="w-full h-48 object-cover" />
+              <textarea v-model="selectedEvent.description" rows="4" class="field-input resize-none" />
+            </div>
+            <div class="field">
+              <label class="field-label">Lieu <span class="text-red-400">*</span></label>
+              <div class="relative">
+                <UIcon name="i-heroicons-map-pin" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#c0b8ad] pointer-events-none" />
+                <input v-model="selectedEvent.location" type="text" class="field-input pl-10" placeholder="Lieu de l'événement" />
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label">Statut <span class="text-red-400">*</span></label>
+              <div class="grid grid-cols-2 gap-3">
+                <button type="button" @click="selectedEvent.status = 'Publié'"
+                  :class="['flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all duration-150',
+                    selectedEvent.status === 'Publié'
+                      ? 'bg-emerald-50 border-emerald-200 shadow-[0_0_0_2px_rgba(5,150,105,0.10)]'
+                      : 'bg-[#faf8f5] border-[#ede8e0] hover:border-[#c0b8ad]']">
+                  <div :class="['w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
+                    selectedEvent.status === 'Publié' ? 'bg-emerald-100 border border-emerald-200' : 'bg-white border border-[#ede8e0]']">
+                    <UIcon name="i-heroicons-check-circle" class="w-4 h-4"
+                      :class="selectedEvent.status === 'Publié' ? 'text-emerald-600' : 'text-[#c0b8ad]'" />
                   </div>
-                </div>
-                <div class="info-block"><div class="info-label"><UIcon name="i-heroicons-document-text" class="w-3.5 h-3.5" />Titre</div><p class="text-[14px] font-bold text-[#1a1612]">{{ selectedEvent.title }}</p></div>
-                <div class="info-block"><div class="info-label"><UIcon name="i-heroicons-bars-3-bottom-left" class="w-3.5 h-3.5" />Description</div><p class="text-[13px] text-[#4a3f32] leading-relaxed">{{ selectedEvent.description }}</p></div>
-                <div class="grid grid-cols-2 gap-3">
-                  <div class="info-block"><div class="info-label"><UIcon name="i-heroicons-calendar" class="w-3.5 h-3.5" />Date</div><p class="text-[13px] font-semibold text-[#1a1612]">{{ formatDate(selectedEvent.createdAt) }}</p></div>
-                  <div class="info-block"><div class="info-label"><UIcon name="i-heroicons-tag" class="w-3.5 h-3.5" />Catégorie</div><p class="text-[13px] font-semibold text-[#1a1612]">{{ selectedEvent.category?.name }}</p></div>
-                  <div class="info-block"><div class="info-label"><UIcon name="i-heroicons-check-circle" class="w-3.5 h-3.5" />Statut</div><span :class="['status-badge', getStatusClasses(selectedEvent.status)]"><span :class="['w-1.5 h-1.5 rounded-full', getDot(selectedEvent.status)]" />{{ selectedEvent.status }}</span></div>
-                  <div class="info-block"><div class="info-label"><UIcon name="i-heroicons-eye" class="w-3.5 h-3.5" />Vues</div><p class="text-[13px] font-bold text-[#ea6c1e]">{{ selectedEvent.views?.toLocaleString() }}</p></div>
-                </div>
-              </template>
+                  <div>
+                    <p class="text-[13px] font-bold" :class="selectedEvent.status === 'Publié' ? 'text-emerald-700' : 'text-[#4a3f32]'">Publié</p>
+                    <p class="text-[11px]" :class="selectedEvent.status === 'Publié' ? 'text-emerald-600/70' : 'text-[#b0a898]'">Visible</p>
+                  </div>
+                  <div v-if="selectedEvent.status === 'Publié'" class="ml-auto w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
+                    <UIcon name="i-heroicons-check" class="w-3 h-3 text-white" />
+                  </div>
+                </button>
+                <button type="button" @click="selectedEvent.status = 'Brouillon'"
+                  :class="['flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all duration-150',
+                    selectedEvent.status === 'Brouillon'
+                      ? 'bg-amber-50 border-amber-200 shadow-[0_0_0_2px_rgba(217,119,6,0.10)]'
+                      : 'bg-[#faf8f5] border-[#ede8e0] hover:border-[#c0b8ad]']">
+                  <div :class="['w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
+                    selectedEvent.status === 'Brouillon' ? 'bg-amber-100 border border-amber-200' : 'bg-white border border-[#ede8e0]']">
+                    <UIcon name="i-heroicons-document-text" class="w-4 h-4"
+                      :class="selectedEvent.status === 'Brouillon' ? 'text-amber-600' : 'text-[#c0b8ad]'" />
+                  </div>
+                  <div>
+                    <p class="text-[13px] font-bold" :class="selectedEvent.status === 'Brouillon' ? 'text-amber-700' : 'text-[#4a3f32]'">Brouillon</p>
+                    <p class="text-[11px]" :class="selectedEvent.status === 'Brouillon' ? 'text-amber-600/70' : 'text-[#b0a898]'">Masqué</p>
+                  </div>
+                  <div v-if="selectedEvent.status === 'Brouillon'" class="ml-auto w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center">
+                    <UIcon name="i-heroicons-check" class="w-3 h-3 text-white" />
+                  </div>
+                </button>
+              </div>
             </div>
-            <div class="modal-footer"><button @click="isPreviewModalOpen = false" class="btn-ghost">Fermer</button></div>
+            <div class="flex items-start gap-3 p-3.5 rounded-xl bg-indigo-50 border border-indigo-100">
+              <UIcon name="i-heroicons-information-circle" class="w-4 h-4 text-[#5b47e0] flex-shrink-0 mt-0.5" />
+              <p class="text-[12.5px] text-[#5b47e0]/80 leading-relaxed">Les modifications sont visibles immédiatement si le statut est <strong>Publié</strong>.</p>
+            </div>
           </div>
-        </Transition>
-      </div>
-    </Transition>
 
-    <!-- ══════════════════════════════════
-         MODAL EDIT
-    ══════════════════════════════════ -->
-    <Transition name="fade">
-      <div v-if="isEditModalOpen" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" @click.self="isEditModalOpen = false">
-        <Transition name="slide-up">
-          <div v-if="selectedEvent" class="modal-sheet sm:max-w-2xl">
-            <div class="modal-header">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center">
-                  <UIcon name="i-heroicons-pencil-square" class="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 class="text-base font-bold text-white">Modifier l'événement</h3>
-                  <p class="text-xs text-orange-100/70">Mettez à jour les informations</p>
-                </div>
-              </div>
-              <button @click="isEditModalOpen = false" class="modal-close"><UIcon name="i-heroicons-x-mark" class="w-4 h-4" /></button>
-            </div>
-            <div class="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
-              <div class="field"><label class="field-label">Titre <span class="text-red-400">*</span></label><input v-model="selectedEvent.title" type="text" class="field-input" /></div>
-              <div class="field"><label class="field-label">Description <span class="text-red-400">*</span></label><textarea v-model="selectedEvent.description" rows="4" class="field-input resize-none" /><p class="text-[11px] text-[#b0a898] mt-1">{{ selectedEvent.description.length }} caractères</p></div>
-              <div class="field"><label class="field-label">Statut <span class="text-red-400">*</span></label><select v-model="selectedEvent.status" class="field-input"><option value="Publié">Publié</option><option value="Brouillon">Brouillon</option></select></div>
-              <div class="field"><label class="field-label">Lieu <span class="text-red-400">*</span></label><input v-model="selectedEvent.location" type="text" class="field-input" /></div>
-              <div class="flex gap-3 bg-blue-50 border border-blue-100 rounded-xl p-4">
-                <UIcon name="i-heroicons-information-circle" class="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                <p class="text-[12.5px] text-blue-700">Les modifications seront visibles immédiatement si le statut est <strong>Publié</strong>.</p>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button @click="isEditModalOpen = false" class="btn-ghost">Annuler</button>
-              <button @click="updateEvent" class="btn-primary"><UIcon name="i-heroicons-check" class="w-4 h-4" />Enregistrer</button>
-            </div>
+          <!-- Footer desktop -->
+          <div class="flex-shrink-0 px-6 py-4 border-t border-[#ede8e0] bg-[#faf8f5] flex items-center justify-end gap-3">
+            <button @click="isEditModalOpen = false"
+              class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-[#ede8e0] text-[13px] font-medium text-[#8a8078] hover:border-[#c0b8ad] transition-all">
+              Annuler
+            </button>
+            <button @click="updateEvent"
+              class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13.5px] font-bold text-white transition-all shadow-[0_4px_18px_rgba(234,108,30,0.25)]"
+              style="background: linear-gradient(135deg, #ea6c1e, #5b47e0)">
+              <UIcon name="i-heroicons-check" class="w-4 h-4" />
+              Enregistrer
+            </button>
           </div>
-        </Transition>
+
+        </div>
       </div>
     </Transition>
   </div>

@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import EventTable from './EventTable.vue'
-import CreateEventModal from './CreateEventModal.vue'
+import CreateEventModal from './EventWizard.vue'
 
 const isModalOpen = ref(false)
 const editingEvent = ref(null)

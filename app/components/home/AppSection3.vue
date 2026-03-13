@@ -1,58 +1,113 @@
-<template>
-  <div
-    class="w-full bg-gradient-to-br from-orange-200 via-white to-indigo-200 py-12 sm:py-16 lg:py-10"
-  >
-    <!-- Résultats des événements -->
-    <PastEvent />
-             
-    <section class="py-20 text-white mt-5">
-      <div class="max-w-5xl mx-auto px-6">
-        <!-- Header -->
-        <div class="text-center mb-16">
-          <div class="flex items-center justify-center mb-6">
-            <div
-              class="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-400 to-transparent"
-            ></div>
+<script setup>
+import PastEvent from './PastEvent.vue'
 
-            <span
-              class="mx-6 px-4 py-2 bg-white rounded-full text-sm font-semibold text-indigo-600 border border-gray-300"
-            >
+const advantages = [
+  {
+    icon: 'i-heroicons-calendar-days',
+    title: 'Création simplifiée',
+    description: 'Créez et publiez vos événements en quelques clics depuis votre tableau de bord.',
+    color: '#ea6c1e',
+    bg: '#fff7f2',
+    border: 'rgba(234,108,30,0.15)',
+  },
+  {
+    icon: 'i-heroicons-chart-bar',
+    title: 'Analytics puissants',
+    description: 'Suivez vos statistiques de vues, sources et tendances en temps réel.',
+    color: '#5b47e0',
+    bg: '#f3f1ff',
+    border: 'rgba(91,71,224,0.15)',
+  },
+  {
+    icon: 'i-heroicons-users',
+    title: 'Gestion complète',
+    description: 'Gérez vos participants, inscriptions et communications facilement.',
+    color: '#059669',
+    bg: '#f0fdf8',
+    border: 'rgba(5,150,105,0.15)',
+  },
+  {
+    icon: 'i-heroicons-megaphone',
+    title: 'Visibilité optimale',
+    description: "Touchez des milliers de personnes au Bénin grâce à notre audience.",
+    color: '#0891b2',
+    bg: '#f0faff',
+    border: 'rgba(8,145,178,0.15)',
+  },
+]
+</script>
+
+<template>
+  <div class="w-full bg-[#f5f3ef] font-outfit">
+
+    <!-- ══ ÉVÉNEMENTS PASSÉS ══ -->
+    <PastEvent />
+
+    <!-- ══ SECTION ORGANISATEURS ══ -->
+    <section class="py-16 sm:py-20 border-t border-[#ede8e0]">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6">
+
+        <!-- Header -->
+        <div class="text-center mb-12">
+
+          <!-- Pill diviseur -->
+          <div class="flex items-center gap-4 mb-8">
+            <div class="flex-1 h-px bg-[#ede8e0]" />
+            <span class="flex items-center gap-2 px-4 py-2 rounded-full
+                         bg-white border border-[#ede8e0]
+                         shadow-[0_1px_8px_rgba(0,0,0,0.04)]
+                         text-[11.5px] font-semibold text-[#5b47e0]">
+              <UIcon name="i-heroicons-sparkles" class="w-3.5 h-3.5" />
               Pour les organisateurs
             </span>
-
-            <div
-              class="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-400 to-transparent"
-            ></div>
+            <div class="flex-1 h-px bg-[#ede8e0]" />
           </div>
-          <h2 class="text-3xl sm:text-4xl lg:text-5xl font-light text-gray-900 mb-3">
+
+          <h2 class="text-[30px] sm:text-[40px] lg:text-[48px] font-bold text-[#1a1612]
+                     leading-tight tracking-tight mb-4">
             Devenez
-            <span
-              class="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-indigo-600"
-              >Organisateur
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#ea6c1e] to-[#5b47e0]">
+              Organisateur
             </span>
           </h2>
-          <p class="text-sm sm:text-base text-gray-600">
-            Rejoignez notre communauté de <strong>+100 organisateurs</strong> et donnez de la
-            visibilité à vos événements
+          <p class="text-[14px] sm:text-[15px] text-[#8a8078] max-w-lg mx-auto leading-relaxed">
+            Rejoignez notre communauté de
+            <strong class="text-[#4a3f32] font-semibold">+100 organisateurs</strong>
+            et donnez de la visibilité à vos événements au Bénin.
           </p>
         </div>
 
-        <!-- Grid -->
-        <div class="grid md:grid-cols-2 gap-8 mb-16">
+        <!-- Grid avantages -->
+        <div class="grid sm:grid-cols-2 gap-4 mb-12">
           <div
-            v-for="(advantage, index) in advantages"
-            :key="index"
-            class="flex items-start gap-4 p-6 bg-gradient-to-r from-orange-600 to-indigo-600 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-all border border-gray-300"
+            v-for="(adv, i) in advantages" :key="i"
+            class="group flex items-start gap-4 p-5 rounded-2xl bg-white
+                   border border-[#ede8e0]
+                   shadow-[0_2px_12px_rgba(0,0,0,0.04)]
+                   hover:shadow-[0_8px_28px_rgba(0,0,0,0.08)]
+                   hover:-translate-y-0.5
+                   transition-all duration-200"
           >
+            <!-- Icône colorée -->
             <div
-              class="flex-shrink-0 w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center border border-gray-300"
+              class="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center
+                     border transition-all duration-200"
+              :style="{
+                background: adv.bg,
+                borderColor: adv.border,
+              }"
             >
-              <UIcon :name="advantage.icon" class="w-7 h-7 text-white" />
+              <UIcon :name="adv.icon" class="w-5.5 h-5.5" :style="{ color: adv.color }" />
             </div>
-            <div>
-              <h3 class="font-bold text-lg mb-2">{{ advantage.title }}</h3>
 
-              <p class="text-white">{{ advantage.description }}</p>
+            <div class="min-w-0">
+              <h3 class="text-[14px] font-bold text-[#1a1612] mb-1.5
+                         group-hover:text-[#ea6c1e] transition-colors">
+                {{ adv.title }}
+              </h3>
+              <p class="text-[12.5px] text-[#8a8078] leading-relaxed">
+                {{ adv.description }}
+              </p>
             </div>
           </div>
         </div>
@@ -61,49 +116,34 @@
         <div class="text-center">
           <NuxtLink
             to="/organizerForm"
-
-            class="inline-block -20 px-8 py-4 bg-indigo-600 border border-gray-300 text-white font-bold rounded-xl hover:bg-indigo-500 transition-all shadow-xl hover:shadow-2xl"
+            class="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl
+                   bg-gradient-to-r from-[#ea6c1e] to-[#5b47e0]
+                   text-white text-[14px] font-bold
+                   shadow-[0_4px_20px_rgba(234,108,30,0.3)]
+                   hover:shadow-[0_6px_28px_rgba(234,108,30,0.4)]
+                   hover:-translate-y-0.5
+                   transition-all duration-200"
           >
-            <span class="flex items-center gap-2 leading-none">
-              <span>Devenir organisateur</span>
-              <ArrowRight class="w-5 h-5 shrink-0" />
-            </span>
+            Devenir organisateur
+            <div class="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center">
+              <UIcon name="i-heroicons-arrow-right" class="w-3.5 h-3.5" />
+            </div>
           </NuxtLink>
-          <p class="text-gray-600 text-sm mt-6">
+
+          <p class="text-[12.5px] text-[#b0a898] mt-5">
             Des questions ? Contactez-nous :
-            <a href="mailto:contact@bj-events.com" class="underline font-semibold"
-              >contact@weloveevent.com</a
-            >
+            <a href="mailto:contact@weloveevent.com"
+               class="text-[#ea6c1e] font-semibold hover:underline transition-all">
+              contact@weloveevent.com
+            </a>
           </p>
         </div>
+
       </div>
     </section>
   </div>
 </template>
 
-<script setup>
-import PastEvent from './PastEvent.vue';
-
-const advantages = [
-  {
-    icon: 'i-heroicons-calendar-days',
-    title: 'Création simplifiée',
-    description: 'Créez et publiez vos événements en quelques clics',
-  },
-  {
-    icon: 'i-heroicons-chart-bar',
-    title: 'Analytics puissants',
-    description: 'Suivez vos statistiques en temps réel',
-  },
-  {
-    icon: 'i-heroicons-users',
-    title: 'Gestion complète',
-    description: 'Gérez participants et inscriptions facilement',
-  },
-  {
-    icon: 'i-heroicons-megaphone',
-    title: 'Visibilité optimale',
-    description: 'Touchez des milliers de personnes au Bénin',
-  },
-]
-</script>
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
+</style>

@@ -228,8 +228,8 @@ watch([searchQuery, filterStatus], () => {
 </script>
 
 <template>
-  <div class="bg-[#f5f3ef] px-4 pt-4 pb-32 sm:px-6 sm:pb-12 font-outfit w-full min-h-screen">
-    <div class="max-w-7xl mx-auto space-y-5">
+  <div class="bg-[#f5f3ef] px-4 pt-4 pb-32 sm:px-6 sm:pb-12 font-outfit w-full min-h-screen overflow-y-auto">
+    <div class="max-w-7xl mx-auto space-y-5 ">
 
       <!-- ── Stats ── -->
       <div class="hidden sm:grid grid-cols-3 gap-3">
@@ -373,7 +373,7 @@ watch([searchQuery, filterStatus], () => {
         </div>
 
         <!-- DESKTOP tableau -->
-        <div class="hidden sm:block overflow-x-auto">
+        <div class="hidden sm:block overflow-x-auto overflow-y-auto max-h-[70vh]">
           <table class="w-full">
             <thead class="bg-[#f5f0e8] border-b border-[#ede8e0]">
               <tr>

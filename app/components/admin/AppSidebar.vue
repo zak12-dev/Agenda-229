@@ -71,16 +71,18 @@ const isActive = (path: string) => route.path === path
     <!-- Header logo -->
     <div class="px-6 pt-4 pb-3 border-b border-[#ede8e0]">
       <NuxtLink to="/" class="block group">
-        <h2 class="font-outfit font-bold text-[17px] tracking-tight text-[#1a1612] leading-none">
-          WeLove
-          <span class="bg-gradient-to-r from-[#ea6c1e] to-[#5b47e0] bg-clip-text text-transparent">
-            Event
-          </span>
-        </h2>
-        <p class="mt-1 text-[10px] uppercase tracking-[0.05em] text-[#b0a898] font-medium">
+        <div class="flex items-center gap-2 flex-shrink-0 group">
+        <svg width="32" height="32" viewBox="0 0 100 110" class="transition-transform duration-300 group-hover:scale-105 flex-shrink-0">
+            <circle cx="50" cy="18" r="16" fill="#ea6c1e"/>
+            <path d="M10 55 Q10 95 30 95 Q40 95 50 80 Q60 95 70 95 Q90 95 90 55 L90 50 Q90 40 80 40 L70 40 Q60 40 60 50 L60 68 Q60 75 50 75 Q40 75 40 68 L40 50 Q40 40 30 40 L20 40 Q10 40 10 50 Z" fill="#ea6c1e"/>
+          </svg>
+          <span class="text-[16px] sm:text-[17px] font-bold tracking-tight text-[#1a1612] group-hover:text-[#ea6c1e] transition-colors duration-300">WeLove<span class="text-[#ea6c1e]">Event</span></span>
+       </div>
+          <p class="mt-1 text-[10px] uppercase tracking-[0.05em] text-[#b0a898] font-medium">
           Dashboard Admin
         </p>
       </NuxtLink>
+       
     </div>
 
     <!-- User card -->

@@ -150,11 +150,10 @@ const currentYear = new Date().getFullYear()
         <!-- Branding + Réseaux -->
         <div class="space-y-5">
           <NuxtLink to="/" class="inline-flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-bold
-                        bg-gradient-to-br from-[#ea6c1e] to-[#5b47e0] text-white
-                        shadow-[0_4px_14px_rgba(234,108,30,0.3)]">
-              WLE
-            </div>
+            <svg width="36" height="36" viewBox="0 0 100 110" class="flex-shrink-0">
+              <circle cx="50" cy="18" r="16" fill="#ea6c1e"/>
+              <path d="M10 55 Q10 95 30 95 Q40 95 50 80 Q60 95 70 95 Q90 95 90 55 L90 50 Q90 40 80 40 L70 40 Q60 40 60 50 L60 68 Q60 75 50 75 Q40 75 40 68 L40 50 Q40 40 30 40 L20 40 Q10 40 10 50 Z" fill="#ea6c1e"/>
+            </svg>
             <span class="text-[19px] font-bold tracking-tight">
               <span class="text-white">WeLove</span><span class="text-[#ea6c1e]">Event</span>
             </span>

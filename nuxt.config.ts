@@ -29,7 +29,7 @@ export default defineNuxtConfig({
           rel: 'stylesheet',
           href: 'https://fonts.googleapis.com/css2?family=Nova+Square&display=swap',
         },
-        { rel: 'icon', href: '/favicon.ico' },
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
       ],
        script: [
         {
@@ -46,6 +46,7 @@ export default defineNuxtConfig({
 
     public: {
       apiBase: 'https://weloveevent.vercel.app',
+
 
 
       turnstileSiteKey: process.env.TURNSTILE_SITE_KEY,

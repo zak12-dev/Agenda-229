@@ -347,11 +347,11 @@ const navSections = [
 </script>
 
 <template>
-  <div class="bg-[#f5f3ef] px-4 pt-4 pb-32 sm:px-6 sm:pb-12 font-outfit w-full min-h-screen">
-    <div class="max-w-6xl mx-auto space-y-5">
+  <div class="bg-[#f5f3ef] px-4 pt-4 pb-32 sm:px-6 sm:pb-12 font-outfit w-full min-h-screen overflow-y-auto">
+    <div class="max-w-7xl mx-auto space-y-5">
 
       <!-- ══ NAV SECTIONS ══ -->
-      <div class="bg-white rounded-2xl border border-[#ede8e0] p-1.5 flex justify-between gap-1
+      <div class="  bg-white rounded-2xl border border-[#ede8e0] p-1.5 flex justify-between gap-1
                   overflow-x-auto scrollbar-none shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
         <button
           v-for="s in navSections" :key="s.key"

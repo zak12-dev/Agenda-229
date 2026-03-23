@@ -2,6 +2,7 @@
 import { createAuthClient } from 'better-auth/client'
 import { ref, computed } from 'vue'
 
+
 // =====================
 // TYPES
 // =====================

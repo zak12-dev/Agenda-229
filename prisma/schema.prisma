@@ -200,12 +200,27 @@ model EventView {
   userId    String?   // null si visiteur non connecté
   visitorId String?   // pour visiteurs anonymes
   createdAt DateTime @default(now())
+   source    TrafficSource? 
+   country   String?
+  city      String?
+  device String?
+   referrer String?
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user  User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([eventId, userId])
-  @@unique([eventId, visitorId])
+  @@index([eventId])
+@@index([createdAt])
+@@index([eventId, createdAt])
+}
+
+enum TrafficSource {
+  FACEBOOK
+  WHATSAPP
+  INSTAGRAM
+  GOOGLE
+  DIRECT
+  PLATFORM
 }
 
 enum OrganizerRequestStatus {

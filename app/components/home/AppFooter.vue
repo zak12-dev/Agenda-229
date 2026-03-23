@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
+import { ref } from 'vue'
 import { useAuth } from '../../../composables/useAuth'
 import { useRouter } from '#imports'
 
@@ -8,124 +8,112 @@ type NavLink = {
   to: string
   requiresAuth?: boolean
   requiresOrganizer?: boolean
+  hideIfOrganizer?: boolean
 }
 
 const { session, fetchSession } = useAuth()
 const router = useRouter()
+const toast = useToast()
 
-// ✅ Modal state
-const showModal = ref(false)
-const modalMessage = ref('')
-const modalType = ref<'success' | 'error'>('success')
-
-// ✅ Fonction utilitaire réutilisable
-const openModal = (message: string, type: 'success' | 'error' = 'success') => {
-  modalMessage.value = message
-  modalType.value = type
-  showModal.value = true
-
-  // Option fermeture automatique après 3s
-  setTimeout(() => {
-    showModal.value = false
-  }, 3000)
-}
-
-// Navigation principale
+// ── Navigation ──
 const navigation: Record<string, NavLink[]> = {
   Événements: [
-    { label: 'Concerts', to: '/events/concerts' },
-    { label: 'Conférences', to: '/events/conferences' },
-    { label: 'Festivals', to: '/events/festivals' },
-    { label: 'Sport', to: '/events/sport' },
-    { label: 'Business', to: '/events/business' },
+    { label: 'Concerts',     to: '/events/concerts' },
+    { label: 'Conférences',  to: '/events/conferences' },
+    { label: 'Festivals',    to: '/events/festivals' },
+    { label: 'Sport',        to: '/events/sport' },
+    { label: 'Business',     to: '/events/business' },
   ],
   Organisateurs: [
-    { label: 'Devenir organisateur', to: '/organizerForm', requiresAuth: true },
-    {
-      label: 'Créer un événement',
-      to: '/organizerForm',
-      requiresAuth: true,
-      requiresOrganizer: true,
-    },
-    { label: 'Dashboard', to: '/dashboard/events', requiresAuth: true, requiresOrganizer: true },
-    {
-      label: 'Guide organisateur',
-      to: '/organizers/guide',
-      requiresOrganizer: true,
-      requiresAuth: true,
-    },
+    { label: 'Devenir organisateur', to: '/organizerForm', requiresAuth: true, hideIfOrganizer: true },
+    { label: 'Créer un événement',   to: '/organizerForm',     requiresAuth: true, requiresOrganizer: true },
+    { label: 'Dashboard',            to: '/dashboard/events',  requiresAuth: true, requiresOrganizer: true },
+    { label: 'Guide organisateur',   to: '/organizers/guide',  requiresAuth: true, requiresOrganizer: true },
   ],
   Support: [
     { label: "Centre d'aide", to: '/guides' },
-    { label: 'Contact', to: '/contact' },
-    { label: 'FAQ', to: '/helps/faq' },
+    { label: 'Contact',       to: '/contact' },
+    { label: 'FAQ',           to: '/helps/faq' },
   ],
   Société: [
-    { label: 'À propos', to: '/about' },
-    { label: "Conditions d'utilisation", to: '/helps/terms' },
+    { label: 'À propos',                     to: '/about' },
+    { label: "Conditions d'utilisation",     to: '/helps/terms' },
     { label: 'Politique de confidentialité', to: '/helps/privacy' },
   ],
 }
 
-// Social Links
 const socialLinks = [
-  {
-    label: 'Facebook',
-    to: 'https://facebook.com',
-    icon: 'lucide:facebook',
-  },
-  {
-    label: 'Instagram',
-    to: 'https://instagram.com',
-    icon: 'lucide:instagram',
-  },
-  {
-    label: 'WhatsApp',
-    to: 'https://wa.me/TON_NUMERO',
-    icon: 'simple-icons:whatsapp',
-  },
-
-  {
-    label: 'YouTube',
-    to: 'https://youtube.com',
-    icon: 'lucide:youtube',
-  },
+  { label: 'Facebook',  to: 'https://facebook.com',     icon: 'lucide:facebook' },
+  { label: 'Instagram', to: 'https://instagram.com',    icon: 'lucide:instagram' },
+  { label: 'WhatsApp',  to: 'https://wa.me/TON_NUMERO', icon: 'simple-icons:whatsapp' },
+  { label: 'YouTube',   to: 'https://youtube.com',      icon: 'lucide:youtube' },
 ]
 
-// Newsletter
+// ── Newsletter ──
 const email = ref('')
+const emailError = ref('')
 const isSubscribing = ref(false)
 
-const handleSubscribe = async () => {
-  if (!email.value) return
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
+const validateEmail = () => {
+  const val = email.value.trim()
+  if (!val) { emailError.value = 'Veuillez entrer votre adresse email.'; return false }
+  if (!EMAIL_REGEX.test(val)) { emailError.value = 'Adresse email invalide.'; return false }
+  emailError.value = ''
+  return true
+}
+
+const handleSubscribe = async () => {
+  if (!validateEmail()) return
   try {
     isSubscribing.value = true
-
-    await $fetch('/api/newsletter', {
-      method: 'POST',
-      body: { email: email.value },
-    })
-
+    await $fetch('/api/newsletter', { method: 'POST', body: { email: email.value.trim().toLowerCase() } })
     email.value = ''
-    openModal('Inscription réussie 🎉', 'success')
+    emailError.value = ''
+    toast.add({
+      title: 'Inscription réussie 🎉',
+      description: 'Vous recevrez nos meilleurs événements chaque semaine.',
+      color: 'green',
+      icon: 'i-heroicons-check-circle',
+    })
   } catch (error: any) {
-    openModal(error?.statusMessage || 'Erreur inscription', 'error')
+    toast.add({
+      title: "Erreur d'inscription",
+      description: error?.statusMessage || 'Veuillez réessayer.',
+      color: 'red',
+      icon: 'i-heroicons-x-circle',
+    })
   } finally {
     isSubscribing.value = false
   }
 }
 
-// ✅ Navigation avec modal réutilisé
-const handleNavigation = async (link: { to: string; requiresAuth?: boolean }) => {
+// ── Navigation avec garde auth → toast ──
+const handleNavigation = async (link: NavLink) => {
   if (link.requiresAuth) {
+    // Recharge la session si nécessaire
+    if (!session.value) await fetchSession()
+
+    // ✅ Pas connecté → toast orange avec cadenas
     if (!session.value) {
-      await fetchSession()
+      toast.add({
+        title: 'Connexion requise',
+        description: 'Vous devez vous connecter pour accéder à cette page.',
+        color: 'orange',
+        icon: 'i-heroicons-lock-closed',
+      })
+      return
     }
 
-    if (!session.value) {
-      await nextTick()
-      openModal('Vous devez vous connecter pour accéder à cette page', 'error')
+    // ✅ Connecté mais pas organisateur
+    if (link.requiresOrganizer && session.value?.user?.roleId !== 2) {
+      toast.add({
+        title: 'Accès réservé aux organisateurs',
+        description: 'Devenez organisateur pour débloquer cette fonctionnalité.',
+        color: 'orange',
+        icon: 'i-heroicons-user-group',
+      })
       return
     }
   }
@@ -133,137 +121,151 @@ const handleNavigation = async (link: { to: string; requiresAuth?: boolean }) =>
   router.push(link.to)
 }
 
-// ✅ Accordéons mobile
+// ── Accordéons mobile ──
 const openSections = ref<Set<string>>(new Set())
-
 const toggleSection = (section: string) => {
-  if (openSections.value.has(section)) {
-    openSections.value.delete(section)
-  } else {
-    openSections.value.add(section)
-  }
+  if (openSections.value.has(section)) openSections.value.delete(section)
+  else openSections.value.add(section)
 }
+
+const currentYear = new Date().getFullYear()
 </script>
 
 <template>
-  <footer class="bg-gradient-to-br from-slate-900 via-orange-900 to-slate-900 text-white">
-    <!-- Vague décorative -->
-    <div class="relative h-12 sm:h-16">
-      <svg
-        class="absolute bottom-0 w-full h-full text-slate-50"
-        viewBox="0 0 1440 120"
-        preserveAspectRatio="none"
-      >
-        <path
-          fill="currentColor"
-          d="M0,64L80,69.3C160,75,320,85,480,80C640,75,800,53,960,48C1120,43,1280,53,1360,58.7L1440,64L1440,0L1360,0C1280,0,1120,0,960,0C800,0,640,0,480,0C320,0,160,0,80,0L0,0Z"
-        />
+  <footer class="bg-[#1a1612] text-white font-outfit">
+
+    <!-- Vague de transition avec le fond crème -->
+    <div class="h-8 bg-[#f5f3ef]">
+      <svg class="w-full h-full" viewBox="0 0 1440 32" preserveAspectRatio="none">
+        <path fill="#1a1612"
+          d="M0,16L80,18C160,20,320,24,480,22C640,20,800,14,960,12C1120,10,1280,14,1360,16L1440,18L1440,32L1360,32C1280,32,1120,32,960,32C800,32,640,32,480,32C320,32,160,32,80,32L0,32Z"/>
       </svg>
     </div>
 
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-16 pb-6 sm:pb-8">
-      <!-- Top Section -->
-      <div
-        class="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 mb-8 sm:mb-16 pb-8 sm:pb-16 border-b border-white/10"
-      >
-        <!-- Branding & Social -->
-        <div class="space-y-4 sm:space-y-6">
-          <div class="flex items-center gap-2 sm:gap-3">
-            <NuxtLink to="/" class="flex items-center gap-2 sm:gap-3 z-50">
-              <div
-                class="w-10 h-10 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-sm font-semibold transition-all duration-500 bg-gradient-to-br from-orange-600 to-indigo-600 text-white shadow-lg shadow-orange-500/20"
-              >
-                WLE
-              </div>
-              <span
-                class="text-xl sm:text-base lg:text-3xl font-bold tracking-tight transition-all duration-500 text-white"
-              >
-                WeLoveEvent
-              </span>
-            </NuxtLink>
-          </div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-6 sm:pb-8">
 
-          <p class="text-sm sm:text-base text-gray-300 max-w-md">
-            Découvrez et participez aux meilleurs événements du Bénin. Culture, sport, business et
-            plus encore.
+      <!-- ══ TOP : Branding + Newsletter ══ -->
+      <div class="grid md:grid-cols-2 gap-8 sm:gap-12 mb-10 pb-10 border-b border-white/8">
+
+        <!-- Branding + Réseaux -->
+        <div class="space-y-5">
+          <NuxtLink to="/" class="inline-flex items-center gap-2.5">
+            <svg width="36" height="36" viewBox="0 0 100 110" class="flex-shrink-0">
+              <circle cx="50" cy="18" r="16" fill="#ea6c1e"/>
+              <path d="M10 55 Q10 95 30 95 Q40 95 50 80 Q60 95 70 95 Q90 95 90 55 L90 50 Q90 40 80 40 L70 40 Q60 40 60 50 L60 68 Q60 75 50 75 Q40 75 40 68 L40 50 Q40 40 30 40 L20 40 Q10 40 10 50 Z" fill="#ea6c1e"/>
+            </svg>
+            <span class="text-[19px] font-bold tracking-tight">
+              <span class="text-white">WeLove</span><span class="text-[#ea6c1e]">Event</span>
+            </span>
+          </NuxtLink>
+
+          <p class="text-[12.5px] text-white/40 leading-relaxed max-w-sm">
+            Découvrez et participez aux meilleurs événements du Bénin. Culture, sport, business et plus encore.
           </p>
 
-          <div class="flex gap-2 sm:gap-3 pt-2 sm:pt-4">
+          <div class="flex gap-2">
             <a
-              v-for="social in socialLinks"
-              :key="social.label"
-              :href="social.to"
-              target="_blank"
-              class="group relative"
-              :aria-label="social.label"
+              v-for="social in socialLinks" :key="social.label"
+              :href="social.to" target="_blank" :aria-label="social.label"
+              class="w-9 h-9 rounded-xl bg-white/6 border border-white/8
+                     flex items-center justify-center
+                     hover:bg-white/14 hover:border-white/20 hover:scale-110
+                     transition-all duration-200"
             >
-              <div
-                class="absolute inset-0 bg-white rounded-lg opacity-0 group-hover:opacity-20 transition-opacity blur-sm"
-              ></div>
-              <div
-                class="relative bg-white/10 backdrop-blur-sm p-2.5 sm:p-3 rounded-lg hover:bg-white/20 transition-all duration-300 hover:scale-110"
-              >
-                <UIcon :name="social.icon" class="w-5 h-5" />
-              </div>
+              <UIcon :name="social.icon" class="w-4 h-4 text-white/55" />
             </a>
           </div>
         </div>
 
         <!-- Newsletter -->
-        <div
-          class="bg-white/5 backdrop-blur-sm rounded-xl sm:rounded-2xl p-6 sm:p-8 border border-white/20"
-        >
-          <div class="flex items-center gap-2 mb-3 sm:mb-4">
-            <UIcon name="i-heroicons-envelope" class="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
-            <h3 class="text-base sm:text-xl font-bold text-orange-400">Newsletter</h3>
+        <div class="bg-white/4 rounded-2xl border border-white/8 p-5">
+          <div class="flex items-center gap-2 mb-1.5">
+            <div class="w-7 h-7 rounded-lg bg-[#ea6c1e]/15 border border-[#ea6c1e]/20
+                        flex items-center justify-center flex-shrink-0">
+              <UIcon name="i-heroicons-envelope" class="w-3.5 h-3.5 text-[#ea6c1e]" />
+            </div>
+            <h3 class="text-[13.5px] font-bold text-white">Newsletter</h3>
           </div>
-          <p class="text-gray-300 text-xs sm:text-sm mb-4 sm:mb-6">
+          <p class="text-[11.5px] text-white/35 mb-4 leading-relaxed">
             Recevez notre sélection hebdomadaire des meilleurs événements au Bénin
           </p>
-          <form @submit.prevent="handleSubscribe" class="space-y-3">
+          <div class="space-y-2">
             <div class="flex flex-col sm:flex-row gap-2">
-              <input
-                v-model="email"
-                type="email"
-                placeholder="votre@email.com"
-                required
-                class="flex-1 px-4 py-2.5 sm:py-3 bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent rounded-full text-sm"
-              />
+              <div class="flex-1 relative">
+                <input
+                  v-model="email"
+                  type="email"
+                  placeholder="votre@email.com"
+                  @input="emailError = ''"
+                  @keydown.enter="handleSubscribe"
+                  maxlength="100"
+                  autocomplete="email"
+                  class="w-full px-4 py-2.5 rounded-xl text-[12px] bg-white/8
+                         border text-white placeholder:text-white/20
+                         outline-none transition-all duration-200"
+                  :class="emailError
+                    ? 'border-red-400/60 focus:border-red-400/80 focus:shadow-[0_0_0_3px_rgba(248,113,113,0.12)]'
+                    : 'border-white/10 focus:border-[#ea6c1e]/50 focus:shadow-[0_0_0_3px_rgba(234,108,30,0.08)]'"
+                />
+              </div>
               <button
-                type="submit"
+                @click="handleSubscribe"
                 :disabled="isSubscribing"
-                class="px-6 py-2.5 sm:py-3 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-800 text-white font-medium rounded-full transition-all duration-300 flex items-center justify-center gap-2 text-sm whitespace-nowrap"
+                class="flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl
+                       bg-gradient-to-r from-[#ea6c1e] to-[#5b47e0]
+                       text-white text-[12px] font-semibold whitespace-nowrap
+                       shadow-[0_3px_12px_rgba(234,108,30,0.2)]
+                       hover:opacity-90 disabled:opacity-50
+                       transition-all duration-200"
               >
-                <span>{{ isSubscribing ? 'Envoi...' : "S'abonner" }}</span>
-                <UIcon name="i-heroicons-paper-airplane" class="w-4 h-4" />
+                <UIcon name="i-heroicons-paper-airplane" class="w-3.5 h-3.5" />
+                {{ isSubscribing ? 'Envoi...' : "S'abonner" }}
               </button>
             </div>
-          </form>
+            <!-- Message d'erreur -->
+            <Transition enter-active-class="transition-all duration-200" enter-from-class="opacity-0 -translate-y-1" enter-to-class="opacity-100 translate-y-0">
+              <p v-if="emailError" class="flex items-center gap-1.5 text-[11px] text-red-400/90 pl-1">
+                <UIcon name="i-heroicons-exclamation-circle" class="w-3.5 h-3.5 flex-shrink-0" />
+                {{ emailError }}
+              </p>
+            </Transition>
+          </div>
         </div>
       </div>
 
-      <!-- Navigation Links -->
-      <!-- Desktop: Grid 4 colonnes -->
-      <div class="hidden md:grid md:grid-cols-4 gap-8 mb-8">
+      <!-- ══ NAV DESKTOP ══ -->
+      <div class="hidden md:grid md:grid-cols-4 gap-8 mb-10">
         <div v-for="(section, name) in navigation" :key="name">
-          <h4 class="font-semibold text-lg mb-4 text-orange-300">{{ name }}</h4>
-          <ul class="space-y-3">
+          <h4 class="text-[10px] font-bold text-[#ea6c1e] uppercase tracking-widest mb-4">
+            {{ name }}
+          </h4>
+          <ul class="space-y-2.5">
             <li
-              v-for="link in section.filter((link) => {
-                if (link.requiresOrganizer && session?.user?.roleId !== 2) {
-                  return false
-                }
+              v-for="link in section.filter(l => {
+                const isOrganizer = session?.value?.user?.roleId === 2
+                if (l.hideIfOrganizer && isOrganizer) return false
+                if (l.requiresOrganizer && !isOrganizer) return false
                 return true
               })"
               :key="link.to"
             >
               <button
                 @click="handleNavigation(link)"
-                class="text-gray-300 hover:text-white transition-colors duration-200 flex items-center gap-2 group w-full text-left"
+                class="group flex items-center gap-2 text-[12px] text-white/40
+                       hover:text-white/90 transition-colors duration-150 text-left w-full"
               >
+                <!-- Icône cadenas si lien protégé et non connecté -->
                 <UIcon
+                  v-if="link.requiresAuth && !session"
+                  name="i-heroicons-lock-closed"
+                  class="w-3 h-3 text-white/20 flex-shrink-0 group-hover:text-[#ea6c1e]/60 transition-colors"
+                />
+                <UIcon
+                  v-else
                   name="i-heroicons-chevron-right"
-                  class="w-4 h-4 opacity-0 group-hover:opacity-100 -ml-6 group-hover:ml-0 transition-all"
+                  class="w-3 h-3 opacity-0 -translate-x-1 flex-shrink-0
+                         group-hover:opacity-100 group-hover:translate-x-0
+                         text-[#ea6c1e] transition-all duration-150"
                 />
                 {{ link.label }}
               </button>
@@ -272,47 +274,54 @@ const toggleSection = (section: string) => {
         </div>
       </div>
 
-      <!-- Mobile: Accordéons -->
-      <div class="md:hidden space-y-3 mb-8">
-        <div v-for="(section, name) in navigation" :key="name" class="border-b border-white/10">
+      <!-- ══ NAV MOBILE (accordéons) ══ -->
+      <div class="md:hidden border-t border-white/8 mb-8">
+        <div v-for="(section, name) in navigation" :key="name"
+          class="border-b border-white/8">
           <button
             @click="toggleSection(name as string)"
-            class="w-full flex items-center justify-between py-4 text-left"
+            class="w-full flex items-center justify-between py-3.5"
           >
-            <span class="font-semibold text-base text-orange-300">{{ name }}</span>
-            <UIcon
-              name="i-heroicons-chevron-down"
-              :class="[
-                'w-5 h-5 text-orange-300 transition-transform duration-300',
-                openSections.has(name as string) ? 'rotate-180' : '',
-              ]"
-            />
+            <span class="text-[12.5px] font-semibold text-white/60">{{ name }}</span>
+            <UIcon name="i-heroicons-chevron-down"
+              class="w-4 h-4 text-[#ea6c1e] transition-transform duration-200"
+              :class="openSections.has(name as string) ? 'rotate-180' : ''" />
           </button>
 
           <Transition
-            enter-active-class="transition-all duration-300 ease-out"
-            enter-from-class="max-h-0 opacity-0"
-            enter-to-class="max-h-96 opacity-100"
-            leave-active-class="transition-all duration-200 ease-in"
-            leave-from-class="max-h-96 opacity-100"
-            leave-to-class="max-h-0 opacity-0"
+            enter-active-class="transition-all duration-200 ease-out"
+            enter-from-class="opacity-0 -translate-y-1"
+            enter-to-class="opacity-100 translate-y-0"
+            leave-active-class="transition-all duration-150 ease-in"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
           >
-            <ul v-if="openSections.has(name as string)" class="pb-4 space-y-3 overflow-hidden">
+            <ul v-if="openSections.has(name as string)" class="pb-4 space-y-2 pl-1">
               <li
-                v-for="link in section.filter((link) => {
-                  if (link.requiresOrganizer && session?.user?.roleId !== 2) {
-                    return false
-                  }
-                  return true
-                })"
+                v-for="link in section.filter(l => {
+                const isOrganizer = session?.value?.user?.roleId === 2
+                if (l.hideIfOrganizer && isOrganizer) return false
+                if (l.requiresOrganizer && !isOrganizer) return false
+                return true
+              })"
                 :key="link.to"
               >
                 <button
                   @click="handleNavigation(link)"
-                  class="text-gray-300 hover:text-white transition-colors duration-200 flex items-center gap-2 w-full text-left py-1.5 pl-4"
+                  class="flex items-center gap-2 text-[11.5px] text-white/35
+                         hover:text-white/80 transition-colors py-1 text-left w-full"
                 >
-                  <UIcon name="i-heroicons-chevron-right" class="w-4 h-4" />
-                  <span class="text-sm">{{ link.label }}</span>
+                  <UIcon
+                    v-if="link.requiresAuth && !session"
+                    name="i-heroicons-lock-closed"
+                    class="w-3 h-3 text-white/20 flex-shrink-0"
+                  />
+                  <UIcon
+                    v-else
+                    name="i-heroicons-chevron-right"
+                    class="w-3 h-3 text-[#ea6c1e] flex-shrink-0"
+                  />
+                  {{ link.label }}
                 </button>
               </li>
             </ul>
@@ -320,94 +329,33 @@ const toggleSection = (section: string) => {
         </div>
       </div>
 
-      <!-- Bottom Section -->
-      <div class="pt-6 sm:pt-8 border-t border-white/10">
-        <div
-          class="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-gray-400"
-        >
-          <p class="text-center sm:text-left">
-            © {{ new Date().getFullYear() }} WeLoveEvent. Tous droits réservés.
+      <!-- ══ BOTTOM ══ -->
+      <div class="pt-5 border-t border-white/8">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p class="text-[11px] text-white/20">
+            © {{ currentYear }} WeLoveEvent. Tous droits réservés.
           </p>
-          <div class="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
-            <NuxtLink to="/helps/terms" class="hover:text-white transition-colors">
+          <div class="flex items-center gap-5">
+            <NuxtLink to="/helps/terms"
+              class="text-[11px] text-white/25 hover:text-white/60 transition-colors">
               Conditions
             </NuxtLink>
-            <NuxtLink to="/helps/privacy" class="hover:text-white transition-colors">
+            <NuxtLink to="/helps/privacy"
+              class="text-[11px] text-white/25 hover:text-white/60 transition-colors">
               Confidentialité
             </NuxtLink>
-            <NuxtLink to="/contact" class="hover:text-white transition-colors"> Contact </NuxtLink>
+            <NuxtLink to="/contact"
+              class="text-[11px] text-white/25 hover:text-white/60 transition-colors">
+              Contact
+            </NuxtLink>
           </div>
         </div>
       </div>
+
     </div>
-
-    <!-- Modal -->
-    <Transition
-      enter-active-class="transition-opacity duration-300"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition-opacity duration-200"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
-    >
-      <div
-        v-if="showModal"
-        class="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4"
-      >
-        <Transition
-          enter-active-class="transition-all duration-300"
-          enter-from-class="opacity-0 scale-95"
-          enter-to-class="opacity-100 scale-100"
-          leave-active-class="transition-all duration-200"
-          leave-from-class="opacity-100 scale-100"
-          leave-to-class="opacity-0 scale-95"
-        >
-          <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm text-center">
-            <div class="mb-4">
-              <div
-                :class="[
-                  'w-16 h-16 mx-auto rounded-full flex items-center justify-center',
-                  modalType === 'success' ? 'bg-green-100' : 'bg-red-100',
-                ]"
-              >
-                <UIcon
-                  :name="
-                    modalType === 'success' ? 'i-heroicons-check-circle' : 'i-heroicons-x-circle'
-                  "
-                  :class="[
-                    'w-10 h-10',
-                    modalType === 'success' ? 'text-green-600' : 'text-red-600',
-                  ]"
-                />
-              </div>
-            </div>
-
-            <h2
-              class="text-lg font-bold mb-3"
-              :class="modalType === 'success' ? 'text-green-600' : 'text-red-600'"
-            >
-              {{ modalType === 'success' ? 'Succès' : 'Erreur' }}
-            </h2>
-
-            <p class="text-gray-600 mb-6 text-sm">
-              {{ modalMessage }}
-            </p>
-
-            <button
-              @click="showModal = false"
-              class="w-full bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 transition font-medium"
-            >
-              OK
-            </button>
-          </div>
-        </Transition>
-      </div>
-    </Transition>
   </footer>
 </template>
 
 <style scoped>
-html {
-  scroll-behavior: smooth;
-}
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
 </style>

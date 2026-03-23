@@ -19,6 +19,9 @@ model User {
   roleId        Int
   status        String   @default("active")
   organizerStatus String @default("none")
+  tickets       Ticket[]
+  scanLogs      ScanLog[] @relation("UserScanLogs")
+  validations   TicketValidation[] @relation("Validator")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -130,6 +133,7 @@ model Event {
   user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   ville      Ville            @relation(fields: [villeId], references: [id], onDelete: Cascade)
   category   Categorie        @relation(fields: [categoryId], references:[id], onDelete: Cascade)
+  tickets     Ticket[]
   images      EventImage[]
   favorites   Favorite[]
   viewsRelation EventView[]
@@ -200,20 +204,64 @@ model EventView {
   userId    String?   // null si visiteur non connecté
   visitorId String?   // pour visiteurs anonymes
   createdAt DateTime @default(now())
-   source    TrafficSource? 
-   country   String?
+  source    TrafficSource? 
+  country   String?
   city      String?
   device String?
-   referrer String?
+  referrer String?
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user  User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([eventId])
-@@index([createdAt])
-@@index([eventId, createdAt])
+  @@index([createdAt])
+  @@index([eventId, createdAt])
 }
 
+model Ticket {
+  id         String   @id @default(cuid())
+  token      String   @unique @db.Text
+  status     TicketStatus @default(ACTIVE)
+  usedCount  Int      @default(0)
+  maxUsage   Int      @default(1)
+  expiresAt  DateTime
+
+  eventId    String
+  userId     String
+
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  validations TicketValidation[]
+  scanLogs    ScanLog[]
+
+  createdAt DateTime @default(now())
+  @@index([token])
+}
+
+model TicketValidation {
+  id          String   @id @default(cuid())
+  validatedAt DateTime @default(now())
+
+  ticketId    String
+  validatedBy String
+
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  validator   User     @relation("Validator", fields: [validatedBy], references: [id])
+}
+
+model ScanLog {
+  id         String   @id @default(cuid())
+  scanResult ScanResult
+  createdAt  DateTime @default(now())
+
+  ticketId   String
+  scannedBy  String
+
+  ticket     Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  scanner    User     @relation("UserScanLogs", fields: [scannedBy], references: [id])
+  @@index([ticketId])
+}
 enum TrafficSource {
   FACEBOOK
   WHATSAPP
@@ -242,4 +290,17 @@ enum PriceType {
 enum EntryMode {
   PUBLIC
   PRIVATE
+}
+
+enum TicketStatus {
+  ACTIVE
+  EXPIRED
+  USED
+}
+
+enum ScanResult {
+  VALID
+  REFUSED
+  EXPIRED
+  INVALID
 }

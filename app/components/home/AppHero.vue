@@ -64,11 +64,17 @@ const toggleFavorite = async () => {
 }
 
 watch(currentEvent, async (event) => {
-  if (!event?.id || !session.value) return
+  // ✅ Guard explicite — ne pas appeler si pas connecté
+  if (!event?.id || !session.value?.user) {
+    isFavorite.value = false
+    return
+  }
   try {
     const response: any = await $fetch(`/api/favorites/check?eventId=${event.id}`)
     isFavorite.value = response.isFavorite
-  } catch { isFavorite.value = false }
+  } catch {
+    isFavorite.value = false
+  }
 }, { immediate: true })
 
 const categories = [

@@ -600,7 +600,6 @@ const getAvatarGradient = (name: string) => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
 
 :deep(.prose) {
   color: #4a3f32;

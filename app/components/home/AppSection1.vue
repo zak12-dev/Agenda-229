@@ -478,9 +478,10 @@ if (process.client) {
                   <span class="text-[20px] font-bold text-[#ea6c1e] leading-none">
                     {{ formatDay(event.eventDate) }}
                   </span>
-                  <span class="text-[9px] font-semibold text-[#8a8078] uppercase tracking-wide mt-0.5">
+                  <span class="text-[9px] font-semibold text-[#6b6560] uppercase tracking-wide mt-0.5">
                     {{ formatMonth(event.eventDate) }}
                   </span>
+                  
                 </div>
               </div>
 
@@ -507,13 +508,13 @@ if (process.client) {
                 <span class="truncate">{{ event.ville?.nomVille }}</span>
               </div>
 
-              <p class="text-[12px] text-[#8a8078] line-clamp-2 mb-4 leading-relaxed">
+              <p class="text-[12px] text-[#6b6560] line-clamp-2 mb-4 leading-relaxed">
                 {{ event.description }}
               </p>
 
               <!-- Footer card -->
               <div class="flex items-center justify-between pt-3 border-t border-[#ede8e0]">
-                <div class="flex items-center gap-1.5 text-[11.5px] text-[#b0a898]">
+                <div class="flex items-center gap-1.5 text-[11.5px] text-[#6b6560]">
                   <UIcon name="i-heroicons-eye" class="w-3.5 h-3.5" />
                   <span>{{ event.views }} vues</span>
                 </div>

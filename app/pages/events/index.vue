@@ -203,7 +203,6 @@
         <div>
           <h2 class="text-[22px] sm:text-[28px] font-bold text-[#1a1612] tracking-tight leading-tight">
             <template v-if="loading">Événements à la une</template>
-           
             <template v-else>Événements à la une</template>
           </h2>
           <p class="text-[12.5px] text-[#b0a898] mt-0.5">
@@ -552,7 +551,6 @@ watch([searchQuery, selectedCategory, selectedDate, selectedLocation, selectedPr
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
 
 /* ── Filtres ── */
 .filter-btn {

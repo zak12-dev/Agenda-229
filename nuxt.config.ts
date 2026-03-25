@@ -17,27 +17,36 @@ export default defineNuxtConfig({
       title: 'WeLoveEvent',
       htmlAttrs: { lang: 'fr' },
       link: [
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         {
           rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css2?family=Gravitas+One&display=swap',
-        },
-        {
-          rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css2?family=Cookie&display=swap',
-        },
-        {
-          rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css2?family=Nova+Square&display=swap',
+          // ✅ Une seule requête, tous les weights, display=swap pour éviter le FOIT
+          href: 'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap',
         },
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'icon', href: '/favicon.ico' }, // fallback navigateurs anciens
       ],
-       script: [
+      script: [
         {
-          src: "https://challenges.cloudflare.com/turnstile/v0/api.js",
+          src: 'https://challenges.cloudflare.com/turnstile/v0/api.js',
           async: true,
-          defer: true
-        }
-      ]
+          defer: true,
+        },
+      ],
+    },
+  },
+
+  routeRules: {
+    '/**': {
+      headers: {
+        'X-Frame-Options': 'SAMEORIGIN',
+        'X-Content-Type-Options': 'nosniff',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        // ✅ Ajout : anti-clickjacking renforcé
+        'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+      },
     },
   },
 
@@ -46,9 +55,6 @@ export default defineNuxtConfig({
 
     public: {
       apiBase: 'https://weloveevent.vercel.app',
-
-
-
       turnstileSiteKey: process.env.TURNSTILE_SITE_KEY,
     },
   },

@@ -266,7 +266,6 @@ async function handleLogout() {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
 
 .section-label {
   font-size: 10px; font-weight: 700; color: #c0b8ad;

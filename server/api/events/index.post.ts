@@ -117,13 +117,18 @@ export default defineEventHandler(async (event) => {
 
     for (const imageFile of imageFiles) {
       const timestamp = Date.now()
-      const safeFilename = (imageFile.filename || 'image').replace(/\s+/g, '_')
+      const safeFilename = (imageFile.filename || 'image')
+        .replace(/\s+/g, '_')
+        .replace(/\.[^/.]+$/, '') // supprime l'extension
       const uniqueSuffix = `${timestamp}-${Math.round(Math.random() * 1e9)}`
       const uploadResult = await cloudinary.uploader.upload(
         `data:${imageFile.type};base64,${imageFile.data.toString('base64')}`,
         {
           folder: 'blog_posts',
           public_id: `post-${uniqueSuffix}-${safeFilename}`,
+          // optionnel : forcer webp pour optimiser la taille
+          format: 'webp',
+          quality: 'auto',
         }
       )
       imagesUrls.push(uploadResult.secure_url)

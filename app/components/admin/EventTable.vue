@@ -909,7 +909,6 @@ watch([searchQuery, filterStatus], () => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
 
 /* ── Transitions ── */
 .fade-enter-active, .fade-leave-active { transition: opacity 0.25s ease; }

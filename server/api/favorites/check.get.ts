@@ -1,25 +1,32 @@
 import { defineEventHandler, getQuery } from 'h3'
 import { prisma } from '~~/server/utils/prisma'
-import { requireAuth } from '~~/server/utils/protect'
+import { getUserSession } from '~~/server/utils/protect' // ou ton helper de session
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const eventId = query.eventId
 
-  // Sécuriser que c'est bien une string
   if (!eventId || typeof eventId !== 'string') {
     return { isFavorite: false }
   }
 
-  const user = await requireAuth(event)
+  // ✅ Vérifier la session sans lancer d'erreur
+  let user: any = null
+  try {
+    user = await requireAuth(event)
+  } catch {
+    return { isFavorite: false }
+  }
+
+  if (!user) return { isFavorite: false }
 
   const favorite = await prisma.favorite.findUnique({
     where: {
       userId_eventId: {
         userId: user.id,
-        eventId: eventId // TypeScript est content maintenant
-      }
-    }
+        eventId,
+      },
+    },
   })
 
   return { isFavorite: !!favorite }

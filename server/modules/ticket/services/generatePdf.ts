@@ -32,7 +32,7 @@ export const generatePdf = async ({
     // 🎨 TITRE
     doc
       .fontSize(22)
-      .text('🎟️ TICKET OFFICIEL', { align: 'center' })
+      .text(' TICKET OFFICIEL', { align: 'center' })
 
     doc.moveDown()
 

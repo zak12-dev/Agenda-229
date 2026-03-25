@@ -1,9 +1,11 @@
 import nodemailer from 'nodemailer'
+import { User } from '@prisma/client'
 
 export const sendTicket = async (
   email: string,
   pdf: Buffer,
-  qr: Buffer
+  qr: Buffer,
+  user: User
 ) => {
 
   const transporter = nodemailer.createTransport({
@@ -23,9 +25,22 @@ export const sendTicket = async (
     text: "Voici votre ticket",
 
     html: `
-      <h2>🎟️ Votre ticket</h2>
+     <h2>🎟️ Votre ticket</h2>
       <p>Présentez ce QR code à l'entrée :</p>
-      <img src="cid:qrcode" />
+
+      <div style="display: flex; align-items: center; gap: 20px;">
+
+        <!-- INFOS USER -->
+        <div>
+          <p><strong>Nom :</strong> ${user.name}</p>
+          <p><strong>Email :</strong> ${user.email}</p>
+        </div>
+        
+        <!-- QR CODE -->
+        <div>
+          <img src="cid:qrcode" alt="QR Code" style="width:150px;height:150px;" />
+        </div>
+      </div>
     `,
 
     attachments: [

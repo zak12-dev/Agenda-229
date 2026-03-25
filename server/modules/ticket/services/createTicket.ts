@@ -47,7 +47,7 @@ export const buyTicket = async (user: User, eventId: string, quantity: number) =
     })
 
     // 7. envoyer mail
-    await sendTicket(user.email, pdf, qrBuffer)
+    await sendTicket(user.email, pdf, qrBuffer, user)
     
   }
   return {

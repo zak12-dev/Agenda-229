@@ -1,6 +1,5 @@
 import PDFDocument from 'pdfkit'
 import { User, Ticket, Event } from '@prisma/client'
-import fs from 'fs'
 
 export const generatePdf = async ({
   user,
@@ -13,26 +12,71 @@ export const generatePdf = async ({
   qrCode: string
   event: Event
 }) => {
-  const doc = new PDFDocument()
+
+  const doc = new PDFDocument({
+    size: 'A4',
+    margin: 50
+  })
+
   const buffers: Uint8Array[] = []
 
-  doc.on('data', buffers.push.bind(buffers))
-  doc.on('end', () => {})
+  doc.on('data', (chunk) => buffers.push(chunk))
 
-  doc.fontSize(20).text('=== TICKET ===', { align: 'center' })
-  doc.moveDown()
-  doc.fontSize(14).text(`Événement : ${event.title}`)
-  doc.text(`Nom : ${user.name}`)
-  doc.text(`Email : ${user.email}`)
-  doc.text(`Token : ${ticket.token}`)
-  doc.moveDown()
+  return new Promise<Buffer>((resolve) => {
 
-  // Ajouter l'image QR
-  const base64Data = qrCode.replace(/^data:image\/png;base64,/, '')
-  const qrBuffer = Buffer.from(base64Data, 'base64')
-  doc.image(qrBuffer, { fit: [200, 200], align: 'center' })
+    doc.on('end', () => {
+      const pdfData = Buffer.concat(buffers)
+      resolve(pdfData)
+    })
 
-  doc.end()
+    // 🎨 TITRE
+    doc
+      .fontSize(22)
+      .text('🎟️ TICKET OFFICIEL', { align: 'center' })
 
-  return Buffer.concat(buffers)
+    doc.moveDown()
+
+    // 📌 INFOS EVENT
+    doc
+      .fontSize(16)
+      .text(`Événement : ${event.title}`)
+
+    doc.moveDown()
+
+    // 👤 INFOS USER
+    doc
+      .fontSize(14)
+      .text(`Nom : ${user.name}`)
+      .text(`Email : ${user.email}`)
+
+    doc.moveDown()
+
+    // 🔐 TOKEN
+    // doc
+    //   .fontSize(10)
+    //   .text(`Code Ticket : ${ticket.token}`, {
+    //     align: 'center'
+    //   })
+
+    // doc.moveDown(2)
+
+    // 🧠 QR CODE
+    const base64Data = qrCode.replace(/^data:image\/png;base64,/, '')
+    const qrBuffer = Buffer.from(base64Data, 'base64')
+
+    doc.image(qrBuffer, {
+      fit: [200, 200],
+      align: 'center'
+    })
+
+    doc.moveDown()
+
+    doc
+      .fontSize(12)
+      .text('Présentez ce QR code à l’entrée', {
+        align: 'center'
+      })
+
+    doc.end()
+  })
 }

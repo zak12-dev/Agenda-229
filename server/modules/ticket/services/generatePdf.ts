@@ -1,4 +1,3 @@
-// generatePdf.ts
 import PDFDocument from 'pdfkit'
 import { User, Ticket, Event } from '@prisma/client'
 import fs from 'fs'

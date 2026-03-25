@@ -49,6 +49,9 @@ export const buyTicket = async (user: User, eventId: string) => {
   // 5. générer QR
   const qrCode = await generateQr(token)
 
+  const base64Data = qrCode.replace(/^data:image\/png;base64,/, '')
+  const qrBuffer = Buffer.from(base64Data, 'base64')
+
   // 6. générer PDF
   const pdf = await generatePdf({
     user,
@@ -58,7 +61,7 @@ export const buyTicket = async (user: User, eventId: string) => {
   })
 
   // 7. envoyer mail
-  await sendTicket(user.email, pdf)
+  await sendTicket(user.email, pdf, qrBuffer)
 
   return {
     message: "Ticket acheté avec succès"

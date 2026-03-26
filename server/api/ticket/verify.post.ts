@@ -78,7 +78,18 @@ export default defineEventHandler(async (event) => {
 
     return {
       success: true,
-      message: 'Ticket valide '
+      message: 'Ticket valide ',
+        data: {
+            user: {  
+                name: ticket.user.name,     
+                email: ticket.user.email
+            }, 
+            event: {
+                title: ticket.event.title,  
+                startDate: ticket.event.startDate,
+                endDate: ticket.event.endDate
+            },
+        }
     }
 
   } catch (error) {

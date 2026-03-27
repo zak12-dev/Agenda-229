@@ -26,6 +26,8 @@ model User {
   updatedAt     DateTime @updatedAt
 
   role             Role                @relation(fields: [roleId], references: [id])
+  userRoles        UserRole[]
+  controllerEvents EventController[]
   sessions         Session[]
   accounts         Account[]
   organizerProfile Organizer_profile?
@@ -40,6 +42,36 @@ model Role {
   id    Int    @id @default(autoincrement())
   role  String @unique
   users User[]
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+}
+
+model Permission {
+  id          String @id @default(cuid())
+  name        String @unique
+  description String?
+
+  roles RolePermission[]
+}
+
+model RolePermission {
+  roleId       Int
+  permissionId String
+
+  role        Role       @relation(fields: [roleId], references: [id])
+  permission  Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+}
+
+model UserRole {
+  userId String
+  roleId Int
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
 }
 
 model Session {
@@ -133,6 +165,7 @@ model Event {
   user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   ville      Ville            @relation(fields: [villeId], references: [id], onDelete: Cascade)
   category   Categorie        @relation(fields: [categoryId], references:[id], onDelete: Cascade)
+  controllers EventController[]
   tickets     Ticket[]
   images      EventImage[]
   favorites   Favorite[]
@@ -262,6 +295,22 @@ model ScanLog {
   scanner    User     @relation("UserScanLogs", fields: [scannedBy], references: [id])
   @@index([ticketId])
 }
+
+model EventController {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  status    ControllerStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+}
+
 enum TrafficSource {
   FACEBOOK
   WHATSAPP
@@ -303,4 +352,10 @@ enum ScanResult {
   REFUSED
   EXPIRED
   INVALID
+}
+
+enum ControllerStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

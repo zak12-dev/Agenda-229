@@ -27,6 +27,24 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    // Vérifier autorisation
+    const isOrganizer = ticket.event.userId === userId
+
+    const isController = await prisma.eventController.findFirst({
+      where: {
+        eventId: ticket.event.id,
+        userId: userId,
+        status: 'APPROVED'
+      }
+    })
+
+    if (!isOrganizer && !isController) {
+      return {
+        success: false,
+        message: 'Non autorisé à vérifier ce ticket'
+      }
+    }
+
     // ⏰ expiré
     if (new Date() > ticket.expiresAt) {
       await prisma.scanLog.create({
@@ -40,7 +58,7 @@ export default defineEventHandler(async (event) => {
       return { success: false, message: 'Ticket expiré' }
     }
 
-    // 🚫 déjà utilisé
+    //  déjà utilisé
     if (ticket.usedCount >= ticket.maxUsage) {
       await prisma.scanLog.create({
         data: {

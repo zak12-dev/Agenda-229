@@ -59,7 +59,7 @@ export default defineEventHandler(async (event) => {
     }
 
     //  déjà utilisé
-    if (ticket.usedCount >= ticket.maxUsage) {
+    if (ticket.usedCount >= ticket.event.maxUsage) {
       await prisma.scanLog.create({
         data: {
           ticketId: ticket.id,

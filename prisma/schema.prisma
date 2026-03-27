@@ -149,7 +149,7 @@ model Event {
   description String   @db.Text
 
   details     String  @db.Text
-
+  maxUsage    Int @default(1)
   location    String
   eventDate   DateTime
   startDate   String
@@ -256,7 +256,6 @@ model Ticket {
   token      String   @unique @db.Text
   status     TicketStatus @default(ACTIVE)
   usedCount  Int      @default(0)
-  maxUsage   Int      @default(1)
   expiresAt  DateTime
 
   eventId    String

@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useAuth } from '../../../composables/useAuth'
-import moderator from '../../../middleware/moderator'
 
-
-definePageMeta({ layout: 'dashboard',name:'admin-scan', middleware: [moderator] 
-, })
+definePageMeta({ layout: 'dashboard' })
 
 const { session } = useAuth()
 const toast = useToast()
@@ -24,30 +21,91 @@ const scanHistory   = ref<any[]>([])
 // ── QR Scanner (jsQR) ──
 let animationFrame: number | null = null
 let jsQR: any = null
+const jsQRLoaded = ref(false)
 
-const loadJsQR = async () => {
-  if (typeof window === 'undefined') return
-  // @ts-ignore
-  const mod = await import('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js')
-  jsQR = mod.default || window.jsQR
+const loadJsQR = (): Promise<void> => {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') { resolve(); return }
+    if (jsQR) { resolve(); return }
+    // Charger via script tag pour éviter les problèmes d'import ESM
+    const existing = document.getElementById('jsqr-script')
+    if (existing) {
+      // Script déjà en cours de chargement, attendre
+      const wait = setInterval(() => {
+        if ((window as any).jsQR) {
+          jsQR = (window as any).jsQR
+          jsQRLoaded.value = true
+          clearInterval(wait)
+          resolve()
+        }
+      }, 100)
+      return
+    }
+    const script = document.createElement('script')
+    script.id = 'jsqr-script'
+    script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js'
+    script.onload = () => {
+      jsQR = (window as any).jsQR
+      jsQRLoaded.value = true
+      resolve()
+    }
+    script.onerror = () => {
+      console.error('Impossible de charger jsQR')
+      resolve()
+    }
+    document.head.appendChild(script)
+  })
 }
 
 const startCamera = async () => {
+  scanError.value = ''
+
+  // 1. Vérifier que le navigateur supporte getUserMedia
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    scanError.value = 'Votre navigateur ne supporte pas l\'accès à la caméra. Utilisez Chrome ou Safari.'
+    return
+  }
+
+  // 2. Charger jsQR si pas encore fait
+  if (!jsQR) {
+    await loadJsQR()
+    if (!jsQR) {
+      scanError.value = 'Impossible de charger le lecteur QR. Vérifiez votre connexion internet.'
+      return
+    }
+  }
+
+  // 3. Demander accès caméra
   try {
     stream.value = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
     })
-    if (videoRef.value) {
-      videoRef.value.srcObject = stream.value
-      await videoRef.value.play()
+  } catch (err: any) {
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      scanError.value = 'Permission caméra refusée. Autorisez l\'accès dans les paramètres de votre navigateur.'
+    } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+      scanError.value = 'Aucune caméra détectée sur cet appareil.'
+    } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+      scanError.value = 'La caméra est utilisée par une autre application. Fermez-la et réessayez.'
+    } else {
+      scanError.value = `Erreur caméra : ${err.message || 'inconnue'}`
     }
-    scanning.value = true
-    scanResult.value = null
-    scanError.value = ''
-    tick()
-  } catch {
-    scanError.value = 'Impossible d\'accéder à la caméra. Vérifiez les permissions.'
+    return
   }
+
+  // 4. Monter le stream sur la vidéo
+  if (videoRef.value) {
+    videoRef.value.srcObject = stream.value
+    try {
+      await videoRef.value.play()
+    } catch (err) {
+      console.error('Erreur play():', err)
+    }
+  }
+
+  scanning.value = true
+  scanResult.value = null
+  tick()
 }
 
 const stopCamera = () => {
@@ -129,12 +187,13 @@ onUnmounted(() => { stopCamera() })
 </script>
 
 <template>
-  <div class="bg-[#f5f3ef] min-h-screen font-outfit px-4 pt-6 pb-16 sm:px-6 sm:pb-10  overflow-y-auto ">
+  <div class="bg-[#f5f3ef] min-h-screen font-outfit px-4 pt-6 pb-16 sm:px-6 sm:pb-10 overflow-y-auto">
     <div class="max-w-7xl mx-auto space-y-5 mb-10">
 
       <!-- Header -->
       <div class="flex items-center justify-between">
         <div>
+          <p class="text-[10px] font-semibold text-[#ea6c1e] uppercase tracking-widest mb-0.5">Scanner</p>
           <h1 class="text-[22px] font-bold text-[#1a1612]">Vérification de tickets</h1>
         </div>
         <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#ede8e0]

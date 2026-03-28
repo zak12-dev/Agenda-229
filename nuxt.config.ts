@@ -17,12 +17,9 @@ export default defineNuxtConfig({
       title: 'WeLoveEvent',
       htmlAttrs: { lang: 'fr' },
       link: [
-<<<<<<< HEAD
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
-=======
-        {rel: 'icon', type:'image/png', href: '/favicon.png'},
->>>>>>> origin/dev-zak
+
         {
           rel: 'stylesheet',
           // ✅ Une seule requête, tous les weights, display=swap pour éviter le FOIT
@@ -30,11 +27,7 @@ export default defineNuxtConfig({
         },
 
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
-<<<<<<< HEAD
         { rel: 'icon', href: '/favicon.ico' }, // fallback navigateurs anciens
-=======
-
->>>>>>> origin/dev-zak
       ],
       script: [
         {

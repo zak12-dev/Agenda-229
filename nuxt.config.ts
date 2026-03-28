@@ -48,7 +48,7 @@ export default defineNuxtConfig({
     turnstileSecret: process.env.TURNSTILE_SECRET_KEY,
 
     public: {
-      apiBase: 'https://weloveevent.vercel.app',
+      apiBase: 'http://localhost:3000/',
 
 
 

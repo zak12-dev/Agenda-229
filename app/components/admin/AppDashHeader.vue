@@ -91,6 +91,11 @@ const pagesConfig: Record<string, { title: string; icon: string; description?: s
     icon: 'i-heroicons-chart-bar',
     description: 'Suivez vos performances',
   },
+   'admin-scan': {
+    title: 'Scanner',
+    icon: 'i-heroicons-qr-code',
+    description: 'Vérification de tickets via QR code',
+  },
   'admin-settings': {
     title: 'Paramètres',
     icon: 'i-heroicons-cog-8-tooth',

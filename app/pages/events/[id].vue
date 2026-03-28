@@ -2,7 +2,6 @@
 import { useRoute } from 'vue-router'
 import { ref, computed, watch } from 'vue'
 import { useAuth } from '../../../composables/useAuth'
-import AppSkeleton from '../../components/home/Appskeleton.vue'
 
 interface EventData {
   id: string
@@ -132,6 +131,54 @@ useHead(() => {
     ],
   }
 })
+
+// ── Ticketing ──
+const ticketQty     = ref(1)
+const ticketLoading = ref(false)
+const toast         = useToast()
+
+const handleTicket = async () => {
+  if (!event.value) return
+
+  if (!session.value?.user) {
+    toast.add({
+      title: 'Connexion requise',
+      description: 'Connectez-vous pour réserver votre place.',
+      color: 'orange',
+      icon: 'i-heroicons-lock-closed',
+    })
+    return
+  }
+
+  ticketLoading.value = true
+  try {
+    await $fetch('/api/ticket/buy', {
+      method: 'POST',
+      body: {
+        eventId: event.value.id,
+        quantity: ticketQty.value,
+      },
+    })
+    toast.add({
+      title: `Ticket${ticketQty.value > 1 ? 's' : ''} réservé${ticketQty.value > 1 ? 's' : ''} avec succès `,
+      description: `Vous allez recevoir votre${ticketQty.value > 1 ? ' vos ' : ' '}ticket${ticketQty.value > 1 ? 's' : ''} par email.`,
+      color: 'green',
+      icon: 'i-heroicons-ticket',
+    })
+    ticketQty.value = 1
+    console.log('Réservation réussie')
+  } catch (err: any) {
+    const msg = err?.data?.message || err?.statusMessage || 'Une erreur est survenue.'
+    toast.add({
+      title: 'Erreur lors de la réservation',
+      description: msg,
+      color: 'red',
+      icon: 'i-heroicons-x-circle',
+    })
+  } finally {
+    ticketLoading.value = false
+  }
+}
 
 // Avatar gradient
 const getAvatarGradient = (name: string) => {
@@ -418,6 +465,124 @@ const getAvatarGradient = (name: string) => {
                         <p class="text-[10.5px] font-semibold text-[#b0a898] uppercase tracking-wide">Lieu</p>
                         <p class="text-[13px] font-semibold text-[#1a1612] truncate">{{ event.location }}</p>
                       </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ══ CARD TICKETING ══ -->
+                <div class="bg-white rounded-2xl border border-[#ede8e0]
+                            shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden">
+
+                  <!-- Header -->
+                  <div class="px-5 pt-5 pb-4 border-b border-[#ede8e0]">
+                    <div class="flex items-center justify-between mb-1">
+                      <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style="background: #ea6c1e15; border: 1.5px solid #ea6c1e30">
+                          <UIcon name="i-heroicons-ticket" class="w-3.5 h-3.5" style="color: #ea6c1e" />
+                        </div>
+                        <p class="text-[13px] font-bold text-[#1a1612]">Réserver ma place</p>
+                      </div>
+                      <!-- Badge dispo -->
+                      <span v-if="!isPastEvent(event.eventDate)"
+                        class="flex items-center gap-1 px-2 py-0.5 rounded-full
+                               bg-emerald-50 border border-emerald-100
+                               text-[10px] font-semibold text-emerald-600">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        Disponible
+                      </span>
+                      <span v-else
+                        class="flex items-center gap-1 px-2 py-0.5 rounded-full
+                               bg-[#f0ede8] border border-[#ede8e0]
+                               text-[10px] font-semibold text-[#8a8078]">
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#c0b8ad]" />
+                        Terminé
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Corps -->
+                  <div class="px-5 py-4 space-y-4">
+
+                    <!-- Prix unitaire -->
+                    <div class="flex items-center justify-between py-3 px-4 rounded-xl bg-[#faf8f5] border border-[#ede8e0]">
+                      <div>
+                        <p class="text-[10.5px] font-semibold text-[#b0a898] uppercase tracking-wide mb-0.5">Ticket standard</p>
+                        <p class="text-[18px] font-bold text-[#1a1612] leading-none">
+                          <template v-if="event?.price && Number(event.price) > 0">
+                            {{ Number(event.price).toLocaleString('fr-FR') }}
+                            <span class="text-[13px] font-semibold text-[#8a8078]">FCFA</span>
+                          </template>
+                          <template v-else>
+                            <span class="text-emerald-600">Gratuit</span>
+                          </template>
+                        </p>
+                      </div>
+                      <!-- Sélecteur quantité -->
+                      <div v-if="!isPastEvent(event.eventDate)"
+                        class="flex items-center gap-2">
+                        <button @click="ticketQty = Math.max(1, ticketQty - 1)"
+                          class="w-7 h-7 rounded-lg bg-white border border-[#ede8e0]
+                                 flex items-center justify-center text-[#4a3f32] font-bold
+                                 hover:border-[#ea6c1e]/40 hover:text-[#ea6c1e] transition-all">
+                          <UIcon name="i-heroicons-minus" class="w-3 h-3" />
+                        </button>
+                        <span class="text-[15px] font-bold text-[#1a1612] min-w-[20px] text-center">{{ ticketQty }}</span>
+                        <button @click="ticketQty = Math.min(10, ticketQty + 1)"
+                          class="w-7 h-7 rounded-lg bg-white border border-[#ede8e0]
+                                 flex items-center justify-center text-[#4a3f32] font-bold
+                                 hover:border-[#ea6c1e]/40 hover:text-[#ea6c1e] transition-all">
+                          <UIcon name="i-heroicons-plus" class="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Total -->
+                    <div v-if="event?.price && Number(event.price) > 0 && !isPastEvent(event.eventDate)"
+                      class="flex items-center justify-between text-[13px]">
+                      <span class="text-[#8a8078]">Total ({{ ticketQty }} ticket{{ ticketQty > 1 ? 's' : '' }})</span>
+                      <span class="font-bold text-[#1a1612]">
+                        {{ (Number(event.price) * ticketQty).toLocaleString('fr-FR') }} FCFA
+                      </span>
+                    </div>
+
+                    <!-- Bouton CTA -->
+                    <button
+                      v-if="!isPastEvent(event.eventDate)"
+                      @click="handleTicket"
+                      :disabled="ticketLoading"
+                      class="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl
+                             text-white text-[13.5px] font-bold
+                             shadow-[0_4px_18px_rgba(234,108,30,0.28)]
+                             hover:opacity-90 hover:-translate-y-0.5
+                             disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0
+                             transition-all duration-200"
+                      style="background: linear-gradient(135deg, #ea6c1e, #5b47e0)">
+                      <template v-if="!ticketLoading">
+                        <UIcon name="i-heroicons-ticket" class="w-4 h-4" />
+                        {{ event?.price && Number(event.price) > 0 ? 'Payer & Réserver' : 'Réserver gratuitement' }}
+                      </template>
+                      <template v-else>
+                        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                        </svg>
+                        Traitement…
+                      </template>
+                    </button>
+
+                    <!-- Événement terminé -->
+                    <div v-else
+                      class="w-full py-3 rounded-xl text-center text-[13px] font-semibold
+                             text-[#b0a898] bg-[#faf8f5] border border-[#ede8e0]">
+                      Cet événement est terminé
+                    </div>
+
+                    <!-- Info sécurité -->
+                    <div v-if="!isPastEvent(event.eventDate)"
+                      class="flex items-center gap-2 text-[11px] text-[#b0a898]">
+                      <UIcon name="i-heroicons-shield-check" class="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                      Paiement sécurisé via FedaPay
                     </div>
                   </div>
                 </div>

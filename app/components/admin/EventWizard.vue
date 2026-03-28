@@ -29,6 +29,7 @@ interface EventForm {
   eventDate: string; startDate: string; endDate: string
   categoryId: string; priceType: 'FREE' | 'PAID'; price: string
   images: File[]
+  maxUsage?: number
 }
 
 // ─── State ───
@@ -51,6 +52,7 @@ const form = reactive<EventForm>({
   eventDate: '', startDate: '', endDate: '',
   categoryId: '', priceType: 'FREE', price: '',
   images: [],
+  maxUsage: undefined,
 })
 
 // ─── Load data on open ───
@@ -164,6 +166,8 @@ const submit = async (status: 'DRAFT' | 'PUBLISHED') => {
   fd.append('priceType',   form.priceType)
   fd.append('status',      status)
   if (form.priceType === 'PAID') fd.append('price', form.price)
+  if (form.maxUsage !== undefined) fd.append('maxUsage', String(form.maxUsage))
+
   form.images.forEach(f => fd.append('images', f))
   try {
     const url    = draftId.value ? `/api/events/${draftId.value}` : '/api/events'
@@ -189,7 +193,7 @@ const resetWizard = () => {
   Object.assign(form, {
     title: '', description: '', details: '',
     location: '', villeId: '', eventDate: '', startDate: '', endDate: '',
-    categoryId: '', priceType: 'FREE', price: '', images: [],
+    categoryId: '', priceType: 'FREE', price: '', images: [],markRaw
   })
 }
 
@@ -778,10 +782,15 @@ const selectedCategoryName = computed(() => categories.value.find(c => c.id === 
                 <div v-if="form.priceType === 'PAID'" class="field">
                   <label class="field-label">Montant (FCFA) <span class="req">*</span></label>
                   <div class="relative">
-                    <UIcon name="i-heroicons-banknotes" class="field-icon" />
+                    <UIcon name="i-heroicons-banknotes" class="field-icon " />
                     <input v-model="form.price" type="number" min="0" step="500"
-                      placeholder="Ex : 5000" class="field-input pl-10" />
-                    <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-[12px] font-medium text-[#b0a898]">FCFA</span>
+                      placeholder="" class="field-input pl-10" />
+                  </div>
+                  <label class="field-label">Combien de fois le ticket peut être utilisé<span class="req">*</span></label>
+                  <div class="relative">
+                    <UIcon name="i-heroicons-ticket" class="field-icon" />
+     <input v-model="form.maxUsage" type="number" min="1" step="1"
+                      placeholder=" " class="field-input pl-10" />
                   </div>
                 </div>
               </Transition>

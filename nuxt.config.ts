@@ -17,15 +17,24 @@ export default defineNuxtConfig({
       title: 'WeLoveEvent',
       htmlAttrs: { lang: 'fr' },
       link: [
+<<<<<<< HEAD
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+=======
+        {rel: 'icon', type:'image/png', href: '/favicon.png'},
+>>>>>>> origin/dev-zak
         {
           rel: 'stylesheet',
           // ✅ Une seule requête, tous les weights, display=swap pour éviter le FOIT
           href: 'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap',
         },
+
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+<<<<<<< HEAD
         { rel: 'icon', href: '/favicon.ico' }, // fallback navigateurs anciens
+=======
+
+>>>>>>> origin/dev-zak
       ],
       script: [
         {
@@ -55,6 +64,7 @@ export default defineNuxtConfig({
 
     public: {
       apiBase: 'https://weloveevent.vercel.app',
+
       turnstileSiteKey: process.env.TURNSTILE_SITE_KEY,
     },
   },

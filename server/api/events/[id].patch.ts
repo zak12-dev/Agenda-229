@@ -73,6 +73,7 @@ export default defineEventHandler(async (event) => {
       priceType,
       status,
       entryMode,
+      maxUsage,
     } = data;
 
     const validStatus = ["DRAFT", "PUBLISHED"];
@@ -83,6 +84,18 @@ export default defineEventHandler(async (event) => {
     const safePriceType = validPriceType.includes(priceType) ? priceType : "FREE";
     const safeEntryMode = validEntryMode.includes(entryMode) ? entryMode : "PUBLIC";
 
+    let safeMaxUsage: number | undefined;
+    if (maxUsage !== undefined) {
+      const parsed = parseInt(maxUsage, 10);
+      if (isNaN(parsed) || parsed < 1) {
+        throw createError({
+          statusCode: 400,
+          statusMessage: "maxUsage doit être un nombre entier supérieur ou égal à 1",
+        });
+      }
+      safeMaxUsage = parsed;
+    }
+
     if (imageFiles.length > 3) {
       throw createError({
         statusCode: 400,
@@ -90,7 +103,7 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    let imagePath = image;
+    // let imagePath = image;
     const imageUrls: string [] = [];
 
     if (imageFiles.length > 0) {
@@ -107,7 +120,7 @@ export default defineEventHandler(async (event) => {
       )
     imageUrls.push(uploadResult.secure_url)
       }
-      imagePath = imageUrls[0];
+      // imagePath = imageUrls[0];
     }
 
     const updatedEvent = await prisma.event.update({
@@ -120,7 +133,7 @@ export default defineEventHandler(async (event) => {
         eventDate: eventDate ? new Date(eventDate) : undefined,
         startDate: startDate ?? undefined,
         endDate: endDate ?? undefined,
-        image: imagePath,
+        // image: imagePath,
         images: imageUrls.length > 0 ? {
           deleteMany: {},
           create: imageUrls.map(url => ({ url }))
@@ -131,6 +144,7 @@ export default defineEventHandler(async (event) => {
         priceType: safePriceType,
         status: safeStatus,
         entryMode: safeEntryMode,
+        ...(safeMaxUsage !== undefined && { maxUsage: safeMaxUsage }),
       },
       include: {
         category: true,

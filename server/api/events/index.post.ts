@@ -17,6 +17,7 @@ export default defineEventHandler(async (event) => {
   let description = ''
   let details = ''
   let location = ''
+  let maxUsage: number | null = null
   let eventDate = ''
   let startDate = ''
   let endDate = ''
@@ -37,6 +38,7 @@ export default defineEventHandler(async (event) => {
     else if (field.name === 'description') description = value
     else if (field.name === 'details') details = value
     else if (field.name === 'location') location = value
+    else if (field.name === 'maxUsage') maxUsage = parseInt(value, 10)
     else if (field.name === 'eventDate') eventDate = value
     else if (field.name === 'startDate') startDate = value
     else if (field.name === 'endDate') endDate = value
@@ -53,22 +55,29 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  if (
-    status === 'PUBLISHED' &&
-    (!title ||
-      !description ||
-      !location ||
-      !details ||
-      !eventDate ||
-      !startDate ||
-      !villeId ||
-      !categoryId)
-  ) {
+  if (status === 'PUBLISHED') {
+  // Vérifier les champs texte
+  if (!title || 
+    !description || 
+    !location || 
+    !details || 
+    !eventDate || 
+    !startDate || 
+    !villeId || 
+    !categoryId) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Tous les champs obligatoires doivent être remplis',
-    })
+    });
   }
+  // Vérifier maxUsage
+  if (!maxUsage || maxUsage < 1) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'maxUsage doit être un nombre entier >= 1',
+    });
+  }
+}
 
   if (imageFiles.length === 0) {
     throw createError({
@@ -139,6 +148,7 @@ export default defineEventHandler(async (event) => {
         title,
         description,
         details,
+        maxUsage: maxUsage ?? undefined,
         location,
         eventDate: new Date(eventDate),
         startDate,

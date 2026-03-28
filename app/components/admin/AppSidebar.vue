@@ -26,7 +26,8 @@ const mobileNavItems = computed(() => {
       { label: 'Historique', icon: 'i-heroicons-clock',      to: '/dashboard/historiques' }
     )
   } else {
-    items.push({ label: 'Analytics', icon: 'i-heroicons-chart-bar', to: '/dashboard/analytic' })
+    items.push({ label: 'Analytics', icon: 'i-heroicons-chart-bar', to: '/dashboard/analytic' }),
+     items.push({ label: 'Scanner', icon: 'i-heroicons-qr-code', to: '/dashboard/scan' })
   }
 
   items.push({ label: 'Profil', icon: 'i-heroicons-user-circle', to: '/dashboard/profileDash' })
@@ -40,7 +41,8 @@ const mainNavItems = computed<NavigationMenuItem[]>(() => {
   ]
 
   if (userRole.value !== 'admin') {
-    items.push({ label: 'Analytiques', icon: 'i-heroicons-chart-bar', to: '/dashboard/analytic' })
+    items.push({ label: 'Analytiques', icon: 'i-heroicons-chart-bar', to: '/dashboard/analytic' }),
+        items.push({ label: 'Scanner', icon: 'i-heroicons-qr-code', to: '/dashboard/scan' })
   }
 
   if (userRole.value === 'admin') {

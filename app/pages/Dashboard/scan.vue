@@ -75,20 +75,37 @@ const startCamera = async () => {
     }
   }
 
-  // 3. Demander accès caméra
-  try {
-    stream.value = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
-    })
-  } catch (err: any) {
+  // 3. Demander accès caméra — fallback progressif mobile/desktop
+  const cameraConstraints = [
+    { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } },
+    { video: { facingMode: 'environment' } },
+    { video: true },
+  ]
+
+  let lastError: any = null
+  for (const constraint of cameraConstraints) {
+    try {
+      stream.value = await navigator.mediaDevices.getUserMedia(constraint)
+      lastError = null
+      break
+    } catch (err: any) {
+      lastError = err
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') break
+    }
+  }
+
+  if (lastError) {
+    const err = lastError
     if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-      scanError.value = 'Permission caméra refusée. Autorisez l\'accès dans les paramètres de votre navigateur.'
+      scanError.value = "Permission caméra refusée. Autorisez l'accès dans les paramètres puis rechargez la page."
     } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
       scanError.value = 'Aucune caméra détectée sur cet appareil.'
     } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
       scanError.value = 'La caméra est utilisée par une autre application. Fermez-la et réessayez.'
+    } else if (err.name === 'OverconstrainedError') {
+      scanError.value = 'Caméra non compatible. Essayez depuis un autre navigateur.'
     } else {
-      scanError.value = `Erreur caméra : ${err.message || 'inconnue'}`
+      scanError.value = `Erreur caméra (${err.name || 'inconnue'}) : ${err.message || ''}`
     }
     return
   }

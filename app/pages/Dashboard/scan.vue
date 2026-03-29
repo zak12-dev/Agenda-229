@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useAuth } from '../../../composables/useAuth'
 
 definePageMeta({ layout: 'dashboard' })
@@ -8,163 +8,97 @@ const { session } = useAuth()
 const toast = useToast()
 
 // ── State ──
-const scanning      = ref(false)
-const scanResult    = ref<any>(null)
-const scanError     = ref('')
-const loading       = ref(false)
-const videoRef      = ref<HTMLVideoElement | null>(null)
-const stream        = ref<MediaStream | null>(null)
-const manualToken   = ref('')
-const showManual    = ref(false)
-const scanHistory   = ref<any[]>([])
+const scanning    = ref(false)
+const scanResult  = ref<any>(null)
+const scanError   = ref('')
+const loading     = ref(false)
+const manualToken = ref('')
+const showManual  = ref(false)
+const scanHistory = ref<any[]>([])
+const videoEl     = ref<HTMLVideoElement | null>(null)
+const hasCamera   = ref(true)
 
-// ── QR Scanner (jsQR) ──
-let animationFrame: number | null = null
-let jsQR: any = null
-const jsQRLoaded = ref(false)
+let qrScanner: any = null
 
-const loadJsQR = (): Promise<void> => {
-  return new Promise((resolve) => {
-    if (typeof window === 'undefined') { resolve(); return }
-    if (jsQR) { resolve(); return }
-    // Charger via script tag pour éviter les problèmes d'import ESM
-    const existing = document.getElementById('jsqr-script')
-    if (existing) {
-      // Script déjà en cours de chargement, attendre
-      const wait = setInterval(() => {
-        if ((window as any).jsQR) {
-          jsQR = (window as any).jsQR
-          jsQRLoaded.value = true
-          clearInterval(wait)
-          resolve()
-        }
-      }, 100)
-      return
-    }
-    const script = document.createElement('script')
-    script.id = 'jsqr-script'
-    script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js'
-    script.onload = () => {
-      jsQR = (window as any).jsQR
-      jsQRLoaded.value = true
-      resolve()
-    }
-    script.onerror = () => {
-      console.error('Impossible de charger jsQR')
-      resolve()
-    }
-    document.head.appendChild(script)
-  })
-}
+// ── Init QrScanner ──
+const initScanner = async () => {
+  if (typeof window === 'undefined' || !videoEl.value) return
 
-const startCamera = async () => {
-  scanError.value = ''
+  try {
+    // Import dynamique de qr-scanner (npm)
+    const { default: QrScanner } = await import('qr-scanner')
 
-  // 1. Vérifier que le navigateur supporte getUserMedia
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    scanError.value = 'Votre navigateur ne supporte pas l\'accès à la caméra. Utilisez Chrome ou Safari.'
-    return
-  }
-
-  // 2. Charger jsQR si pas encore fait
-  if (!jsQR) {
-    await loadJsQR()
-    if (!jsQR) {
-      scanError.value = 'Impossible de charger le lecteur QR. Vérifiez votre connexion internet.'
-      return
-    }
-  }
-
-  // 3. Demander accès caméra — fallback progressif mobile/desktop
-  const cameraConstraints = [
-    { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } },
-    { video: { facingMode: 'environment' } },
-    { video: true },
-  ]
-
-  let lastError: any = null
-  for (const constraint of cameraConstraints) {
-    try {
-      stream.value = await navigator.mediaDevices.getUserMedia(constraint)
-      lastError = null
-      break
-    } catch (err: any) {
-      lastError = err
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') break
-    }
-  }
-
-  if (lastError) {
-    const err = lastError
-    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-      scanError.value = "Permission caméra refusée. Autorisez l'accès dans les paramètres puis rechargez la page."
-    } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+    // Vérifier qu'une caméra est disponible
+    const cams = await QrScanner.listCameras(true)
+    if (!cams.length) {
+      hasCamera.value = false
       scanError.value = 'Aucune caméra détectée sur cet appareil.'
-    } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-      scanError.value = 'La caméra est utilisée par une autre application. Fermez-la et réessayez.'
-    } else if (err.name === 'OverconstrainedError') {
-      scanError.value = 'Caméra non compatible. Essayez depuis un autre navigateur.'
-    } else {
-      scanError.value = `Erreur caméra (${err.name || 'inconnue'}) : ${err.message || ''}`
+      return
     }
-    return
-  }
 
-  // 4. Monter le stream sur la vidéo
-  if (videoRef.value) {
-    videoRef.value.srcObject = stream.value
-    try {
-      await videoRef.value.play()
-    } catch (err) {
-      console.error('Erreur play():', err)
-    }
+    qrScanner = new QrScanner(
+      videoEl.value,
+      (result: any) => {
+        const token = typeof result === 'string' ? result : result.data
+        if (token) {
+          stopScan()
+          verifyToken(token)
+        }
+      },
+      {
+        preferredCamera: 'environment',      // caméra arrière sur mobile
+        highlightScanRegion: true,            // zone de scan mise en évidence
+        highlightCodeOutline: true,           // contour du QR détecté
+        returnDetailedScanResult: true,
+      }
+    )
+  } catch (err: any) {
+    console.error('QrScanner init error:', err)
+    scanError.value = 'Impossible d\'initialiser le scanner. Assurez-vous que le site est en HTTPS.'
   }
-
-  scanning.value = true
-  scanResult.value = null
-  tick()
 }
 
-const stopCamera = () => {
-  if (stream.value) {
-    stream.value.getTracks().forEach(t => t.stop())
-    stream.value = null
+// ── Démarrer ──
+const startScan = async () => {
+  scanError.value = ''
+  scanResult.value = null
+
+  if (!qrScanner) {
+    await initScanner()
+    if (!qrScanner) return
   }
-  if (animationFrame) cancelAnimationFrame(animationFrame)
+
+  try {
+    await qrScanner.start()
+    scanning.value = true
+  } catch (err: any) {
+    scanning.value = false
+    if (err?.name === 'NotAllowedError' || String(err).includes('permission')) {
+      scanError.value = "Accès à la caméra refusé. Autorisez la caméra dans les paramètres de votre navigateur puis rechargez la page."
+    } else if (err?.name === 'NotFoundError') {
+      scanError.value = 'Aucune caméra trouvée sur cet appareil.'
+    } else if (err?.name === 'NotReadableError') {
+      scanError.value = 'La caméra est déjà utilisée par une autre application.'
+    } else {
+      scanError.value = `Erreur caméra : ${err?.message || String(err)}`
+    }
+  }
+}
+
+// ── Arrêter ──
+const stopScan = () => {
+  qrScanner?.stop()
   scanning.value = false
 }
 
-const tick = () => {
-  if (!videoRef.value || !jsQR || !scanning.value) return
-  const video = videoRef.value
-  if (video.readyState !== video.HAVE_ENOUGH_DATA) {
-    animationFrame = requestAnimationFrame(tick)
-    return
-  }
-  const canvas = document.createElement('canvas')
-  canvas.width  = video.videoWidth
-  canvas.height = video.videoHeight
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return
-  ctx.drawImage(video, 0, 0)
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-  const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' })
-  if (code?.data) {
-    stopCamera()
-    verifyToken(code.data)
-    return
-  }
-  animationFrame = requestAnimationFrame(tick)
-}
-
-// ── Vérification ──
+// ── Vérification token ──
 const verifyToken = async (token: string) => {
   if (!token.trim()) return
   loading.value = true
   scanResult.value = null
   scanError.value = ''
   try {
-    const res = await $fetch('/api/ticket/verify', {
+    const res: any = await $fetch('/api/ticket/verify', {
       method: 'POST',
       body: { token: token.trim(), userId: session.value?.user?.id },
     })
@@ -172,14 +106,15 @@ const verifyToken = async (token: string) => {
     scanHistory.value.unshift({ ...res, token: token.trim(), time: new Date() })
     if (scanHistory.value.length > 20) scanHistory.value.pop()
 
-    if ((res as any).success) {
+    if (res.success) {
       toast.add({ title: 'Ticket valide ✅', color: 'green', icon: 'i-heroicons-check-circle' })
     } else {
-      toast.add({ title: (res as any).message || 'Ticket invalide', color: 'red', icon: 'i-heroicons-x-circle' })
+      toast.add({ title: res.message || 'Ticket invalide', color: 'red', icon: 'i-heroicons-x-circle' })
     }
   } catch (err: any) {
-    scanError.value = err?.data?.message || 'Erreur lors de la vérification'
-    toast.add({ title: scanError.value, color: 'red', icon: 'i-heroicons-x-circle' })
+    const msg = err?.data?.message || err?.statusMessage || 'Erreur lors de la vérification'
+    scanError.value = msg
+    toast.add({ title: msg, color: 'red', icon: 'i-heroicons-x-circle' })
   } finally {
     loading.value = false
     manualToken.value = ''
@@ -199,8 +134,15 @@ const resetScan = () => {
 const formatTime = (d: Date) =>
   new Date(d).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
-onMounted(async () => { await loadJsQR() })
-onUnmounted(() => { stopCamera() })
+onMounted(async () => {
+  await nextTick()
+  await initScanner()
+})
+
+onUnmounted(() => {
+  qrScanner?.destroy()
+  qrScanner = null
+})
 </script>
 
 <template>
@@ -220,7 +162,7 @@ onUnmounted(() => { stopCamera() })
         </div>
       </div>
 
-      <!-- Zone scan caméra -->
+      <!-- Card scanner -->
       <div class="bg-white rounded-2xl border border-[#ede8e0] shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden">
 
         <!-- Header card -->
@@ -238,39 +180,34 @@ onUnmounted(() => { stopCamera() })
           </button>
         </div>
 
-        <!-- Caméra -->
+        <!-- Vue caméra -->
         <div v-if="!showManual" class="p-5 space-y-4">
 
           <!-- Viewfinder -->
-          <div class="relative aspect-square sm:aspect-video rounded-2xl overflow-hidden bg-[#1a1612]">
-            <video ref="videoRef" class="w-full h-full object-cover" playsinline muted />
+          <div class="relative rounded-2xl overflow-hidden bg-[#1a1612]"
+            style="aspect-ratio: 4/3">
 
-            <!-- Overlay idle -->
+            <!-- Élément vidéo — QrScanner s'y attache -->
+            <video ref="videoEl"
+              class="w-full h-full object-cover"
+              style="display: block"
+              playsinline
+              muted
+            />
+
+            <!-- Overlay idle (avant démarrage) -->
             <div v-if="!scanning && !loading"
-              class="absolute inset-0 flex flex-col items-center justify-center gap-4">
-              <div class="w-20 h-20 rounded-2xl bg-white/10 border-2 border-white/30
+              class="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#1a1612]">
+              <div class="w-20 h-20 rounded-2xl bg-white/10 border-2 border-white/20
                           flex items-center justify-center">
-                <UIcon name="i-heroicons-qr-code" class="w-10 h-10 text-white/60" />
+                <UIcon name="i-heroicons-qr-code" class="w-10 h-10 text-white/40" />
               </div>
-              <p class="text-[13px] text-white/60">Caméra inactive</p>
+              <p class="text-[13px] text-white/50">Appuyez sur "Démarrer" pour scanner</p>
             </div>
 
-            <!-- Viseur animé quand scan actif -->
-            <div v-if="scanning" class="absolute inset-0 flex items-center justify-center">
-              <div class="relative w-52 h-52">
-                <!-- Coins du viseur -->
-                <span class="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-[#ea6c1e] rounded-tl-lg" />
-                <span class="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-[#ea6c1e] rounded-tr-lg" />
-                <span class="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-[#ea6c1e] rounded-bl-lg" />
-                <span class="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-[#ea6c1e] rounded-br-lg" />
-                <!-- Ligne de scan -->
-                <div class="absolute inset-x-0 top-1/2 h-0.5 bg-[#ea6c1e]/60 animate-scan-line" />
-              </div>
-            </div>
-
-            <!-- Loading -->
+            <!-- Overlay chargement vérification -->
             <div v-if="loading"
-              class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3">
+              class="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-3">
               <svg class="w-8 h-8 animate-spin text-[#ea6c1e]" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
@@ -279,16 +216,16 @@ onUnmounted(() => { stopCamera() })
             </div>
           </div>
 
-          <!-- Erreur caméra -->
-          <div v-if="scanError && !scanResult"
+          <!-- Message d'erreur -->
+          <div v-if="scanError"
             class="flex items-start gap-3 p-3.5 rounded-xl bg-red-50 border border-red-100">
             <UIcon name="i-heroicons-exclamation-circle" class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-            <p class="text-[12.5px] text-red-600">{{ scanError }}</p>
+            <p class="text-[12.5px] text-red-600 leading-relaxed">{{ scanError }}</p>
           </div>
 
           <!-- Boutons -->
           <div class="flex gap-2.5">
-            <button v-if="!scanning" @click="startCamera"
+            <button v-if="!scanning" @click="startScan"
               class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl
                      text-white text-[13.5px] font-bold transition-all
                      shadow-[0_4px_18px_rgba(234,108,30,0.28)] hover:opacity-90"
@@ -296,7 +233,7 @@ onUnmounted(() => { stopCamera() })
               <UIcon name="i-heroicons-camera" class="w-4 h-4" />
               Démarrer le scan
             </button>
-            <button v-else @click="stopCamera"
+            <button v-else @click="stopScan"
               class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl
                      bg-[#faf8f5] border border-[#ede8e0] text-[13.5px] font-semibold
                      text-[#4a3f32] hover:border-red-200 hover:text-red-500 transition-all">
@@ -335,14 +272,17 @@ onUnmounted(() => { stopCamera() })
         enter-active-class="transition-all duration-300 ease-out"
         enter-from-class="opacity-0 translate-y-4 scale-95"
         enter-to-class="opacity-100 translate-y-0 scale-100">
-        <div v-if="scanResult" class="bg-white rounded-2xl border overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.08)]"
+        <div v-if="scanResult"
+          class="bg-white rounded-2xl border overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.08)]"
           :class="scanResult.success ? 'border-emerald-200' : 'border-red-200'">
 
           <!-- Bandeau résultat -->
           <div class="px-5 py-4 flex items-center gap-3"
             :class="scanResult.success ? 'bg-emerald-50' : 'bg-red-50'">
             <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              :class="scanResult.success ? 'bg-emerald-100 border border-emerald-200' : 'bg-red-100 border border-red-200'">
+              :class="scanResult.success
+                ? 'bg-emerald-100 border border-emerald-200'
+                : 'bg-red-100 border border-red-200'">
               <UIcon
                 :name="scanResult.success ? 'i-heroicons-check-circle' : 'i-heroicons-x-circle'"
                 class="w-5 h-5"
@@ -360,9 +300,8 @@ onUnmounted(() => { stopCamera() })
             </div>
           </div>
 
-          <!-- Détails si valide -->
+          <!-- Détails participant + événement -->
           <div v-if="scanResult.success && scanResult.data" class="p-5 space-y-3">
-            <!-- Participant -->
             <div class="flex items-center gap-3 p-3.5 rounded-xl bg-[#faf8f5] border border-[#ede8e0]">
               <div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100
                           flex items-center justify-center flex-shrink-0">
@@ -374,7 +313,6 @@ onUnmounted(() => { stopCamera() })
                 <p class="text-[11.5px] text-[#8a8078]">{{ scanResult.data.user.email }}</p>
               </div>
             </div>
-            <!-- Événement -->
             <div class="flex items-center gap-3 p-3.5 rounded-xl bg-[#faf8f5] border border-[#ede8e0]">
               <div class="w-9 h-9 rounded-xl bg-orange-50 border border-orange-100
                           flex items-center justify-center flex-shrink-0">
@@ -390,7 +328,7 @@ onUnmounted(() => { stopCamera() })
 
           <!-- Bouton nouveau scan -->
           <div class="px-5 pb-5">
-            <button @click="resetScan(); showManual ? null : startCamera()"
+            <button @click="resetScan(); startScan()"
               class="w-full py-2.5 rounded-xl bg-[#faf8f5] border border-[#ede8e0]
                      text-[13px] font-semibold text-[#4a3f32]
                      hover:border-[#ea6c1e]/40 hover:text-[#ea6c1e] transition-all">
@@ -400,11 +338,11 @@ onUnmounted(() => { stopCamera() })
         </div>
       </Transition>
 
-      <!-- Historique des scans -->
+      <!-- Historique -->
       <div v-if="scanHistory.length > 0"
         class="bg-white rounded-2xl border border-[#ede8e0] shadow-[0_2px_12px_rgba(0,0,0,0.04)] overflow-hidden">
         <div class="px-5 py-3.5 border-b border-[#ede8e0] bg-[#faf8f5] flex items-center justify-between">
-          <p class="text-[13px] font-bold text-[#1a1612]">Historique</p>
+          <p class="text-[13px] font-bold text-[#1a1612]">Historique de session</p>
           <button @click="scanHistory = []"
             class="text-[11.5px] text-[#b0a898] hover:text-red-400 transition-colors">
             Effacer
@@ -414,7 +352,9 @@ onUnmounted(() => { stopCamera() })
           <div v-for="(h, i) in scanHistory" :key="i"
             class="flex items-center gap-3 px-5 py-3">
             <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-              :class="h.success ? 'bg-emerald-50 border border-emerald-100' : 'bg-red-50 border border-red-100'">
+              :class="h.success
+                ? 'bg-emerald-50 border border-emerald-100'
+                : 'bg-red-50 border border-red-100'">
               <UIcon
                 :name="h.success ? 'i-heroicons-check' : 'i-heroicons-x-mark'"
                 class="w-3.5 h-3.5"
@@ -426,7 +366,7 @@ onUnmounted(() => { stopCamera() })
               </p>
               <p class="text-[11px] text-[#b0a898]">{{ formatTime(h.time) }}</p>
             </div>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
               :class="h.success
                 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
                 : 'bg-red-50 text-red-500 border border-red-100'">
@@ -456,13 +396,7 @@ onUnmounted(() => { stopCamera() })
   box-shadow: 0 0 0 3px rgba(234,108,30,0.1);
 }
 
-@keyframes scan-line {
-  0%   { transform: translateY(-100px); opacity: 0; }
-  20%  { opacity: 1; }
-  80%  { opacity: 1; }
-  100% { transform: translateY(100px); opacity: 0; }
-}
-.animate-scan-line {
-  animation: scan-line 2s ease-in-out infinite;
-}
+/* Styles injectés par QrScanner pour la zone de scan */
+:deep(video) { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+:deep(.qr-scanner-region-highlight) { border-color: #ea6c1e !important; }
 </style>

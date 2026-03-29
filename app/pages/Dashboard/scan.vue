@@ -61,27 +61,17 @@ const initScanner = async () => {
 // ── Démarrer ──
 const startScan = async () => {
   scanError.value = ''
-  scanResult.value = null
-
-  if (!qrScanner) {
-    await initScanner()
-    if (!qrScanner) return
-  }
 
   try {
+    // 🔥 FORCER la demande permission AVANT qrScanner
+    await navigator.mediaDevices.getUserMedia({ video: true })
+
     await qrScanner.start()
     scanning.value = true
+
   } catch (err: any) {
-    scanning.value = false
-    if (err?.name === 'NotAllowedError' || String(err).includes('permission')) {
-      scanError.value = "Accès à la caméra refusé. Autorisez la caméra dans les paramètres de votre navigateur puis rechargez la page."
-    } else if (err?.name === 'NotFoundError') {
-      scanError.value = 'Aucune caméra trouvée sur cet appareil.'
-    } else if (err?.name === 'NotReadableError') {
-      scanError.value = 'La caméra est déjà utilisée par une autre application.'
-    } else {
-      scanError.value = `Erreur caméra : ${err?.message || String(err)}`
-    }
+    console.error(err)
+    scanError.value = "Accès caméra refusé ou bloqué"
   }
 }
 

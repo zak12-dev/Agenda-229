@@ -63,15 +63,27 @@ const startScan = async () => {
   scanError.value = ''
 
   try {
-    // 🔥 FORCER la demande permission AVANT qrScanner
-    await navigator.mediaDevices.getUserMedia({ video: true })
+    // 🔥 Étape 1 : forcer la permission caméra
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true })
 
+    // 🔥 IMPORTANT : libérer la caméra immédiatement
+    stream.getTracks().forEach(track => track.stop())
+
+    // Étape 2 : lancer le scanner
     await qrScanner.start()
+
     scanning.value = true
 
   } catch (err: any) {
-    console.error(err)
-    scanError.value = "Accès caméra refusé ou bloqué"
+    console.error('CAMERA ERROR:', err.name, err.message)
+
+    if (!window.isSecureContext) {
+      scanError.value = "Site non sécurisé (HTTPS requis)"
+    } else if (err.name === 'NotAllowedError') {
+      scanError.value = "Permission caméra refusée"
+    } else {
+      scanError.value = "Accès caméra bloqué par le navigateur"
+    }
   }
 }
 

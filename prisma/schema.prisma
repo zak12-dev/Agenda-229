@@ -351,6 +351,7 @@ enum ScanResult {
   REFUSED
   EXPIRED
   INVALID
+  UNAUTHORIZED
 }
 
 enum ControllerStatus {

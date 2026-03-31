@@ -63,10 +63,10 @@ const startScan = async () => {
   scanError.value = ''
 
   try {
-    // 🔥 Étape 1 : forcer la permission caméra
+    // Étape 1 : forcer la permission caméra
     const stream = await navigator.mediaDevices.getUserMedia({ video: true })
 
-    // 🔥 IMPORTANT : libérer la caméra immédiatement
+    // IMPORTANT : libérer la caméra immédiatement
     stream.getTracks().forEach(track => track.stop())
 
     // Étape 2 : lancer le scanner

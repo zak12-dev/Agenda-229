@@ -250,8 +250,7 @@ onUnmounted(() => {
           <div class="field">
             <label class="field-label">Token du ticket</label>
             <div class="relative">
-              <UIcon name="i-heroicons-key"
-                class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#c0b8ad] pointer-events-none" />
+              
               <input v-model="manualToken" type="text" placeholder="Collez le token ici…"
                 @keydown.enter="handleManual"
                 class="field-input pl-10 font-mono" />
@@ -281,19 +280,11 @@ onUnmounted(() => {
           <!-- Bandeau résultat -->
           <div class="px-5 py-4 flex items-center gap-3"
             :class="scanResult.success ? 'bg-emerald-50' : 'bg-red-50'">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              :class="scanResult.success
-                ? 'bg-emerald-100 border border-emerald-200'
-                : 'bg-red-100 border border-red-200'">
-              <UIcon
-                :name="scanResult.success ? 'i-heroicons-check-circle' : 'i-heroicons-x-circle'"
-                class="w-5 h-5"
-                :class="scanResult.success ? 'text-emerald-600' : 'text-red-500'" />
-            </div>
+           
             <div>
               <p class="text-[14px] font-bold"
                 :class="scanResult.success ? 'text-emerald-700' : 'text-red-600'">
-                {{ scanResult.success ? 'Ticket valide' : 'Ticket invalide' }}
+                {{ scanResult.success ? 'Ticket valide' : 'Ticket expiré' }}
               </p>
               <p class="text-[12px]"
                 :class="scanResult.success ? 'text-emerald-600/70' : 'text-red-500/70'">
@@ -329,7 +320,7 @@ onUnmounted(() => {
           </div>
 
           <!-- Bouton nouveau scan -->
-          <div class="px-5 pb-5">
+          <div class="px-5 pb-5 mt-3">
             <button @click="resetScan(); startScan()"
               class="w-full py-2.5 rounded-xl bg-[#faf8f5] border border-[#ede8e0]
                      text-[13px] font-semibold text-[#4a3f32]

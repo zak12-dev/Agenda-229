@@ -263,10 +263,7 @@ const mobileTitle = computed(() => {
               >
                 {{ userInitial }}
               </div>
-              <!-- Online dot -->
-              <span
-                class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border-[1.5px] border-white"
-              />
+             
             </div>
 
             <!-- Nom + rôle — masqué sur mobile -->

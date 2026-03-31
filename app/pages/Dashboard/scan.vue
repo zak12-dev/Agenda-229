@@ -14,81 +14,74 @@ const scanError   = ref('')
 const loading     = ref(false)
 const manualToken = ref('')
 const showManual  = ref(false)
+const showCamera  = ref(false)
 const scanHistory = ref<any[]>([])
-const videoEl     = ref<HTMLVideoElement | null>(null)
-const hasCamera   = ref(true)
 
-let qrScanner: any = null
+let scanner: any = null
 
-// ── Init QrScanner ──
-const initScanner = async () => {
-  if (typeof window === 'undefined' || !videoEl.value) return
-
-  try {
-    // Import dynamique de qr-scanner (npm)
-    const { default: QrScanner } = await import('qr-scanner')
-
-    // Vérifier qu'une caméra est disponible
-    const cams = await QrScanner.listCameras(true)
-    if (!cams.length) {
-      hasCamera.value = false
-      scanError.value = 'Aucune caméra détectée sur cet appareil.'
-      return
-    }
-
-    qrScanner = new QrScanner(
-      videoEl.value,
-      (result: any) => {
-        const token = typeof result === 'string' ? result : result.data
-        if (token) {
-          stopScan()
-          verifyToken(token)
-        }
-      },
-      {
-        preferredCamera: 'environment',      // caméra arrière sur mobile
-        highlightScanRegion: true,            // zone de scan mise en évidence
-        highlightCodeOutline: true,           // contour du QR détecté
-        returnDetailedScanResult: true,
-      }
-    )
-  } catch (err: any) {
-    console.error('QrScanner init error:', err)
-    scanError.value = 'Impossible d\'initialiser le scanner. Assurez-vous que le site est en HTTPS.'
-  }
-}
-
-// ── Démarrer ──
+// ── Démarrer le scan — affiche la popup permission caméra ──
 const startScan = async () => {
+  if (typeof window === 'undefined') return
+
+  showCamera.value = true
   scanError.value = ''
   scanResult.value = null
 
-  if (!qrScanner) {
-    await initScanner()
-    if (!qrScanner) return
-  }
+  await nextTick()
 
   try {
-    await qrScanner.start()
+    const { Html5QrcodeScanner, Html5QrcodeScanType } = await import('html5-qrcode')
+
+    // Nettoyer ancien scanner si existe
+    if (scanner) {
+      try { await scanner.clear() } catch {}
+      scanner = null
+    }
+
+    scanner = new Html5QrcodeScanner(
+      'qr-reader',
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        rememberLastUsedCamera: true,
+        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+        showTorchButtonIfSupported: true,
+      },
+      false
+    )
+
+    scanner.render(
+      // Succès — QR détecté
+      async (decodedText: string) => {
+        await scanner.clear()
+        scanner = null
+        scanning.value = false
+        showCamera.value = false
+        verifyToken(decodedText)
+      },
+      // Erreur de scan (ignorée, la lib tente en continu)
+      (_: any) => {}
+    )
+
     scanning.value = true
   } catch (err: any) {
+    showCamera.value = false
     scanning.value = false
-    if (err?.name === 'NotAllowedError' || String(err).includes('permission')) {
-      scanError.value = "Accès à la caméra refusé. Autorisez la caméra dans les paramètres de votre navigateur puis rechargez la page."
-    } else if (err?.name === 'NotFoundError') {
-      scanError.value = 'Aucune caméra trouvée sur cet appareil.'
-    } else if (err?.name === 'NotReadableError') {
-      scanError.value = 'La caméra est déjà utilisée par une autre application.'
+    if (String(err).includes('Permission') || String(err).includes('NotAllowed')) {
+      scanError.value = "Accès à la caméra refusé. Autorisez la caméra dans votre navigateur puis rechargez la page."
     } else {
-      scanError.value = `Erreur caméra : ${err?.message || String(err)}`
+      scanError.value = `Impossible de démarrer le scanner : ${err?.message || String(err)}`
     }
   }
 }
 
-// ── Arrêter ──
-const stopScan = () => {
-  qrScanner?.stop()
+const stopScan = async () => {
+  if (scanner) {
+    try { await scanner.clear() } catch {}
+    scanner = null
+  }
   scanning.value = false
+  showCamera.value = false
 }
 
 // ── Vérification token ──
@@ -134,14 +127,11 @@ const resetScan = () => {
 const formatTime = (d: Date) =>
   new Date(d).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
-onMounted(async () => {
-  await nextTick()
-  await initScanner()
-})
-
-onUnmounted(() => {
-  qrScanner?.destroy()
-  qrScanner = null
+onUnmounted(async () => {
+  if (scanner) {
+    try { await scanner.clear() } catch {}
+    scanner = null
+  }
 })
 </script>
 
@@ -155,8 +145,7 @@ onUnmounted(() => {
           <p class="text-[10px] font-semibold text-[#ea6c1e] uppercase tracking-widest mb-0.5">Scanner</p>
           <h1 class="text-[22px] font-bold text-[#1a1612]">Vérification de tickets</h1>
         </div>
-        <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#ede8e0]
-                    shadow-[0_1px_6px_rgba(0,0,0,0.04)]">
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#ede8e0]">
           <span class="w-2 h-2 rounded-full bg-emerald-400" />
           <span class="text-[11.5px] font-semibold text-[#4a3f32]">{{ scanHistory.length }} scans</span>
         </div>
@@ -174,7 +163,7 @@ onUnmounted(() => {
             </div>
             <p class="text-[14px] font-bold text-[#1a1612]">Scanner un QR code</p>
           </div>
-          <button @click="showManual = !showManual"
+          <button @click="showManual = !showManual; stopScan()"
             class="text-[11.5px] font-medium text-[#8a8078] hover:text-[#ea6c1e] transition-colors">
             {{ showManual ? 'Utiliser la caméra' : 'Saisie manuelle' }}
           </button>
@@ -183,40 +172,32 @@ onUnmounted(() => {
         <!-- Vue caméra -->
         <div v-if="!showManual" class="p-5 space-y-4">
 
-          <!-- Viewfinder -->
-          <div class="relative rounded-2xl overflow-hidden bg-[#1a1612]"
-            style="aspect-ratio: 4/3">
-
-            <!-- Élément vidéo — QrScanner s'y attache -->
-            <video ref="videoEl"
-              class="w-full h-full object-cover"
-              style="display: block"
-              playsinline
-              muted
-            />
-
-            <!-- Overlay idle (avant démarrage) -->
-            <div v-if="!scanning && !loading"
-              class="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#1a1612]">
-              <div class="w-20 h-20 rounded-2xl bg-white/10 border-2 border-white/20
-                          flex items-center justify-center">
-                <UIcon name="i-heroicons-qr-code" class="w-10 h-10 text-white/40" />
-              </div>
-              <p class="text-[13px] text-white/50">Appuyez sur "Démarrer" pour scanner</p>
-            </div>
-
-            <!-- Overlay chargement vérification -->
-            <div v-if="loading"
-              class="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-3">
-              <svg class="w-8 h-8 animate-spin text-[#ea6c1e]" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-              </svg>
-              <p class="text-[13px] text-white">Vérification en cours…</p>
-            </div>
+          <!-- Zone rendu Html5QrcodeScanner -->
+          <div v-show="showCamera">
+            <div id="qr-reader" class="w-full rounded-2xl overflow-hidden" />
           </div>
 
-          <!-- Message d'erreur -->
+          <!-- Placeholder quand caméra inactive -->
+          <div v-if="!showCamera && !loading"
+            class="relative rounded-2xl overflow-hidden bg-[#1a1612] flex flex-col items-center justify-center gap-4 py-14">
+            <div class="w-20 h-20 rounded-2xl bg-white/10 border-2 border-white/20
+                        flex items-center justify-center">
+              <UIcon name="i-heroicons-qr-code" class="w-10 h-10 text-white/40" />
+            </div>
+            <p class="text-[13px] text-white/50">Appuyez sur "Démarrer le scan"</p>
+          </div>
+
+          <!-- Vérification en cours -->
+          <div v-if="loading"
+            class="rounded-2xl bg-[#1a1612] flex flex-col items-center justify-center gap-3 py-14">
+            <svg class="w-8 h-8 animate-spin text-[#ea6c1e]" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+            <p class="text-[13px] text-white">Vérification en cours…</p>
+          </div>
+
+          <!-- Erreur -->
           <div v-if="scanError"
             class="flex items-start gap-3 p-3.5 rounded-xl bg-red-50 border border-red-100">
             <UIcon name="i-heroicons-exclamation-circle" class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
@@ -248,10 +229,10 @@ onUnmounted(() => {
           <div class="field">
             <label class="field-label">Token du ticket</label>
             <div class="relative">
-              
+              <UIcon name="i-heroicons-key"
+                class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#c0b8ad] pointer-events-none" />
               <input v-model="manualToken" type="text" placeholder="Collez le token ici…"
-                @keydown.enter="handleManual"
-                class="field-input pl-10 font-mono" />
+                @keydown.enter="handleManual" class="field-input pl-10 font-mono" />
             </div>
           </div>
           <button @click="handleManual" :disabled="!manualToken.trim() || loading"
@@ -266,59 +247,141 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Résultat du scan -->
-      <Transition
-        enter-active-class="transition-all duration-300 ease-out"
-        enter-from-class="opacity-0 translate-y-4 scale-95"
-        enter-to-class="opacity-100 translate-y-0 scale-100">
+      <!-- ══ RÉSULTAT ══ -->
+      <Transition enter-active-class="transition-all duration-300 ease-out"
+        enter-from-class="opacity-0 translate-y-4" enter-to-class="opacity-100 translate-y-0">
         <div v-if="scanResult"
           class="bg-white rounded-2xl border overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.08)]"
-          :class="scanResult.success ? 'border-emerald-200' : 'border-red-200'">
+          :class="{
+            'border-emerald-200': scanResult.success,
+            'border-amber-200': !scanResult.success && scanResult.message === 'Ticket expiré',
+            'border-red-200': !scanResult.success && scanResult.message !== 'Ticket expiré',
+          }">
 
-          <!-- Bandeau résultat -->
-          <div class="px-5 py-4 flex items-center gap-3"
-            :class="scanResult.success ? 'bg-emerald-50' : 'bg-red-50'">
-           
-            <div>
-              <p class="text-[14px] font-bold"
-                :class="scanResult.success ? 'text-emerald-700' : 'text-red-600'">
-                {{ scanResult.success ? 'Ticket valide' : 'Ticket expiré' }}
-              </p>
-              <p class="text-[12px]"
-                :class="scanResult.success ? 'text-emerald-600/70' : 'text-red-500/70'">
-                {{ scanResult.message }}
-              </p>
-            </div>
-          </div>
-
-          <!-- Détails participant + événement -->
-          <div v-if="scanResult.success && scanResult.data" class="p-5 space-y-3">
-            <div class="flex items-center gap-3 p-3.5 rounded-xl bg-[#faf8f5] border border-[#ede8e0]">
-              <div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100
+          <!-- ── Valide ── -->
+          <template v-if="scanResult.success">
+            <div class="px-5 py-4 flex items-center gap-3 bg-emerald-50">
+              <div class="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200
                           flex items-center justify-center flex-shrink-0">
-                <UIcon name="i-heroicons-user" class="w-4 h-4 text-[#5b47e0]" />
+                <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-emerald-600" />
               </div>
               <div>
-                <p class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-0.5">Participant</p>
-                <p class="text-[13.5px] font-bold text-[#1a1612]">{{ scanResult.data.user.name }}</p>
-                <p class="text-[11.5px] text-[#8a8078]">{{ scanResult.data.user.email }}</p>
+                <p class="text-[14px] font-bold text-emerald-700">Ticket valide ✅</p>
+                <p class="text-[12px] text-emerald-600/70">Accès autorisé</p>
               </div>
             </div>
-            <div class="flex items-center gap-3 p-3.5 rounded-xl bg-[#faf8f5] border border-[#ede8e0]">
-              <div class="w-9 h-9 rounded-xl bg-orange-50 border border-orange-100
+            <div v-if="scanResult.data" class="p-5 space-y-3">
+              <!-- Participant -->
+              <div class="flex items-center gap-3 p-3.5 rounded-xl bg-[#faf8f5] border border-[#ede8e0]">
+                <div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100
+                            flex items-center justify-center flex-shrink-0">
+                  <UIcon name="i-heroicons-user" class="w-4 h-4 text-[#5b47e0]" />
+                </div>
+                <div>
+                  <p class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-0.5">Participant</p>
+                  <p class="text-[13.5px] font-bold text-[#1a1612]">{{ scanResult.data.user.name }}</p>
+                  <p class="text-[11.5px] text-[#8a8078]">{{ scanResult.data.user.email }}</p>
+                </div>
+              </div>
+              <!-- Événement -->
+              <div class="flex items-center gap-3 p-3.5 rounded-xl bg-[#faf8f5] border border-[#ede8e0]">
+                <div class="w-9 h-9 rounded-xl bg-orange-50 border border-orange-100
+                            flex items-center justify-center flex-shrink-0">
+                  <UIcon name="i-heroicons-calendar-days" class="w-4 h-4 text-[#ea6c1e]" />
+                </div>
+                <div>
+                  <p class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-0.5">Événement</p>
+                  <p class="text-[13.5px] font-bold text-[#1a1612]">{{ scanResult.data.event.title }}</p>
+                  <p class="text-[11.5px] text-[#8a8078]">{{ scanResult.data.event.startDate }}</p>
+                </div>
+              </div>
+              <!-- Utilisations restantes -->
+              <div class="flex items-center justify-between p-3.5 rounded-xl bg-emerald-50 border border-emerald-100">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-200
+                              flex items-center justify-center flex-shrink-0">
+                    <UIcon name="i-heroicons-ticket" class="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-0.5">Utilisations</p>
+                    <p class="text-[13px] font-semibold text-[#1a1612]">
+                      {{ scanResult.data.usedCount }} / {{ scanResult.data.maxUsage }}
+                    </p>
+                  </div>
+                </div>
+                <div class="flex flex-col items-end gap-1.5">
+                  <span class="text-[12px] font-bold text-emerald-700">
+                    {{ scanResult.data.usageRemaining }} restant{{ scanResult.data.usageRemaining > 1 ? 's' : '' }}
+                  </span>
+                  <div class="w-24 h-2 bg-emerald-100 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full bg-emerald-500 transition-all"
+                      :style="`width: ${(scanResult.data.usedCount / scanResult.data.maxUsage) * 100}%`" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- ── Expiré ── -->
+          <template v-else-if="scanResult.message === 'Ticket expiré'">
+            <div class="px-5 py-4 flex items-center gap-3 bg-amber-50">
+              <div class="w-10 h-10 rounded-xl bg-amber-100 border border-amber-200
                           flex items-center justify-center flex-shrink-0">
-                <UIcon name="i-heroicons-calendar-days" class="w-4 h-4 text-[#ea6c1e]" />
+                <UIcon name="i-heroicons-clock" class="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <p class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-0.5">Événement</p>
-                <p class="text-[13.5px] font-bold text-[#1a1612]">{{ scanResult.data.event.title }}</p>
-                <p class="text-[11.5px] text-[#8a8078]">{{ scanResult.data.event.startDate }}</p>
+                <p class="text-[14px] font-bold text-amber-700">Ticket expiré ⏰</p>
+                <p class="text-[12px] text-amber-600/70">Ce ticket n'est plus valide</p>
               </div>
             </div>
-          </div>
+            <div class="p-5">
+              <div class="flex items-start gap-3 p-3.5 rounded-xl bg-amber-50 border border-amber-100">
+                <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                <p class="text-[12.5px] text-amber-700 leading-relaxed">
+                  La durée de validité de ce ticket est dépassée. Contactez l'organisateur si vous pensez qu'il s'agit d'une erreur.
+                </p>
+              </div>
+            </div>
+          </template>
+
+          <!-- ── QR invalide ── -->
+          <template v-else-if="scanResult.message === 'Ticket invalide'">
+            <div class="px-5 py-4 flex items-center gap-3 bg-red-50">
+              <div class="w-10 h-10 rounded-xl bg-red-100 border border-red-200
+                          flex items-center justify-center flex-shrink-0">
+                <UIcon name="i-heroicons-x-circle" class="w-5 h-5 text-red-500" />
+              </div>
+              <div>
+                <p class="text-[14px] font-bold text-red-600">QR Code invalide ❌</p>
+                <p class="text-[12px] text-red-500/70">Ce QR code ne correspond à aucun ticket</p>
+              </div>
+            </div>
+            <div class="p-5">
+              <div class="flex items-start gap-3 p-3.5 rounded-xl bg-red-50 border border-red-100">
+                <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                <p class="text-[12.5px] text-red-600 leading-relaxed">
+                  Assurez-vous de scanner le bon QR code depuis le PDF du ticket.
+                </p>
+              </div>
+            </div>
+          </template>
+
+          <!-- ── Déjà utilisé ou autre ── -->
+          <template v-else>
+            <div class="px-5 py-4 flex items-center gap-3 bg-red-50">
+              <div class="w-10 h-10 rounded-xl bg-red-100 border border-red-200
+                          flex items-center justify-center flex-shrink-0">
+                <UIcon name="i-heroicons-x-circle" class="w-5 h-5 text-red-500" />
+              </div>
+              <div>
+                <p class="text-[14px] font-bold text-red-600">{{ scanResult.message }}</p>
+                <p class="text-[12px] text-red-500/70">Accès refusé</p>
+              </div>
+            </div>
+          </template>
 
           <!-- Bouton nouveau scan -->
-          <div class="px-5 pb-5 mt-3">
+          <div class="px-5 pb-5 pt-2">
             <button @click="resetScan(); startScan()"
               class="w-full py-2.5 rounded-xl bg-[#faf8f5] border border-[#ede8e0]
                      text-[13px] font-semibold text-[#4a3f32]
@@ -340,14 +403,10 @@ onUnmounted(() => {
           </button>
         </div>
         <div class="divide-y divide-[#ede8e0]">
-          <div v-for="(h, i) in scanHistory" :key="i"
-            class="flex items-center gap-3 px-5 py-3">
+          <div v-for="(h, i) in scanHistory" :key="i" class="flex items-center gap-3 px-5 py-3">
             <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-              :class="h.success
-                ? 'bg-emerald-50 border border-emerald-100'
-                : 'bg-red-50 border border-red-100'">
-              <UIcon
-                :name="h.success ? 'i-heroicons-check' : 'i-heroicons-x-mark'"
+              :class="h.success ? 'bg-emerald-50 border border-emerald-100' : 'bg-red-50 border border-red-100'">
+              <UIcon :name="h.success ? 'i-heroicons-check' : 'i-heroicons-x-mark'"
                 class="w-3.5 h-3.5"
                 :class="h.success ? 'text-emerald-500' : 'text-red-400'" />
             </div>
@@ -382,12 +441,23 @@ onUnmounted(() => {
   font-size: 13.5px; color: #1a1612; font-family: 'Outfit', sans-serif;
   transition: border-color 0.15s, box-shadow 0.15s; outline: none;
 }
-.field-input:focus {
-  border-color: #ea6c1e;
-  box-shadow: 0 0 0 3px rgba(234,108,30,0.1);
-}
+.field-input:focus { border-color: #ea6c1e; box-shadow: 0 0 0 3px rgba(234,108,30,0.1); }
 
-/* Styles injectés par QrScanner pour la zone de scan */
-:deep(video) { width: 100% !important; height: 100% !important; object-fit: cover !important; }
-:deep(.qr-scanner-region-highlight) { border-color: #ea6c1e !important; }
+/* Surcharge du style par défaut de html5-qrcode */
+:deep(#qr-reader) { border: none !important; }
+:deep(#qr-reader__scan_region) { border-radius: 16px; overflow: hidden; }
+:deep(#qr-reader__dashboard) { padding: 12px 0 0 !important; }
+:deep(#qr-reader__dashboard_section_csr button) {
+  background: linear-gradient(135deg, #ea6c1e, #5b47e0) !important;
+  color: white !important; border: none !important;
+  border-radius: 10px !important; padding: 8px 16px !important;
+  font-family: 'Outfit', sans-serif !important; font-weight: 600 !important;
+  cursor: pointer !important;
+}
+:deep(#qr-reader__camera_selection) {
+  background: #faf8f5 !important; border: 1px solid #ede8e0 !important;
+  border-radius: 10px !important; padding: 6px 10px !important;
+  font-family: 'Outfit', sans-serif !important; color: #1a1612 !important;
+  margin-bottom: 8px !important;
+}
 </style>

@@ -78,7 +78,7 @@ const isActive = (path: string) => route.path === path
             <circle cx="50" cy="18" r="16" fill="#ea6c1e"/>
             <path d="M10 55 Q10 95 30 95 Q40 95 50 80 Q60 95 70 95 Q90 95 90 55 L90 50 Q90 40 80 40 L70 40 Q60 40 60 50 L60 68 Q60 75 50 75 Q40 75 40 68 L40 50 Q40 40 30 40 L20 40 Q10 40 10 50 Z" fill="#ea6c1e"/>
           </svg>
-          <span class="text-[16px] sm:text-[17px] font-bold tracking-tight text-[#1a1612] group-hover:text-[#ea6c1e] transition-colors duration-300">WeLove<span class="text-[#ea6c1e]">Event</span></span>
+          <span class="text-[16px] sm:text-[17px] font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#ea6c1e] to-[#5b47e0]">WeLoveEvent</span>
        </div>
           <p class="mt-1 text-[10px] uppercase tracking-[0.05em] text-[#b0a898] font-medium">
           Dashboard Admin
@@ -105,8 +105,7 @@ const isActive = (path: string) => route.path === path
           >
             {{ userInitial }}
           </div>
-          <!-- Online dot -->
-          <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#faf8f5]" />
+         
         </div>
 
         <div class="min-w-0 flex-1">
@@ -138,7 +137,7 @@ const isActive = (path: string) => route.path === path
         :class="{ 'nav-item--active': isActive(item.to as string) }"
       >
         <!-- Active indicator dot -->
-        <span class="nav-dot" />
+        
 
         <!-- Icon -->
         <span class="nav-icon-wrap">

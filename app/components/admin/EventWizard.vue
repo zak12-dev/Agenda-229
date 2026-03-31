@@ -782,13 +782,11 @@ const selectedCategoryName = computed(() => categories.value.find(c => c.id === 
                 <div v-if="form.priceType === 'PAID'" class="field">
                   <label class="field-label">Montant (FCFA) <span class="req">*</span></label>
                   <div class="relative">
-                    <UIcon name="i-heroicons-banknotes" class="field-icon " />
                     <input v-model="form.price" type="number" min="0" step="500"
                       placeholder="" class="field-input pl-10" />
                   </div>
                   <label class="field-label">Combien de fois le ticket peut être utilisé<span class="req">*</span></label>
                   <div class="relative">
-                    <UIcon name="i-heroicons-ticket" class="field-icon" />
      <input v-model="form.maxUsage" type="number" min="1" step="1"
                       placeholder=" " class="field-input pl-10" />
                   </div>

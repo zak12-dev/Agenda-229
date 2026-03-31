@@ -57,7 +57,6 @@ const advantages = [
                          bg-white border border-[#ede8e0]
                          shadow-[0_1px_8px_rgba(0,0,0,0.04)]
                          text-[11.5px] font-semibold text-[#5b47e0]">
-              <UIcon name="i-heroicons-sparkles" class="w-3.5 h-3.5" />
               Pour les organisateurs
             </span>
             <div class="flex-1 h-px bg-[#ede8e0]" />

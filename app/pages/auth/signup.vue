@@ -137,7 +137,7 @@ onMounted(() => { refreshCaptcha() })
             <circle cx="50" cy="18" r="16" fill="#ea6c1e"/>
             <path d="M10 55 Q10 95 30 95 Q40 95 50 80 Q60 95 70 95 Q90 95 90 55 L90 50 Q90 40 80 40 L70 40 Q60 40 60 50 L60 68 Q60 75 50 75 Q40 75 40 68 L40 50 Q40 40 30 40 L20 40 Q10 40 10 50 Z" fill="#ea6c1e"/>
           </svg>
-          <span class="text-[16px] sm:text-[17px] font-bold tracking-tight text-[#1a1612] group-hover:text-[#ea6c1e] transition-colors duration-300">WeLove<span class="text-[#ea6c1e]">Event</span></span>
+          <span class="text-[16px] sm:text-[17px] font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#ea6c1e] to-[#5b47e0]">WeLoveEvent</span>
         </NuxtLink>
             <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#faf8f5] border border-[#ede8e0]">
               <UIcon name="i-heroicons-shield-check" class="w-3 h-3 text-emerald-500" />

@@ -85,7 +85,6 @@
               <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg
                            bg-black/60 backdrop-blur-sm border border-white/10
                            text-[11px] font-semibold text-white/90">
-                <span class="w-1.5 h-1.5 rounded-full bg-[#c0b8ad]" />
                 Terminé
               </span>
             </div>

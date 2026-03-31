@@ -2,16 +2,36 @@ import { prisma } from '../../utils/prisma'
 
 export default defineEventHandler(async (event) => {
   try {
-    const body = await readBody(event)
-    const { token, userId } = body
 
-    if (!token || !userId) {
+    // 1. RÉCUPÉRER UTILISATEUR AUTHENTIFIÉ
+    const user = event.context.user
+
+    if (!user) {
       return {
         success: false,
-        message: 'Token ou userId manquant'
+        message: 'Non authentifié'
       }
     }
 
+    const userId = user.id
+
+    // 2. RÉCUPÉRER TOKEN (GET ou POST)
+    const query = getQuery(event)
+    let token = query.token as string
+
+    if (!token) {
+      const body = await readBody(event)
+      token = body?.token
+    }
+
+    if (!token) {
+      return {
+        success: false,
+        message: 'Token manquant'
+      }
+    }
+
+    // 3. RÉCUPÉRER LE TICKET
     const ticket = await prisma.ticket.findUnique({
       where: { token },
       include: {
@@ -27,7 +47,7 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // Vérifier autorisation
+    // 4. VÉRIFICATION AUTORISATION
     const isOrganizer = ticket.event.userId === userId
 
     const isController = await prisma.eventController.findFirst({
@@ -39,13 +59,23 @@ export default defineEventHandler(async (event) => {
     })
 
     if (!isOrganizer && !isController) {
+
+      // LOG tentative frauduleuse
+      await prisma.scanLog.create({
+        data: {
+          ticketId: ticket.id,
+          scannedBy: userId,
+          scanResult: 'UNAUTHORIZED'
+        }
+      })
+
       return {
         success: false,
         message: 'Non autorisé à vérifier ce ticket'
       }
     }
 
-    // ⏰ expiré
+    //5. EXPIRATION
     if (new Date() > ticket.expiresAt) {
       await prisma.scanLog.create({
         data: {
@@ -58,7 +88,7 @@ export default defineEventHandler(async (event) => {
       return { success: false, message: 'Ticket expiré' }
     }
 
-    //  déjà utilisé
+    // 6. LIMITE D’UTILISATION
     if (ticket.usedCount >= ticket.event.maxUsage) {
       await prisma.scanLog.create({
         data: {
@@ -71,7 +101,7 @@ export default defineEventHandler(async (event) => {
       return { success: false, message: 'Ticket déjà utilisé' }
     }
 
-    // ✅ OK
+    // 7. VALIDATION
     await prisma.ticket.update({
       where: { id: ticket.id },
       data: {
@@ -80,10 +110,10 @@ export default defineEventHandler(async (event) => {
     })
 
     await prisma.ticketValidation.create({
-        data: {
-            ticketId: ticket.id,
-            validatedBy: userId
-        }
+      data: {
+        ticketId: ticket.id,
+        validatedBy: userId
+      }
     })
 
     await prisma.scanLog.create({
@@ -94,20 +124,21 @@ export default defineEventHandler(async (event) => {
       }
     })
 
+    //8. RÉPONSE
     return {
       success: true,
-      message: 'Ticket valide ',
-        data: {
-            user: {  
-                name: ticket.user.name,     
-                email: ticket.user.email
-            }, 
-            event: {
-                title: ticket.event.title,  
-                startDate: ticket.event.startDate,
-                endDate: ticket.event.endDate
-            },
+      message: 'Ticket valide',
+      data: {
+        user: {
+          name: ticket.user.name,
+          email: ticket.user.email
+        },
+        event: {
+          title: ticket.event.title,
+          startDate: ticket.event.startDate,
+          endDate: ticket.event.endDate
         }
+      }
     }
 
   } catch (error) {

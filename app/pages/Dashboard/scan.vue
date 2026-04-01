@@ -1,191 +1,146 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useAuth } from '../../../composables/useAuth'
 
-definePageMeta({ layout: 'dashboard' })
+definePageMeta({ layout: 'dashboard', ssr: false })
 
 const { session } = useAuth()
 const toast = useToast()
 
-// ── State ──
-const scanning = ref(false)
-const scanResult = ref<any>(null)
-const scanError = ref('')
-const loading = ref(false)
+const scanning    = ref(false)
+const scanResult  = ref<any>(null)
+const scanError   = ref('')
+const loading     = ref(false)
 const manualToken = ref('')
-const showManual = ref(false)
-const showCamera = ref(false)
+const showManual  = ref(false)
+const showCamera  = ref(false)
 const scanHistory = ref<any[]>([])
 
 let scanner: any = null
 
-// ── Démarrer le scan — affiche la popup permission caméra ──
+// ── Charger html5-qrcode via CDN (plus fiable qu'un import dynamique en prod) ──
+const loadHtml5QrCode = (): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') { reject('SSR'); return }
+    if ((window as any).Html5Qrcode) { resolve((window as any).Html5Qrcode); return }
+
+    const script = document.createElement('script')
+    script.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'
+    script.onload = () => {
+      if ((window as any).Html5Qrcode) {
+        resolve((window as any).Html5Qrcode)
+      } else {
+        reject(new Error('Html5Qrcode non disponible après chargement'))
+      }
+    }
+    script.onerror = () => reject(new Error('Impossible de charger html5-qrcode'))
+    document.head.appendChild(script)
+  })
+}
+
 const startScan = async () => {
   if (typeof window === 'undefined') return
-
-  // Vérifier le support et le protocole HTTPS
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    scanError.value = "Votre navigateur ne supporte pas l'accès à la caméra"
-    showManual.value = true
-    return
-  }
-
-  // ⚠️ EN PRODUCTION: Vérifier HTTPS strictement
-  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-  const isHttps = window.location.protocol === 'https:'
-  const isDev = process.env.NODE_ENV === 'development'
-  
-  // DEBUG: Logger pour déboguer en production
-  console.log('[Scanner Debug]', {
-    protocol: window.location.protocol,
-    hostname: window.location.hostname,
-    isHttps,
-    isLocalhost,
-    isDev,
-    isMobile,
-  })
-  
-  if (isMobile && !isHttps && !isLocalhost) {
-    scanError.value = "HTTPS requis sur mobile. Contactez l'administrateur si vous êtes en production."
-    showManual.value = true
-    return
-  }
-  
-  if (!isLocalhost && !isDev && !isHttps) {
-    scanError.value = "HTTPS requis en production. URL courante: " + window.location.href
-    showManual.value = true
-    return
-  }
-
-  showCamera.value = true
   scanError.value = ''
 
   scanResult.value = null
 
-  // Attendre que le DOM soit prêt et que l'élément existe
-  await nextTick()
-  
-  // Vérifier que le conteneur existe
-  const container = document.getElementById('qr-reader')
-  if (!container) {
-    scanError.value = "Conteneur non trouvé"
-    showManual.value = true
-    showCamera.value = false
+  // Nettoyer
+  if (scanner) {
+    try { await scanner.stop() } catch {}
+    try { scanner.clear() } catch {}
+    scanner = null
+  }
+
+  let Html5Qrcode: any
+  try {
+    Html5Qrcode = await loadHtml5QrCode()
+  } catch (err: any) {
+    scanError.value = `Impossible de charger le scanner : ${err?.message || err}`
     return
   }
 
+  // Afficher le conteneur vidéo avant d'init
+  showCamera.value = true
+  scanning.value = true
+  await nextTick()
+
   try {
-    const { Html5QrcodeScanner, Html5QrcodeScanType } = await import('html5-qrcode')
+    scanner = new Html5Qrcode('qr-reader', { verbose: false })
 
-    // Nettoyer ancien scanner si existe
-    if (scanner) {
-      try {
-        await scanner.clear()
-      } catch (e) {
-        console.warn('Erreur lors du nettoyage du scanner:', e)
-      }
-      scanner = null
-    }
-
-    // 🔴 CRITICAL: Appeler getUserMedia() AVANT render()
-    // Cela force le popup de permission sur TOUS les navigateurs (Edge, Opera, Firefox, Chrome)
-    // Sans cet appel, Opera reste bloqué
+    // getCameras déclenche la popup permission caméra
+    let cameras: any[] = []
     try {
-      console.log('[Scanner] Demande de permission caméra...')
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
-      })
-      console.log('[Scanner] Permission accordée!')
-      // Arrêter immédiatement le stream, on vient juste de demander la permission
-      stream.getTracks().forEach(track => track.stop())
+      cameras = await Html5Qrcode.getCameras()
     } catch (err: any) {
-      console.error('[Scanner] Erreur getUserMedia:', {
-        name: err.name,
-        message: err.message,
-        code: err.code,
-      })
-      // Si permission refuse ici, html5-qrcode ne s'initialisera pas
-      if (err.name === 'NotAllowedError') {
-        throw new Error('Permission caméra refusée')
+      showCamera.value = false
+      scanning.value = false
+      const msg = String(err?.message || err)
+      if (msg.includes('NotAllowed') || msg.includes('Permission') || msg.includes('denied')) {
+        scanError.value = "Permission caméra refusée. Autorisez la caméra pour ce site dans les paramètres de votre navigateur, puis rechargez la page."
+      } else {
+        scanError.value = `Impossible d'accéder à la caméra : ${msg}`
       }
-      // Sinon continuer, peut-être qu'une caméra de secours existera
+      return
     }
 
-    scanner = new Html5QrcodeScanner(
-      'qr-reader',
-      {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        rememberLastUsedCamera: true,
-        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
-        showTorchButtonIfSupported: true,
-      },
-      false
-    )
+    if (!cameras.length) {
+      showCamera.value = false
+      scanning.value = false
+      scanError.value = 'Aucune caméra détectée.'
+      return
+    }
 
-    // ⚠️ IMPORTANT: render() n'est PAS une Promise, ne pas l'attendre!
-    // Appeler render() déclenche le lecture de la caméra (déjà autorisée)
-    scanner.render(
-      // Succès — QR détecté
+    // Préférer caméra arrière sur mobile
+    const back = cameras.find((c: any) =>
+      /back|rear|arrière|environment/i.test(c.label)
+    )
+    const cameraId = back?.id || cameras[cameras.length - 1].id
+
+    await scanner.start(
+      cameraId,
+      { fps: 10, qrbox: { width: 250, height: 250 } },
       async (decodedText: string) => {
-        try {
-          await scanner.clear()
-        } catch {}
-        scanner = null
+        try { await scanner.stop() } catch {}
         scanning.value = false
         showCamera.value = false
         verifyToken(decodedText)
       },
-      // Erreur de scan (ignorée, la lib tente en continu)
-      (_: any) => {}
+      (_: any) => {} // erreurs continues ignorées
     )
+<<<<<<< HEAD
 
     // Juste attendre que le DOM soit mis à jour
     // (pas d'await du render, car ce n'est pas une Promise)
     await new Promise(resolve => setTimeout(resolve, 100))
     scanning.value = true
 
-  } catch (err: any) {
 
-    console.error('Erreur startScan:', err)
+  } catch (err: any) {
     showCamera.value = false
     scanning.value = false
-
-    // Nettoyage du scanner en cas d'erreur
-    if (scanner) {
-      try {
-        await scanner.clear()
-      } catch {}
-      scanner = null
-    }
-
-    if (err.name === 'NotAllowedError' || err.message?.includes('Permission')) {
-      scanError.value = "Permission caméra refusée. Allez dans les paramètres du navigateur pour autoriser la caméra."
-    } else if (err.name === 'NotReadableError' || err.message?.includes('could not start video')) {
-      scanError.value = "Caméra déjà utilisée ou non disponible"
-    } else if (err.message?.includes('NotFoundError') || err.message?.includes('Requested device not found')) {
-      scanError.value = "Aucune caméra trouvée sur cet appareil"
+    const msg = String(err?.message || err)
+    if (/NotAllowed|Permission|denied/i.test(msg)) {
+      scanError.value = "Permission caméra refusée. Autorisez la caméra dans les paramètres de votre navigateur puis rechargez."
+    } else if (/NotFound|DevicesNotFound/i.test(msg)) {
+      scanError.value = 'Aucune caméra trouvée.'
+    } else if (/NotReadable|TrackStart/i.test(msg)) {
+      scanError.value = 'La caméra est déjà utilisée par une autre app.'
     } else {
-      scanError.value = err.message || "Erreur lors de l'accès à la caméra"
+      scanError.value = `Erreur : ${msg}`
     }
-
-    showManual.value = true
   }
 }
 
 const stopScan = async () => {
   if (scanner) {
-    try {
-      await scanner.clear()
-    } catch {}
+    try { await scanner.stop() } catch {}
+    try { scanner.clear() } catch {}
     scanner = null
   }
   scanning.value = false
   showCamera.value = false
 }
 
-// ── Vérification token ──
 const verifyToken = async (token: string) => {
   if (!token.trim()) return
   loading.value = true
@@ -199,15 +154,10 @@ const verifyToken = async (token: string) => {
     scanResult.value = res
     scanHistory.value.unshift({ ...res, token: token.trim(), time: new Date() })
     if (scanHistory.value.length > 20) scanHistory.value.pop()
-
     if (res.success) {
       toast.add({ title: 'Ticket valide ✅', color: 'green', icon: 'i-heroicons-check-circle' })
     } else {
-      toast.add({
-        title: res.message || 'Ticket invalide',
-        color: 'red',
-        icon: 'i-heroicons-x-circle',
-      })
+      toast.add({ title: res.message || 'Ticket invalide', color: 'red', icon: 'i-heroicons-x-circle' })
     }
   } catch (err: any) {
     const msg = err?.data?.message || err?.statusMessage || 'Erreur lors de la vérification'
@@ -234,136 +184,96 @@ const formatTime = (d: Date) =>
 
 onUnmounted(async () => {
   if (scanner) {
-    try {
-      await scanner.clear()
-    } catch {}
+    try { await scanner.stop() } catch {}
+    try { scanner.clear() } catch {}
     scanner = null
   }
 })
 </script>
 
 <template>
-  <div
-    class="bg-[#f5f3ef] min-h-screen font-outfit px-4 pt-6 pb-16 sm:px-6 sm:pb-10 overflow-y-auto"
-  >
-    <div class="max-w-7xl mx-auto space-y-5 mb-10">
+  <div class="bg-[#f5f3ef] min-h-screen font-outfit px-4 pt-6 pb-16 sm:px-6 sm:pb-10 overflow-y-auto">
+    <div class="max-w-7xl mx-auto space-y-5 mb-15">
+
       <!-- Header -->
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-[10px] font-semibold text-[#ea6c1e] uppercase tracking-widest mb-0.5">
-            Scanner
-          </p>
+          <p class="text-[10px] font-semibold text-[#ea6c1e] uppercase tracking-widest mb-0.5">Scanner</p>
           <h1 class="text-[22px] font-bold text-[#1a1612]">Vérification de tickets</h1>
         </div>
-        <div
-          class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#ede8e0]"
-        >
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#ede8e0]">
           <span class="w-2 h-2 rounded-full bg-emerald-400" />
-          <span class="text-[11.5px] font-semibold text-[#4a3f32]"
-            >{{ scanHistory.length }} scans</span
-          >
+          <span class="text-[11.5px] font-semibold text-[#4a3f32]">{{ scanHistory.length }} scans</span>
         </div>
       </div>
 
       <!-- Card scanner -->
-      <div
-        class="bg-white rounded-2xl border border-[#ede8e0] shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden"
-      >
+      <div class="bg-white rounded-2xl border border-[#ede8e0] shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden">
+
         <!-- Header card -->
-        <div
-          class="px-5 py-4 border-b border-[#ede8e0] bg-[#faf8f5] flex items-center justify-between"
-        >
+        <div class="px-5 py-4 border-b border-[#ede8e0] bg-[#faf8f5] flex items-center justify-between">
           <div class="flex items-center gap-2.5">
-            <div
-              class="w-8 h-8 rounded-xl flex items-center justify-center"
-              style="background: #ea6c1e12; border: 1.5px solid #ea6c1e25"
-            >
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center"
+              style="background: #ea6c1e12; border: 1.5px solid #ea6c1e25">
               <UIcon name="i-heroicons-qr-code" class="w-4 h-4" style="color: #ea6c1e" />
             </div>
             <p class="text-[14px] font-bold text-[#1a1612]">Scanner un QR code</p>
           </div>
-          <button
-            @click="
-              showManual = !showManual;
-              stopScan()
-            "
-            class="text-[11.5px] font-medium text-[#8a8078] hover:text-[#ea6c1e] transition-colors"
-          >
+          <button @click="showManual = !showManual; stopScan()"
+            class="text-[11.5px] font-medium text-[#8a8078] hover:text-[#ea6c1e] transition-colors">
             {{ showManual ? 'Utiliser la caméra' : 'Saisie manuelle' }}
           </button>
         </div>
 
         <!-- Vue caméra -->
         <div v-if="!showManual" class="p-5 space-y-4">
+
           <!-- Zone rendu Html5QrcodeScanner -->
-          <div v-if="showCamera">
+          <div v-show="showCamera">
             <div id="qr-reader" class="w-full rounded-2xl overflow-hidden" />
           </div>
 
           <!-- Placeholder quand caméra inactive -->
-          <div
-            v-if="!showCamera && !loading"
-            class="relative rounded-2xl overflow-hidden bg-[#1a1612] flex flex-col items-center justify-center gap-4 py-14"
-          >
-            <div
-              class="w-20 h-20 rounded-2xl bg-white/10 border-2 border-white/20 flex items-center justify-center"
-            >
+          <div v-if="!showCamera && !loading"
+            class="relative rounded-2xl overflow-hidden bg-[#1a1612] flex flex-col items-center justify-center gap-4 py-14">
+            <div class="w-20 h-20 rounded-2xl bg-white/10 border-2 border-white/20
+                        flex items-center justify-center">
               <UIcon name="i-heroicons-qr-code" class="w-10 h-10 text-white/40" />
             </div>
             <p class="text-[13px] text-white/50">Appuyez sur "Démarrer le scan"</p>
           </div>
 
           <!-- Vérification en cours -->
-          <div
-            v-if="loading"
-            class="rounded-2xl bg-[#1a1612] flex flex-col items-center justify-center gap-3 py-14"
-          >
+          <div v-if="loading"
+            class="rounded-2xl bg-[#1a1612] flex flex-col items-center justify-center gap-3 py-14">
             <svg class="w-8 h-8 animate-spin text-[#ea6c1e]" fill="none" viewBox="0 0 24 24">
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-              />
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-              />
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
             </svg>
             <p class="text-[13px] text-white">Vérification en cours…</p>
           </div>
 
           <!-- Erreur -->
-          <div
-            v-if="scanError"
-            class="flex items-start gap-3 p-3.5 rounded-xl bg-red-50 border border-red-100"
-          >
-            <UIcon
-              name="i-heroicons-exclamation-circle"
-              class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5"
-            />
+          <div v-if="scanError"
+            class="flex items-start gap-3 p-3.5 rounded-xl bg-red-50 border border-red-100">
+            <UIcon name="i-heroicons-exclamation-circle" class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
             <p class="text-[12.5px] text-red-600 leading-relaxed">{{ scanError }}</p>
           </div>
 
           <!-- Boutons -->
           <div class="flex gap-2.5">
-            <button
-              v-if="!scanning"
-              @click="startScan"
-              class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white text-[13.5px] font-bold transition-all shadow-[0_4px_18px_rgba(234,108,30,0.28)] hover:opacity-90"
-              style="background: linear-gradient(135deg, #ea6c1e, #5b47e0)"
-            >
+            <button v-if="!scanning" @click="startScan"
+              class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl
+                     text-white text-[13.5px] font-bold transition-all
+                     shadow-[0_4px_18px_rgba(234,108,30,0.28)] hover:opacity-90"
+              style="background: linear-gradient(135deg, #ea6c1e, #5b47e0)">
               <UIcon name="i-heroicons-camera" class="w-4 h-4" />
               Démarrer le scan
             </button>
-            <button
-              v-else
-              @click="stopScan"
-              class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#faf8f5] border border-[#ede8e0] text-[13.5px] font-semibold text-[#4a3f32] hover:border-red-200 hover:text-red-500 transition-all"
-            >
+            <button v-else @click="stopScan"
+              class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl
+                     bg-[#faf8f5] border border-[#ede8e0] text-[13.5px] font-semibold
+                     text-[#4a3f32] hover:border-red-200 hover:text-red-500 transition-all">
               <UIcon name="i-heroicons-stop" class="w-4 h-4" />
               Arrêter
             </button>
@@ -375,25 +285,18 @@ onUnmounted(async () => {
           <div class="field">
             <label class="field-label">Token du ticket</label>
             <div class="relative">
-              <UIcon
-                name="i-heroicons-key"
-                class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#c0b8ad] pointer-events-none"
-              />
-              <input
-                v-model="manualToken"
-                type="text"
-                placeholder="Collez le token ici…"
-                @keydown.enter="handleManual"
-                class="field-input pl-10 font-mono"
-              />
+              <UIcon name="i-heroicons-key"
+                class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#c0b8ad] pointer-events-none" />
+              <input v-model="manualToken" type="text" placeholder="Collez le token ici…"
+                @keydown.enter="handleManual" class="field-input pl-10 font-mono" />
             </div>
           </div>
-          <button
-            @click="handleManual"
-            :disabled="!manualToken.trim() || loading"
-            class="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white text-[13.5px] font-bold transition-all shadow-[0_4px_18px_rgba(234,108,30,0.28)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-            style="background: linear-gradient(135deg, #ea6c1e, #5b47e0)"
-          >
+          <button @click="handleManual" :disabled="!manualToken.trim() || loading"
+            class="w-full flex items-center justify-center gap-2 py-3 rounded-xl
+                   text-white text-[13.5px] font-bold transition-all
+                   shadow-[0_4px_18px_rgba(234,108,30,0.28)]
+                   hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+            style="background: linear-gradient(135deg, #ea6c1e, #5b47e0)">
             <UIcon name="i-heroicons-magnifying-glass" class="w-4 h-4" />
             Vérifier le ticket
           </button>
@@ -401,26 +304,21 @@ onUnmounted(async () => {
       </div>
 
       <!-- ══ RÉSULTAT ══ -->
-      <Transition
-        enter-active-class="transition-all duration-300 ease-out"
-        enter-from-class="opacity-0 translate-y-4"
-        enter-to-class="opacity-100 translate-y-0"
-      >
-        <div
-          v-if="scanResult"
+      <Transition enter-active-class="transition-all duration-300 ease-out"
+        enter-from-class="opacity-0 translate-y-4" enter-to-class="opacity-100 translate-y-0">
+        <div v-if="scanResult"
           class="bg-white rounded-2xl border overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.08)]"
           :class="{
             'border-emerald-200': scanResult.success,
             'border-amber-200': !scanResult.success && scanResult.message === 'Ticket expiré',
             'border-red-200': !scanResult.success && scanResult.message !== 'Ticket expiré',
-          }"
-        >
+          }">
+
           <!-- ── Valide ── -->
           <template v-if="scanResult.success">
             <div class="px-5 py-4 flex items-center gap-3 bg-emerald-50">
-              <div
-                class="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center flex-shrink-0"
-              >
+              <div class="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200
+                          flex items-center justify-center flex-shrink-0">
                 <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-emerald-600" />
               </div>
               <div>
@@ -430,63 +328,38 @@ onUnmounted(async () => {
             </div>
             <div v-if="scanResult.data" class="p-5 space-y-3">
               <!-- Participant -->
-              <div
-                class="flex items-center gap-3 p-3.5 rounded-xl bg-[#faf8f5] border border-[#ede8e0]"
-              >
-                <div
-                  class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center flex-shrink-0"
-                >
+              <div class="flex items-center gap-3 p-3.5 rounded-xl bg-[#faf8f5] border border-[#ede8e0]">
+                <div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100
+                            flex items-center justify-center flex-shrink-0">
                   <UIcon name="i-heroicons-user" class="w-4 h-4 text-[#5b47e0]" />
                 </div>
                 <div>
-                  <p
-                    class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-0.5"
-                  >
-                    Participant
-                  </p>
-                  <p class="text-[13.5px] font-bold text-[#1a1612]">
-                    {{ scanResult.data.user.name }}
-                  </p>
+                  <p class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-0.5">Participant</p>
+                  <p class="text-[13.5px] font-bold text-[#1a1612]">{{ scanResult.data.user.name }}</p>
                   <p class="text-[11.5px] text-[#8a8078]">{{ scanResult.data.user.email }}</p>
                 </div>
               </div>
               <!-- Événement -->
-              <div
-                class="flex items-center gap-3 p-3.5 rounded-xl bg-[#faf8f5] border border-[#ede8e0]"
-              >
-                <div
-                  class="w-9 h-9 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center flex-shrink-0"
-                >
+              <div class="flex items-center gap-3 p-3.5 rounded-xl bg-[#faf8f5] border border-[#ede8e0]">
+                <div class="w-9 h-9 rounded-xl bg-orange-50 border border-orange-100
+                            flex items-center justify-center flex-shrink-0">
                   <UIcon name="i-heroicons-calendar-days" class="w-4 h-4 text-[#ea6c1e]" />
                 </div>
                 <div>
-                  <p
-                    class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-0.5"
-                  >
-                    Événement
-                  </p>
-                  <p class="text-[13.5px] font-bold text-[#1a1612]">
-                    {{ scanResult.data.event.title }}
-                  </p>
+                  <p class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-0.5">Événement</p>
+                  <p class="text-[13.5px] font-bold text-[#1a1612]">{{ scanResult.data.event.title }}</p>
                   <p class="text-[11.5px] text-[#8a8078]">{{ scanResult.data.event.startDate }}</p>
                 </div>
               </div>
               <!-- Utilisations restantes -->
-              <div
-                class="flex items-center justify-between p-3.5 rounded-xl bg-emerald-50 border border-emerald-100"
-              >
+              <div class="flex items-center justify-between p-3.5 rounded-xl bg-emerald-50 border border-emerald-100">
                 <div class="flex items-center gap-2.5">
-                  <div
-                    class="w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center flex-shrink-0"
-                  >
+                  <div class="w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-200
+                              flex items-center justify-center flex-shrink-0">
                     <UIcon name="i-heroicons-ticket" class="w-4 h-4 text-emerald-600" />
                   </div>
                   <div>
-                    <p
-                      class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-0.5"
-                    >
-                      Utilisations
-                    </p>
+                    <p class="text-[10px] font-semibold text-[#b0a898] uppercase tracking-wide mb-0.5">Utilisations</p>
                     <p class="text-[13px] font-semibold text-[#1a1612]">
                       {{ scanResult.data.usedCount }} / {{ scanResult.data.maxUsage }}
                     </p>
@@ -494,15 +367,11 @@ onUnmounted(async () => {
                 </div>
                 <div class="flex flex-col items-end gap-1.5">
                   <span class="text-[12px] font-bold text-emerald-700">
-                    {{ scanResult.data.usageRemaining }} restant{{
-                      scanResult.data.usageRemaining > 1 ? 's' : ''
-                    }}
+                    {{ scanResult.data.usageRemaining }} restant{{ scanResult.data.usageRemaining > 1 ? 's' : '' }}
                   </span>
                   <div class="w-24 h-2 bg-emerald-100 rounded-full overflow-hidden">
-                    <div
-                      class="h-full rounded-full bg-emerald-500 transition-all"
-                      :style="`width: ${(scanResult.data.usedCount / scanResult.data.maxUsage) * 100}%`"
-                    />
+                    <div class="h-full rounded-full bg-emerald-500 transition-all"
+                      :style="`width: ${(scanResult.data.usedCount / scanResult.data.maxUsage) * 100}%`" />
                   </div>
                 </div>
               </div>
@@ -512,9 +381,8 @@ onUnmounted(async () => {
           <!-- ── Expiré ── -->
           <template v-else-if="scanResult.message === 'Ticket expiré'">
             <div class="px-5 py-4 flex items-center gap-3 bg-amber-50">
-              <div
-                class="w-10 h-10 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center flex-shrink-0"
-              >
+              <div class="w-10 h-10 rounded-xl bg-amber-100 border border-amber-200
+                          flex items-center justify-center flex-shrink-0">
                 <UIcon name="i-heroicons-clock" class="w-5 h-5 text-amber-600" />
               </div>
               <div>
@@ -523,16 +391,10 @@ onUnmounted(async () => {
               </div>
             </div>
             <div class="p-5">
-              <div
-                class="flex items-start gap-3 p-3.5 rounded-xl bg-amber-50 border border-amber-100"
-              >
-                <UIcon
-                  name="i-heroicons-exclamation-triangle"
-                  class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5"
-                />
+              <div class="flex items-start gap-3 p-3.5 rounded-xl bg-amber-50 border border-amber-100">
+                <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                 <p class="text-[12.5px] text-amber-700 leading-relaxed">
-                  La durée de validité de ce ticket est dépassée. Contactez l'organisateur si vous
-                  pensez qu'il s'agit d'une erreur.
+                  La durée de validité de ce ticket est dépassée. Contactez l'organisateur si vous pensez qu'il s'agit d'une erreur.
                 </p>
               </div>
             </div>
@@ -541,9 +403,8 @@ onUnmounted(async () => {
           <!-- ── QR invalide ── -->
           <template v-else-if="scanResult.message === 'Ticket invalide'">
             <div class="px-5 py-4 flex items-center gap-3 bg-red-50">
-              <div
-                class="w-10 h-10 rounded-xl bg-red-100 border border-red-200 flex items-center justify-center flex-shrink-0"
-              >
+              <div class="w-10 h-10 rounded-xl bg-red-100 border border-red-200
+                          flex items-center justify-center flex-shrink-0">
                 <UIcon name="i-heroicons-x-circle" class="w-5 h-5 text-red-500" />
               </div>
               <div>
@@ -553,10 +414,7 @@ onUnmounted(async () => {
             </div>
             <div class="p-5">
               <div class="flex items-start gap-3 p-3.5 rounded-xl bg-red-50 border border-red-100">
-                <UIcon
-                  name="i-heroicons-exclamation-triangle"
-                  class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5"
-                />
+                <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
                 <p class="text-[12.5px] text-red-600 leading-relaxed">
                   Assurez-vous de scanner le bon QR code depuis le PDF du ticket.
                 </p>
@@ -567,9 +425,8 @@ onUnmounted(async () => {
           <!-- ── Déjà utilisé ou autre ── -->
           <template v-else>
             <div class="px-5 py-4 flex items-center gap-3 bg-red-50">
-              <div
-                class="w-10 h-10 rounded-xl bg-red-100 border border-red-200 flex items-center justify-center flex-shrink-0"
-              >
+              <div class="w-10 h-10 rounded-xl bg-red-100 border border-red-200
+                          flex items-center justify-center flex-shrink-0">
                 <UIcon name="i-heroicons-x-circle" class="w-5 h-5 text-red-500" />
               </div>
               <div>
@@ -581,10 +438,10 @@ onUnmounted(async () => {
 
           <!-- Bouton nouveau scan -->
           <div class="px-5 pb-5 pt-2">
-            <button
-              @click="resetScan(); startScan()"
-              class="w-full py-2.5 rounded-xl bg-[#faf8f5] border border-[#ede8e0] text-[13px] font-semibold text-[#4a3f32] hover:border-[#ea6c1e]/40 hover:text-[#ea6c1e] transition-all"
-            >
+            <button @click="resetScan(); startScan()"
+              class="w-full py-2.5 rounded-xl bg-[#faf8f5] border border-[#ede8e0]
+                     text-[13px] font-semibold text-[#4a3f32]
+                     hover:border-[#ea6c1e]/40 hover:text-[#ea6c1e] transition-all">
               Scanner un autre ticket
             </button>
           </div>
@@ -592,36 +449,22 @@ onUnmounted(async () => {
       </Transition>
 
       <!-- Historique -->
-      <div
-        v-if="scanHistory.length > 0"
-        class="bg-white rounded-2xl border border-[#ede8e0] shadow-[0_2px_12px_rgba(0,0,0,0.04)] overflow-hidden"
-      >
-        <div
-          class="px-5 py-3.5 border-b border-[#ede8e0] bg-[#faf8f5] flex items-center justify-between"
-        >
+      <div v-if="scanHistory.length > 0"
+        class="bg-white rounded-2xl border border-[#ede8e0] shadow-[0_2px_12px_rgba(0,0,0,0.04)] overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-[#ede8e0] bg-[#faf8f5] flex items-center justify-between">
           <p class="text-[13px] font-bold text-[#1a1612]">Historique de session</p>
-          <button
-            @click="scanHistory = []"
-            class="text-[11.5px] text-[#b0a898] hover:text-red-400 transition-colors"
-          >
+          <button @click="scanHistory = []"
+            class="text-[11.5px] text-[#b0a898] hover:text-red-400 transition-colors">
             Effacer
           </button>
         </div>
         <div class="divide-y divide-[#ede8e0]">
           <div v-for="(h, i) in scanHistory" :key="i" class="flex items-center gap-3 px-5 py-3">
-            <div
-              class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-              :class="
-                h.success
-                  ? 'bg-emerald-50 border border-emerald-100'
-                  : 'bg-red-50 border border-red-100'
-              "
-            >
-              <UIcon
-                :name="h.success ? 'i-heroicons-check' : 'i-heroicons-x-mark'"
+            <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+              :class="h.success ? 'bg-emerald-50 border border-emerald-100' : 'bg-red-50 border border-red-100'">
+              <UIcon :name="h.success ? 'i-heroicons-check' : 'i-heroicons-x-mark'"
                 class="w-3.5 h-3.5"
-                :class="h.success ? 'text-emerald-500' : 'text-red-400'"
-              />
+                :class="h.success ? 'text-emerald-500' : 'text-red-400'" />
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-[12.5px] font-semibold text-[#1a1612] truncate">
@@ -629,19 +472,16 @@ onUnmounted(async () => {
               </p>
               <p class="text-[11px] text-[#b0a898]">{{ formatTime(h.time) }}</p>
             </div>
-            <span
-              class="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
-              :class="
-                h.success
-                  ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                  : 'bg-red-50 text-red-500 border border-red-100'
-              "
-            >
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+              :class="h.success
+                ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                : 'bg-red-50 text-red-500 border border-red-100'">
               {{ h.success ? 'VALIDE' : 'REFUSÉ' }}
             </span>
           </div>
         </div>
       </div>
+
     </div>
   </div>
 </template>
@@ -649,63 +489,31 @@ onUnmounted(async () => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.field-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #4a3f32;
-}
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-label { font-size: 12px; font-weight: 600; color: #4a3f32; }
 .field-input {
-  width: 100%;
-  padding: 11px 14px;
-  background: #faf8f5;
-  border: 1px solid #ede8e0;
-  border-radius: 12px;
-  font-size: 13.5px;
-  color: #1a1612;
-  font-family: 'Outfit', sans-serif;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
-  outline: none;
+  width: 100%; padding: 11px 14px;
+  background: #faf8f5; border: 1px solid #ede8e0; border-radius: 12px;
+  font-size: 13.5px; color: #1a1612; font-family: 'Outfit', sans-serif;
+  transition: border-color 0.15s, box-shadow 0.15s; outline: none;
 }
-.field-input:focus {
-  border-color: #ea6c1e;
-  box-shadow: 0 0 0 3px rgba(234, 108, 30, 0.1);
-}
+.field-input:focus { border-color: #ea6c1e; box-shadow: 0 0 0 3px rgba(234,108,30,0.1); }
 
 /* Surcharge du style par défaut de html5-qrcode */
-:deep(#qr-reader) {
-  border: none !important;
-}
-:deep(#qr-reader__scan_region) {
-  border-radius: 16px;
-  overflow: hidden;
-}
-:deep(#qr-reader__dashboard) {
-  padding: 12px 0 0 !important;
-}
+:deep(#qr-reader) { border: none !important; }
+:deep(#qr-reader__scan_region) { border-radius: 16px; overflow: hidden; }
+:deep(#qr-reader__dashboard) { padding: 12px 0 0 !important; }
 :deep(#qr-reader__dashboard_section_csr button) {
   background: linear-gradient(135deg, #ea6c1e, #5b47e0) !important;
-  color: white !important;
-  border: none !important;
-  border-radius: 10px !important;
-  padding: 8px 16px !important;
-  font-family: 'Outfit', sans-serif !important;
-  font-weight: 600 !important;
+  color: white !important; border: none !important;
+  border-radius: 10px !important; padding: 8px 16px !important;
+  font-family: 'Outfit', sans-serif !important; font-weight: 600 !important;
   cursor: pointer !important;
 }
 :deep(#qr-reader__camera_selection) {
-  background: #faf8f5 !important;
-  border: 1px solid #ede8e0 !important;
-  border-radius: 10px !important;
-  padding: 6px 10px !important;
-  font-family: 'Outfit', sans-serif !important;
-  color: #1a1612 !important;
+  background: #faf8f5 !important; border: 1px solid #ede8e0 !important;
+  border-radius: 10px !important; padding: 6px 10px !important;
+  font-family: 'Outfit', sans-serif !important; color: #1a1612 !important;
   margin-bottom: 8px !important;
 }
 </style>

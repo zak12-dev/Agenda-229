@@ -8,9 +8,13 @@ export const sendTicket = async (
   user: User
 ) => {
 
+  const safeName = user.name.replace(/[^a-zA-Z0-9]/g, '')
+  const timestamp = Date.now()
+
   const transporter = nodemailer.createTransport({
     host: process.env.MAIL_HOST!,
     port: Number(process.env.MAIL_PORT),
+    secure: process.env.MAIL_SECURE === 'true',
     auth: {
       user: process.env.MAIL_USER!,
       pass: process.env.MAIL_PASS!
@@ -45,7 +49,7 @@ export const sendTicket = async (
 
     attachments: [
       {
-        filename: "ticket.pdf",
+        filename: `WLE-${safeName}-${timestamp}.pdf`,
         content: pdf
       },
       {

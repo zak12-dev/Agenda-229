@@ -15,7 +15,7 @@ export const generatePdf = async ({
 
   const doc = new PDFDocument({
     size: 'A4',
-    margin: 50
+    margin: 40
   })
 
   const buffers: Uint8Array[] = []
@@ -24,56 +24,87 @@ export const generatePdf = async ({
 
   return new Promise<Buffer>((resolve) => {
 
-    doc.on('end', () => {
-      const pdfData = Buffer.concat(buffers)
-      resolve(pdfData)
-    })
+    doc.on('end', () => resolve(Buffer.concat(buffers)))
 
-    // 🎨 TITRE
+    //HEADER
     doc
-      .fontSize(22)
-      .text(' TICKET OFFICIEL', { align: 'center' })
+      .fontSize(20)
+      .text('TICKET EVENEMENT', { align: 'center' })
 
     doc.moveDown()
 
-    // 📌 INFOS EVENT
     doc
       .fontSize(16)
-      .text(`Événement : ${event.title}`)
+      .text(event.title, { align: 'center' })
+
+    doc.moveDown(2)
+
+    //LIGNE SEPARATION
+    doc
+      .moveTo(40, doc.y)
+      .lineTo(doc.page.width - 40, doc.y)
+      .dash(5, { space: 5 })
+      .stroke()
+
+    doc.undash()
+
+    doc.moveDown(2)
+
+    //INFOS EVENT
+    doc
+      .fontSize(12)
+      .text(`Date : ${new Date(event.eventDate).toLocaleDateString()}`)
+      .text(`Lieu : ${event.villeId || 'Non défini'}`)
 
     doc.moveDown()
 
-    // 👤 INFOS USER
+    //INFOS UTILISATEUR
     doc
-      .fontSize(14)
-      .text(`Nom : ${user.name}`)
+      .text(` Nom : ${user.name}`)
       .text(`Email : ${user.email}`)
 
     doc.moveDown()
 
-    // 🔐 TOKEN
-    // doc
-    //   .fontSize(10)
-    //   .text(`Code Ticket : ${ticket.token}`, {
-    //     align: 'center'
-    //   })
+    //TICKET ID
+    doc
+      .text(`Ticket ID : ${ticket.id}`)
 
-    // doc.moveDown(2)
+    doc.moveDown(2)
 
-    // 🧠 QR CODE
+    //LIGNE SEPARATION
+    doc
+      .moveTo(40, doc.y)
+      .lineTo(doc.page.width - 40, doc.y)
+      .dash(5, { space: 5 })
+      .stroke()
+
+    doc.undash()
+
+    doc.moveDown(2)
+
+    //QR CODE
     const base64Data = qrCode.replace(/^data:image\/png;base64,/, '')
     const qrBuffer = Buffer.from(base64Data, 'base64')
 
     doc.image(qrBuffer, {
-      fit: [200, 200],
+      fit: [150, 150],
       align: 'center'
     })
 
     doc.moveDown()
 
+    //MESSAGE
     doc
-      .fontSize(12)
-      .text('Présentez ce QR code à l’entrée', {
+      .fontSize(10)
+      .text('Présentez ce ticket à l’entrée', {
+        align: 'center'
+      })
+
+    doc.moveDown()
+
+    doc
+      .fillColor('red')
+      .text('Valable en fonction de la durée de l\'événement', {
         align: 'center'
       })
 

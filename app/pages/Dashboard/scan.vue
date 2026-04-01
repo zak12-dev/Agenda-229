@@ -107,12 +107,7 @@ const startScan = async () => {
       },
       (_: any) => {} // erreurs continues ignorées
     )
-<<<<<<< HEAD
 
-    // Juste attendre que le DOM soit mis à jour
-    // (pas d'await du render, car ce n'est pas une Promise)
-    await new Promise(resolve => setTimeout(resolve, 100))
-    scanning.value = true
 
 
   } catch (err: any) {

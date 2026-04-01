@@ -17,7 +17,7 @@ export default defineNuxtConfig({
       title: 'WeLoveEvent',
       htmlAttrs: { lang: 'fr' },
       link: [
-        {rel: 'icon', type:'image/png', href: '/favicon.png'},
+        { rel: 'icon', type: 'image/png', href: '/favicon.png' },
         {
           rel: 'stylesheet',
           href: 'https://fonts.googleapis.com/css2?family=Gravitas+One&display=swap',
@@ -32,25 +32,22 @@ export default defineNuxtConfig({
         },
 
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
-
       ],
-       script: [
+      script: [
         {
-          src: "https://challenges.cloudflare.com/turnstile/v0/api.js",
+          src: 'https://challenges.cloudflare.com/turnstile/v0/api.js',
           async: true,
-          defer: true
-        }
-      ]
+          defer: true,
+        },
+      ],
     },
   },
-
+  
   runtimeConfig: {
     turnstileSecret: process.env.TURNSTILE_SECRET_KEY,
 
     public: {
       apiBase: 'http://localhost:3000/',
-
-
 
       turnstileSiteKey: process.env.TURNSTILE_SITE_KEY,
     },
@@ -62,6 +59,13 @@ export default defineNuxtConfig({
         driver: 'fs',
         base: './public/uploads',
       },
+    },
+     prerender: {
+      crawlLinks: false,
+    },
+    headers: {
+      'Permissions-Policy': 'camera=(self), microphone=(self)',
+      'Feature-Policy': "camera 'self'; microphone 'self'",
     },
   },
 })

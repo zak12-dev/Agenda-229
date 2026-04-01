@@ -147,11 +147,8 @@ const startScan = async () => {
     scanning.value = true
 
   } catch (err: any) {
-<<<<<<< HEAD
 
-=======
     console.error('Erreur startScan:', err)
->>>>>>> origin/dev-zak
     showCamera.value = false
     scanning.value = false
 

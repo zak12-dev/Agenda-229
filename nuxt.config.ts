@@ -52,6 +52,13 @@ export default defineNuxtConfig({
       turnstileSiteKey: process.env.TURNSTILE_SITE_KEY,
     },
   },
+  routeRules: {
+     '/**': {
+    headers: {
+      'Content-Security-Policy': "script-src 'self' 'unsafe-inline' https://unpkg.com https://challenges.cloudflare.com",
+    }
+  }
+},
 
   nitro: {
     storage: {
@@ -63,9 +70,6 @@ export default defineNuxtConfig({
      prerender: {
       crawlLinks: false,
     },
-    headers: {
-      'Permissions-Policy': 'camera=(self), microphone=(self)',
-      'Feature-Policy': "camera 'self'; microphone 'self'",
-    },
+   
   },
 })

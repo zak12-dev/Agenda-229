@@ -2,12 +2,11 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useAuth } from '../../../composables/useAuth'
 
-definePageMeta({ layout: 'dashboard' })
+definePageMeta({ layout: 'dashboard', ssr: false })
 
 const { session } = useAuth()
 const toast = useToast()
 
-// ── State ──
 const scanning    = ref(false)
 const scanResult  = ref<any>(null)
 const scanError   = ref('')
@@ -19,80 +18,106 @@ const scanHistory = ref<any[]>([])
 
 let scanner: any = null
 
-// ── Démarrer le scan ──
-// Html5Qrcode (API bas niveau) appelle getUserMedia directement
-// → déclenche immédiatement la popup permission caméra du navigateur
+// ── Charger html5-qrcode via CDN (plus fiable qu'un import dynamique en prod) ──
+const loadHtml5QrCode = (): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') { reject('SSR'); return }
+    if ((window as any).Html5Qrcode) { resolve((window as any).Html5Qrcode); return }
+
+    const script = document.createElement('script')
+    script.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'
+    script.onload = () => {
+      if ((window as any).Html5Qrcode) {
+        resolve((window as any).Html5Qrcode)
+      } else {
+        reject(new Error('Html5Qrcode non disponible après chargement'))
+      }
+    }
+    script.onerror = () => reject(new Error('Impossible de charger html5-qrcode'))
+    document.head.appendChild(script)
+  })
+}
+
 const startScan = async () => {
   if (typeof window === 'undefined') return
-
   scanError.value = ''
   scanResult.value = null
 
+  // Nettoyer
+  if (scanner) {
+    try { await scanner.stop() } catch {}
+    try { scanner.clear() } catch {}
+    scanner = null
+  }
+
+  let Html5Qrcode: any
   try {
-    const { Html5Qrcode } = await import('html5-qrcode')
+    Html5Qrcode = await loadHtml5QrCode()
+  } catch (err: any) {
+    scanError.value = `Impossible de charger le scanner : ${err?.message || err}`
+    return
+  }
 
-    // Nettoyer ancien scanner
-    if (scanner) {
-      try { await scanner.stop(); await scanner.clear() } catch {}
-      scanner = null
-    }
+  // Afficher le conteneur vidéo avant d'init
+  showCamera.value = true
+  scanning.value = true
+  await nextTick()
 
-    scanner = new Html5Qrcode('qr-reader')
+  try {
+    scanner = new Html5Qrcode('qr-reader', { verbose: false })
 
-    // getCameras déclenche la popup permission caméra immédiatement
-    const cameras = await Html5Qrcode.getCameras()
-    if (!cameras || cameras.length === 0) {
-      scanError.value = 'Aucune caméra détectée sur cet appareil.'
+    // getCameras déclenche la popup permission caméra
+    let cameras: any[] = []
+    try {
+      cameras = await Html5Qrcode.getCameras()
+    } catch (err: any) {
+      showCamera.value = false
+      scanning.value = false
+      const msg = String(err?.message || err)
+      if (msg.includes('NotAllowed') || msg.includes('Permission') || msg.includes('denied')) {
+        scanError.value = "Permission caméra refusée. Autorisez la caméra pour ce site dans les paramètres de votre navigateur, puis rechargez la page."
+      } else {
+        scanError.value = `Impossible d'accéder à la caméra : ${msg}`
+      }
       return
     }
 
-    // Préférer la caméra arrière sur mobile
-    const backCamera = cameras.find((c: any) =>
-      c.label.toLowerCase().includes('back') ||
-      c.label.toLowerCase().includes('arrière') ||
-      c.label.toLowerCase().includes('environment') ||
-      c.label.toLowerCase().includes('rear')
+    if (!cameras.length) {
+      showCamera.value = false
+      scanning.value = false
+      scanError.value = 'Aucune caméra détectée.'
+      return
+    }
+
+    // Préférer caméra arrière sur mobile
+    const back = cameras.find((c: any) =>
+      /back|rear|arrière|environment/i.test(c.label)
     )
-    const cameraId = backCamera?.id || cameras[cameras.length - 1].id
+    const cameraId = back?.id || cameras[cameras.length - 1].id
 
     await scanner.start(
       cameraId,
-      {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0,
-      },
-      // Succès — QR détecté
+      { fps: 10, qrbox: { width: 250, height: 250 } },
       async (decodedText: string) => {
         try { await scanner.stop() } catch {}
         scanning.value = false
         showCamera.value = false
         verifyToken(decodedText)
       },
-      // Erreur continue (ignorée)
-      (_: any) => {}
+      (_: any) => {} // erreurs continues ignorées
     )
-
-    showCamera.value = true
-    scanning.value = true
-
   } catch (err: any) {
     showCamera.value = false
     scanning.value = false
-    const msg = err?.message || String(err)
-    if (
-      err?.name === 'NotAllowedError' ||
-      msg.includes('Permission') ||
-      msg.includes('NotAllowed') ||
-      msg.includes('denied')
-    ) {
-      scanError.value = "Accès à la caméra refusé. Allez dans les paramètres de votre navigateur, autorisez la caméra pour ce site, puis rechargez la page."
-    } else if (err?.name === 'NotFoundError' || msg.includes('NotFound')) {
-      scanError.value = 'Aucune caméra trouvée sur cet appareil.'
-    } else if (err?.name === 'NotReadableError') {
-      scanError.value = 'La caméra est déjà utilisée par une autre application.'
+    const msg = String(err?.message || err)
+    if (/NotAllowed|Permission|denied/i.test(msg)) {
+      scanError.value = "Permission caméra refusée. Autorisez la caméra dans les paramètres de votre navigateur puis rechargez."
+    } else if (/NotFound|DevicesNotFound/i.test(msg)) {
+      scanError.value = 'Aucune caméra trouvée.'
+    } else if (/NotReadable|TrackStart/i.test(msg)) {
+      scanError.value = 'La caméra est déjà utilisée par une autre app.'
     } else {
-      scanError.value = `Erreur caméra : ${msg}`
+      scanError.value = `Erreur : ${msg}`
     }
   }
 }
@@ -100,14 +125,13 @@ const startScan = async () => {
 const stopScan = async () => {
   if (scanner) {
     try { await scanner.stop() } catch {}
-    try { await scanner.clear() } catch {}
+    try { scanner.clear() } catch {}
     scanner = null
   }
   scanning.value = false
   showCamera.value = false
 }
 
-// ── Vérification token ──
 const verifyToken = async (token: string) => {
   if (!token.trim()) return
   loading.value = true
@@ -121,7 +145,6 @@ const verifyToken = async (token: string) => {
     scanResult.value = res
     scanHistory.value.unshift({ ...res, token: token.trim(), time: new Date() })
     if (scanHistory.value.length > 20) scanHistory.value.pop()
-
     if (res.success) {
       toast.add({ title: 'Ticket valide ✅', color: 'green', icon: 'i-heroicons-check-circle' })
     } else {
@@ -153,7 +176,7 @@ const formatTime = (d: Date) =>
 onUnmounted(async () => {
   if (scanner) {
     try { await scanner.stop() } catch {}
-    try { await scanner.clear() } catch {}
+    try { scanner.clear() } catch {}
     scanner = null
   }
 })

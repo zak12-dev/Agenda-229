@@ -51,7 +51,8 @@ export const buyTicket = async (user: User, eventId: string, quantity: number) =
         .slice(0, 4)                // prendre les 4 premiers caractères
 
       // Construire le codeVerify final : codePrefix + code aléatoire + titre tronqué
-      codeVerify = `${event.codePrefix}-${generatedCode}-${eventCodePart}`
+      const shortPrefix = event.codePrefix.slice(0, 3)
+      codeVerify = `${shortPrefix}-${generatedCode}-${eventCodePart}`
 
       // Vérifier unicité dans la base
       const found = await prisma.ticket.findUnique({

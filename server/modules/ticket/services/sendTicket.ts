@@ -1,11 +1,12 @@
 import nodemailer from 'nodemailer'
-import { User } from '@prisma/client'
+import { User, Ticket } from '@prisma/client'
 
 export const sendTicket = async (
   email: string,
   pdf: Buffer,
   qr: Buffer,
-  user: User
+  user: User,
+  ticket: Ticket,
 ) => {
 
   const safeName = user.name.replace(/[^a-zA-Z0-9]/g, '')
@@ -38,6 +39,7 @@ export const sendTicket = async (
         <div>
           <p><strong>Nom :</strong> ${user.name}</p>
           <p><strong>Email :</strong> ${user.email}</p>
+          <p><strong>Code de vérification :</strong> ${ticket.codeVerify}</p>
         </div>
         
         <!-- QR CODE -->

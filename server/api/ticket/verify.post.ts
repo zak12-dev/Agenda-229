@@ -18,22 +18,29 @@ export default defineEventHandler(async (event) => {
     // 2. RÉCUPÉRER TOKEN (GET ou POST)
     const query = getQuery(event)
     let token = query.token as string
+    let codeVerify = query.codeVerify as string
 
-    if (!token) {
+    if (!token && !codeVerify) {
       const body = await readBody(event)
       token = body?.token
+      codeVerify = body?.codeVerify
     }
 
-    if (!token) {
+    if (!token && !codeVerify) {
       return {
         success: false,
-        message: 'Token manquant'
+        message: 'Token ou code requis'
       }
     }
 
     // 3. RÉCUPÉRER LE TICKET
-    const ticket = await prisma.ticket.findUnique({
-      where: { token },
+    const ticket = await prisma.ticket.findFirst({
+      where: {
+        OR: [
+          { token: token || undefined },
+          { codeVerify: codeVerify || undefined }
+        ]
+      },
       include: {
         event: true,
         user: true

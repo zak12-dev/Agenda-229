@@ -21,5 +21,6 @@ export interface Event {
   status: string
   eventDate: string
   privilege: boolean
+  codePrefix: string
 }
 export type { Event }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuth } from '../../../composables/useAuth'
 
 definePageMeta({ layout: 'dashboard', ssr: false })
@@ -15,6 +15,29 @@ const manualToken = ref('')
 const showManual  = ref(false)
 const showCamera  = ref(false)
 const scanHistory = ref<any[]>([])
+
+// Saisie manuelle
+const events        = ref<any[]>([])
+const selectedEvent = ref<any>(null)
+const manualCode    = ref('')
+const eventsLoading = ref(false)
+
+const fetchEvents = async () => {
+  eventsLoading.value = true
+  try {
+    const res = await $fetch<any[]>('/api/events')
+    events.value = res || []
+  } catch { events.value = [] }
+  finally { eventsLoading.value = false }
+}
+
+const fullCode = computed(() => {
+  if (!selectedEvent.value || !manualCode.value.trim()) return ''
+  const prefix = (selectedEvent.value.codePrefix || '').slice(0, 3).toUpperCase()
+  const evtPart = (selectedEvent.value.title || '')
+    .replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 4)
+  return `${prefix}-${manualCode.value.trim().toUpperCase()}-${evtPart}`
+})
 
 let scanner: any = null
 
@@ -161,8 +184,8 @@ const verifyToken = async (token: string) => {
 }
 
 const handleManual = () => {
-  if (!manualToken.value.trim()) return
-  verifyToken(manualToken.value)
+  if (!fullCode.value) return
+  verifyToken(fullCode.value)
 }
 
 const resetScan = () => {
@@ -184,7 +207,7 @@ onUnmounted(async () => {
 
 <template>
   <div class="bg-[#f5f3ef] min-h-screen font-outfit px-4 pt-6 pb-16 sm:px-6 sm:pb-10 overflow-y-auto">
-    <div class="max-w-7xl mx-auto space-y-5 mb-15">
+    <div class="max-w-5xl mx-auto space-y-5 mb-15">
 
       <!-- Header -->
       <div class="flex items-center justify-between">
@@ -272,24 +295,78 @@ onUnmounted(async () => {
         </div>
 
         <!-- Saisie manuelle -->
-        <div v-else class="p-5 space-y-3">
+        <div v-else class="p-5 space-y-4">
+
+          <!-- Étape 1 : Choisir l'événement -->
           <div class="field">
-            <label class="field-label">Token du ticket</label>
+            <label class="field-label">
+              <span class="flex items-center gap-1.5">
+                <span class="w-5 h-5 rounded-full bg-[#ea6c1e] text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">1</span>
+                Choisir l'événement
+              </span>
+            </label>
             <div class="relative">
-              <UIcon name="i-heroicons-key"
-                class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#c0b8ad] pointer-events-none" />
-              <input v-model="manualToken" type="text" placeholder="Collez le token ici…"
-                @keydown.enter="handleManual" class="field-input pl-10 font-mono" />
+              <UIcon name="i-heroicons-calendar-days"
+                class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#c0b8ad] pointer-events-none z-10" />
+              <select v-model="selectedEvent"
+                @focus="!events.length && fetchEvents()"
+                class="field-input pl-10 appearance-none">
+                <option :value="null" disabled>
+                  {{ eventsLoading ? 'Chargement...' : 'Sélectionnez un événement' }}
+                </option>
+                <option v-for="ev in events" :key="ev.id" :value="ev">{{ ev.title }}</option>
+              </select>
+            </div>
+            <!-- Aperçu format code -->
+            <div v-if="selectedEvent"
+              class="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#faf8f5] border border-[#ede8e0]">
+              <UIcon name="i-heroicons-ticket" class="w-3.5 h-3.5 text-[#ea6c1e] flex-shrink-0" />
+              <span class="text-[11px] text-[#8a8078]">Format attendu :</span>
+              <span class="text-[12px] font-bold text-[#1a1612] font-mono">
+                {{ (selectedEvent.codePrefix || '').slice(0, 3).toUpperCase() }}-<span class="text-[#ea6c1e]">XXXXXX</span>-{{ (selectedEvent.title || '').replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 4) }}
+              </span>
             </div>
           </div>
-          <button @click="handleManual" :disabled="!manualToken.trim() || loading"
+
+          <!-- Étape 2 : Saisir les 6 caractères -->
+          <div v-if="selectedEvent" class="field">
+            <label class="field-label">
+              <span class="flex items-center gap-1.5">
+                <span class="w-5 h-5 rounded-full bg-[#5b47e0] text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">2</span>
+                Code de vérification (6 caractères)
+              </span>
+            </label>
+            <input
+              v-model="manualCode"
+              type="text"
+              maxlength="6"
+              placeholder="A3K9BZ"
+              @input="manualCode = ($event.target as HTMLInputElement).value.toUpperCase()"
+              @keydown.enter="handleManual"
+              class="field-input font-mono tracking-[0.35em] text-center text-[20px] uppercase"
+            />
+            <p class="text-[11px] text-[#b0a898]">Les 6 caractères au milieu du code imprimé sur le ticket.</p>
+          </div>
+
+          <!-- Aperçu code complet -->
+          <div v-if="fullCode"
+            class="flex items-center justify-between px-4 py-3 rounded-xl bg-indigo-50 border border-indigo-100">
+            <span class="text-[11.5px] font-semibold text-[#5b47e0]">Code complet :</span>
+            <span class="text-[13px] font-bold text-[#1a1612] font-mono tracking-wider">{{ fullCode }}</span>
+          </div>
+
+          <button @click="handleManual" :disabled="!fullCode || loading"
             class="w-full flex items-center justify-center gap-2 py-3 rounded-xl
                    text-white text-[13.5px] font-bold transition-all
                    shadow-[0_4px_18px_rgba(234,108,30,0.28)]
                    hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
             style="background: linear-gradient(135deg, #ea6c1e, #5b47e0)">
-            <UIcon name="i-heroicons-magnifying-glass" class="w-4 h-4" />
-            Vérifier le ticket
+            <svg v-if="loading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+            <UIcon v-else name="i-heroicons-magnifying-glass" class="w-4 h-4" />
+            {{ loading ? 'Vérification...' : 'Vérifier le ticket' }}
           </button>
         </div>
       </div>

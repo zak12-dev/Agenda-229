@@ -74,6 +74,7 @@ export default defineEventHandler(async (event) => {
       status,
       entryMode,
       maxUsage,
+      codePrefix
     } = data;
 
     const validStatus = ["DRAFT", "PUBLISHED"];
@@ -83,6 +84,27 @@ export default defineEventHandler(async (event) => {
     const safeStatus = validStatus.includes(status) ? status : "DRAFT";
     const safePriceType = validPriceType.includes(priceType) ? priceType : "FREE";
     const safeEntryMode = validEntryMode.includes(entryMode) ? entryMode : "PUBLIC";
+
+    // === Gestion du codePrefix ===
+    let safeCodePrefix: string | undefined;
+    if (codePrefix) {
+      // Nettoyage : majuscules et suppression des caractères non alphanumériques
+      safeCodePrefix = codePrefix.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+      // Vérification d'unicité uniquement si le préfixe a changé
+      if (safeCodePrefix !== existingEvent.codePrefix) {
+        const prefixExists = await prisma.event.findUnique({
+          where: { codePrefix: safeCodePrefix },
+        });
+        if (prefixExists) {
+          throw createError({
+            statusCode: 400,
+            statusMessage: "Ce préfixe est déjà utilisé",
+          });
+        }
+      }
+    }
+    // === Fin codePrefix ===
 
     let safeMaxUsage: number | undefined;
     if (maxUsage !== undefined) {
@@ -109,16 +131,16 @@ export default defineEventHandler(async (event) => {
     if (imageFiles.length > 0) {
       for (const imageFile of imageFiles) {
         const timestamp = Date.now()
-      const safeFilename = (imageFile.filename || 'image').replace(/\s+/g, '_')
-      const uniqueSuffix = `${timestamp}-${Math.round(Math.random() * 1E9)}`
-      const uploadResult = await cloudinary.uploader.upload(
-        `data:${imageFile.type};base64,${imageFile.data.toString('base64')}`,
-        {
-          folder: 'events',
-          public_id: `event-${uniqueSuffix}-${safeFilename}`,
-        }
-      )
-    imageUrls.push(uploadResult.secure_url)
+        const safeFilename = (imageFile.filename || 'image').replace(/\s+/g, '_')
+        const uniqueSuffix = `${timestamp}-${Math.round(Math.random() * 1E9)}`
+        const uploadResult = await cloudinary.uploader.upload(
+          `data:${imageFile.type};base64,${imageFile.data.toString('base64')}`,
+          {
+            folder: 'events',
+            public_id: `event-${uniqueSuffix}-${safeFilename}`,
+          }
+        )
+        imageUrls.push(uploadResult.secure_url)
       }
       // imagePath = imageUrls[0];
     }
@@ -129,6 +151,7 @@ export default defineEventHandler(async (event) => {
         title,
         description,
         details: details !== undefined ? details : undefined,
+        codePrefix: safeCodePrefix || existingEvent.codePrefix,
         location,
         eventDate: eventDate ? new Date(eventDate) : undefined,
         startDate: startDate ?? undefined,

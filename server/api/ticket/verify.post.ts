@@ -3,26 +3,32 @@ import { prisma } from '../../utils/prisma'
 export default defineEventHandler(async (event) => {
   try {
     const user = event.context.user
-
     if (!user) {
       return { success: false, message: 'Non authentifié' }
     }
-
     const userId = user.id
 
     const query = getQuery(event)
-    let token = query.token as string
-    if (!token) {
+    let token = query.token as string | undefined
+    let codeVerify = query.codeVerify as string | undefined
+
+    if (!token && !codeVerify) {
       const body = await readBody(event)
-      token = body?.token
+      token = body?.token || undefined
+      codeVerify = body?.codeVerify || undefined
     }
 
-    if (!token) {
-      return { success: false, message: 'Token manquant' }
+    if (!token && !codeVerify) {
+      return { success: false, message: 'Token ou code requis' }
     }
 
-    const ticket = await prisma.ticket.findUnique({
-      where: { token },
+    // ── Construire le OR dynamiquement pour éviter { token: undefined } ──
+    const orConditions: any[] = []
+    if (token) orConditions.push({ token })
+    if (codeVerify) orConditions.push({ codeVerify })
+
+    const ticket = await prisma.ticket.findFirst({
+      where: { OR: orConditions },
       include: { event: true, user: true }
     })
 
@@ -51,8 +57,9 @@ export default defineEventHandler(async (event) => {
       return { success: false, message: 'Ticket expiré' }
     }
 
-    // Limite d'utilisation
-    if (ticket.usedCount >= ticket.event.maxUsage) {
+    // Limite d'utilisation — maxUsage peut être null (événement gratuit sans limite)
+    const maxUsage = ticket.event.maxUsage ?? null
+    if (maxUsage !== null && ticket.usedCount >= maxUsage) {
       await prisma.scanLog.create({
         data: { ticketId: ticket.id, scannedBy: userId, scanResult: 'REFUSED' }
       })
@@ -74,7 +81,6 @@ export default defineEventHandler(async (event) => {
     })
 
     const usedCount = updatedTicket.usedCount
-    const maxUsage = ticket.event.maxUsage
 
     return {
       success: true,
@@ -88,12 +94,15 @@ export default defineEventHandler(async (event) => {
         },
         usedCount,
         maxUsage,
-        usageRemaining: maxUsage - usedCount,
+        usageRemaining: maxUsage !== null ? maxUsage - usedCount : null,
       }
     }
 
-  } catch (error) {
-    console.error(error)
-    return { success: false, message: 'Erreur serveur' }
+  } catch (error: any) {
+    console.error('VERIFY ERROR =>', error)
+    return {
+      success: false,
+      message: `Erreur serveur : ${error?.message || 'inconnue'}`
+    }
   }
 })

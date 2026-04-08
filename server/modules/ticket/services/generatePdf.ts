@@ -68,6 +68,7 @@ export const generatePdf = async ({
     //TICKET ID
     doc
       .text(`Ticket ID : ${ticket.id}`)
+      .text(`Code de vérification : ${ticket.codeVerify}`)
 
     doc.moveDown(2)
 

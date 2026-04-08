@@ -146,6 +146,7 @@ model Event {
   villeId     String
   categoryId  String
   title       String
+  codePrefix  String   @unique
   description String   @db.Text
 
   details     String  @db.Text
@@ -255,6 +256,7 @@ model Ticket {
   id         String   @id @default(cuid())
   token      String   @unique @db.Text
   status     TicketStatus @default(ACTIVE)
+  codeVerify String   @unique @db.Text
   usedCount  Int      @default(0)
   expiresAt  DateTime
 

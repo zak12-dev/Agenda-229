@@ -155,18 +155,43 @@ const stopScan = async () => {
   showCamera.value = false
 }
 
-const verifyToken = async (token: string) => {
+
+
+const handleManual = () => {
+  if (!fullCode.value) return
+  verifyByCode(fullCode.value)
+}
+
+const verifyMode = ref<'qr' | 'code'>('qr')
+
+// Vérification par token QR
+const verifyByToken = async (token: string) => {
   if (!token.trim()) return
+  verifyMode.value = 'qr'
+  await doVerify({ token: token.trim() }, token.slice(0, 8) + '…')
+}
+
+// Vérification par code manuel — envoie codeVerify et non token
+const verifyByCode = async (codeVerify: string) => {
+  if (!codeVerify.trim()) return
+  verifyMode.value = 'code'
+  await doVerify({ codeVerify: codeVerify.trim() }, codeVerify)
+}
+
+// Alias appelé par le callback QR scanner
+const verifyToken = (token: string) => verifyByToken(token)
+
+const doVerify = async (body: Record<string, any>, ref: string) => {
   loading.value = true
   scanResult.value = null
   scanError.value = ''
   try {
     const res: any = await $fetch('/api/ticket/verify', {
       method: 'POST',
-      body: { token: token.trim(), userId: session.value?.user?.id },
+      body,
     })
     scanResult.value = res
-    scanHistory.value.unshift({ ...res, token: token.trim(), time: new Date() })
+    scanHistory.value.unshift({ ...res, ref, time: new Date() })
     if (scanHistory.value.length > 20) scanHistory.value.pop()
     if (res.success) {
       toast.add({ title: 'Ticket valide ✅', color: 'green', icon: 'i-heroicons-check-circle' })
@@ -180,12 +205,8 @@ const verifyToken = async (token: string) => {
   } finally {
     loading.value = false
     manualToken.value = ''
+    manualCode.value = ''
   }
-}
-
-const handleManual = () => {
-  if (!fullCode.value) return
-  verifyToken(fullCode.value)
 }
 
 const resetScan = () => {
@@ -207,7 +228,7 @@ onUnmounted(async () => {
 
 <template>
   <div class="bg-[#f5f3ef] min-h-screen font-outfit px-4 pt-6 pb-16 sm:px-6 sm:pb-10 overflow-y-auto">
-    <div class="max-w-5xl mx-auto space-y-5 mb-15">
+    <div class="max-w-7xl mx-auto space-y-5 mb-15">
 
       <!-- Header -->
       <div class="flex items-center justify-between">
@@ -306,8 +327,7 @@ onUnmounted(async () => {
               </span>
             </label>
             <div class="relative">
-              <UIcon name="i-heroicons-calendar-days"
-                class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#c0b8ad] pointer-events-none z-10" />
+              
               <select v-model="selectedEvent"
                 @focus="!events.length && fetchEvents()"
                 class="field-input pl-10 appearance-none">
@@ -320,7 +340,6 @@ onUnmounted(async () => {
             <!-- Aperçu format code -->
             <div v-if="selectedEvent"
               class="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#faf8f5] border border-[#ede8e0]">
-              <UIcon name="i-heroicons-ticket" class="w-3.5 h-3.5 text-[#ea6c1e] flex-shrink-0" />
               <span class="text-[11px] text-[#8a8078]">Format attendu :</span>
               <span class="text-[12px] font-bold text-[#1a1612] font-mono">
                 {{ (selectedEvent.codePrefix || '').slice(0, 3).toUpperCase() }}-<span class="text-[#ea6c1e]">XXXXXX</span>-{{ (selectedEvent.title || '').replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 4) }}
@@ -390,8 +409,8 @@ onUnmounted(async () => {
                 <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-emerald-600" />
               </div>
               <div>
-                <p class="text-[14px] font-bold text-emerald-700">Ticket valide ✅</p>
-                <p class="text-[12px] text-emerald-600/70">Accès autorisé</p>
+                <p class="text-[14px] font-bold text-emerald-700">{{ verifyMode === 'code' ? 'Code valide ' : 'QR Code valide' }}</p>
+                <p class="text-[12px] text-emerald-600/70">{{ verifyMode === 'code' ? 'Code de vérification accepté accès autorisé' : 'QR Code authentifié — accès autorisé' }}</p>
               </div>
             </div>
             <div v-if="scanResult.data" class="p-5 space-y-3">
@@ -420,7 +439,7 @@ onUnmounted(async () => {
                 </div>
               </div>
               <!-- Utilisations restantes -->
-              <div class="flex items-center justify-between p-3.5 rounded-xl bg-emerald-50 border border-emerald-100">
+              <div class="flex items-center justify-between p-3.5 rounded-xl bg-[#faf8f5] border border-[#ede8e0]">
                 <div class="flex items-center gap-2.5">
                   <div class="w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-200
                               flex items-center justify-center flex-shrink-0">
@@ -433,15 +452,7 @@ onUnmounted(async () => {
                     </p>
                   </div>
                 </div>
-                <div class="flex flex-col items-end gap-1.5">
-                  <span class="text-[12px] font-bold text-emerald-700">
-                    {{ scanResult.data.usageRemaining }} restant{{ scanResult.data.usageRemaining > 1 ? 's' : '' }}
-                  </span>
-                  <div class="w-24 h-2 bg-emerald-100 rounded-full overflow-hidden">
-                    <div class="h-full rounded-full bg-emerald-500 transition-all"
-                      :style="`width: ${(scanResult.data.usedCount / scanResult.data.maxUsage) * 100}%`" />
-                  </div>
-                </div>
+                
               </div>
             </div>
           </template>
@@ -454,7 +465,7 @@ onUnmounted(async () => {
                 <UIcon name="i-heroicons-clock" class="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <p class="text-[14px] font-bold text-amber-700">Ticket expiré ⏰</p>
+                <p class="text-[14px] font-bold text-amber-700">Ticket expiré</p>
                 <p class="text-[12px] text-amber-600/70">Ce ticket n'est plus valide</p>
               </div>
             </div>
@@ -462,7 +473,7 @@ onUnmounted(async () => {
               <div class="flex items-start gap-3 p-3.5 rounded-xl bg-amber-50 border border-amber-100">
                 <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                 <p class="text-[12.5px] text-amber-700 leading-relaxed">
-                  La durée de validité de ce ticket est dépassée. Contactez l'organisateur si vous pensez qu'il s'agit d'une erreur.
+                  {{ verifyMode === 'code' ? 'Les codes sont valables 24h après achat. Vérifiez la date sur le ticket.' : 'La durée de validité est dépassée. Contactez l\'organisateur si vous pensez qu\'il s\'agit d\'une erreur.' }}
                 </p>
               </div>
             </div>
@@ -476,7 +487,7 @@ onUnmounted(async () => {
                 <UIcon name="i-heroicons-x-circle" class="w-5 h-5 text-red-500" />
               </div>
               <div>
-                <p class="text-[14px] font-bold text-red-600">QR Code invalide ❌</p>
+                <p class="text-[14px] font-bold text-red-600">QR Code invalide</p>
                 <p class="text-[12px] text-red-500/70">Ce QR code ne correspond à aucun ticket</p>
               </div>
             </div>
@@ -484,7 +495,7 @@ onUnmounted(async () => {
               <div class="flex items-start gap-3 p-3.5 rounded-xl bg-red-50 border border-red-100">
                 <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
                 <p class="text-[12.5px] text-red-600 leading-relaxed">
-                  Assurez-vous de scanner le bon QR code depuis le PDF du ticket.
+                  {{ verifyMode === 'code' ? 'Vérifiez les 6 caractères saisis — ils doivent correspondre exactement au code imprimé sur le ticket.' : 'Assurez-vous de scanner le bon QR code depuis le PDF du ticket.' }}
                 </p>
               </div>
             </div>
@@ -528,12 +539,7 @@ onUnmounted(async () => {
         </div>
         <div class="divide-y divide-[#ede8e0]">
           <div v-for="(h, i) in scanHistory" :key="i" class="flex items-center gap-3 px-5 py-3">
-            <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-              :class="h.success ? 'bg-emerald-50 border border-emerald-100' : 'bg-red-50 border border-red-100'">
-              <UIcon :name="h.success ? 'i-heroicons-check' : 'i-heroicons-x-mark'"
-                class="w-3.5 h-3.5"
-                :class="h.success ? 'text-emerald-500' : 'text-red-400'" />
-            </div>
+           
             <div class="flex-1 min-w-0">
               <p class="text-[12.5px] font-semibold text-[#1a1612] truncate">
                 {{ h.success ? h.data?.user?.name : h.message }}
@@ -544,7 +550,7 @@ onUnmounted(async () => {
               :class="h.success
                 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
                 : 'bg-red-50 text-red-500 border border-red-100'">
-              {{ h.success ? 'VALIDE' : 'REFUSÉ' }}
+              {{ h.success ? 'Valide' : 'Refusé' }}
             </span>
           </div>
         </div>

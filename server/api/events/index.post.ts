@@ -14,6 +14,7 @@ export default defineEventHandler(async (event) => {
   }
 
   let title = ''
+  let codePrefix = '' 
   let description = ''
   let details = ''
   let location = ''
@@ -35,6 +36,7 @@ export default defineEventHandler(async (event) => {
     const value = field.data.toString()
 
     if (field.name === 'title') title = value
+    else if (field.name === 'codePrefix') codePrefix = value
     else if (field.name === 'description') description = value
     else if (field.name === 'details') details = value
     else if (field.name === 'location') location = value
@@ -55,29 +57,46 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // Nettoyage du préfixe
+  if (codePrefix) {
+    codePrefix = codePrefix
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '')
+  }
+
   if (status === 'PUBLISHED') {
-  // Vérifier les champs texte
-  if (!title || 
-    !description || 
-    !location || 
-    !details || 
-    !eventDate || 
-    !startDate || 
-    !villeId || 
-    !categoryId) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Tous les champs obligatoires doivent être remplis',
-    });
+    if (
+      !title ||
+      !description ||
+      !location ||
+      !details ||
+      !eventDate ||
+      !startDate ||
+      !villeId ||
+      !categoryId ||
+      !codePrefix
+    ) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Tous les champs obligatoires doivent être remplis',
+      })
+    }
+
+    // Validation longueur prefix
+    if (codePrefix.length < 3) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Le préfixe doit contenir au moins 3 caractères',
+      })
+    }
+
+    if (!maxUsage || maxUsage < 1) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'maxUsage doit être un nombre entier >= 1',
+      })
+    }
   }
-  // Vérifier maxUsage
-  if (!maxUsage || maxUsage < 1) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'maxUsage doit être un nombre entier >= 1',
-    });
-  }
-}
 
   if (imageFiles.length === 0) {
     throw createError({
@@ -92,6 +111,7 @@ export default defineEventHandler(async (event) => {
       statusMessage: "Le nombre d'images maximum est de 3",
     })
   }
+
   let parsedPrice: number | null = null
 
   if (price && price.trim() !== '') {
@@ -106,22 +126,34 @@ export default defineEventHandler(async (event) => {
       })
     }
   }
-  // Sécurisation status
+
   if (!['DRAFT', 'PUBLISHED'].includes(status)) {
     status = 'DRAFT'
   }
 
-  // Sécurisation entryMode
   if (!['PUBLIC', 'PRIVATE'].includes(entryMode)) {
     entryMode = 'PUBLIC'
   }
 
-  // Sécurisation priceType
   if (!['FREE', 'PAID'].includes(priceType)) {
     priceType = 'FREE'
   }
+
   try {
-    // Sauvegarde des images
+    // Vérification unicité prefix
+    if (codePrefix) {
+      const existingPrefix = await prisma.event.findUnique({
+        where: { codePrefix },
+      })
+
+      if (existingPrefix) {
+        throw createError({
+          statusCode: 400,
+          statusMessage: 'Ce préfixe est déjà utilisé',
+        })
+      }
+    }
+
     const imagesUrls: string[] = []
 
     for (const imageFile of imageFiles) {
@@ -146,6 +178,7 @@ export default defineEventHandler(async (event) => {
     const newEvent = await prisma.event.create({
       data: {
         title,
+        codePrefix,
         description,
         details,
         maxUsage: maxUsage ?? undefined,

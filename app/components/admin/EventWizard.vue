@@ -30,6 +30,7 @@ interface EventForm {
   categoryId: string; priceType: 'FREE' | 'PAID'; price: string
   images: File[]
   maxUsage?: number
+   codePrefix?: string
 }
 
 // ─── State ───
@@ -53,6 +54,7 @@ const form = reactive<EventForm>({
   categoryId: '', priceType: 'FREE', price: '',
   images: [],
   maxUsage: undefined,
+   codePrefix: undefined
 })
 
 // ─── Load data on open ───
@@ -167,6 +169,7 @@ const submit = async (status: 'DRAFT' | 'PUBLISHED') => {
   fd.append('status',      status)
   if (form.priceType === 'PAID') fd.append('price', form.price)
   if (form.maxUsage !== undefined) fd.append('maxUsage', String(form.maxUsage))
+  if (form.codePrefix) fd.append('codePrefix', form.codePrefix)
 
   form.images.forEach(f => fd.append('images', f))
   try {
@@ -784,6 +787,11 @@ const selectedCategoryName = computed(() => categories.value.find(c => c.id === 
                   <div class="relative">
                     <input v-model="form.price" type="number" min="0" step="500"
                       placeholder="" class="field-input pl-10" />
+                  </div>
+                   <label class="field-label">Préfixe du code ticket <span class="req">*</span></label>
+                  <div class="relative">
+     <input v-model="form.codePrefix" type="text" 
+                      placeholder=" " class="field-input pl-10" />
                   </div>
                   <label class="field-label">Combien de fois le ticket peut être utilisé<span class="req">*</span></label>
                   <div class="relative">

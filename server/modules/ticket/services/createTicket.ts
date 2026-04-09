@@ -4,6 +4,7 @@ import { sendTicket } from './sendTicket'
 import { prisma } from '../../../utils/prisma'
 import { nanoid } from 'nanoid'
 import { User } from '@prisma/client'
+import { createError } from 'h3'
 
 export const buyTicket = async (user: User, eventId: string, quantity: number) => {
 

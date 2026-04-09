@@ -213,14 +213,7 @@ const doVerify = async (body: Record<string, any>, ref: string) => {
   }
 }
 
-<<<<<<< HEAD
-=======
-const handleManual = () => {
-  if (!fullCode.value) return
-  verifyToken(fullCode.value)
-}
 
->>>>>>> 20daf1d7b77dbc36a96b3b20b28e2e63c06bf503
 const resetScan = () => {
   scanResult.value = null
   scanError.value = ''
@@ -339,12 +332,7 @@ onUnmounted(async () => {
               </span>
             </label>
             <div class="relative">
-<<<<<<< HEAD
-              
-=======
-              <UIcon name="i-heroicons-calendar-days"
-                class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#c0b8ad] pointer-events-none z-10" />
->>>>>>> 20daf1d7b77dbc36a96b3b20b28e2e63c06bf503
+
               <select v-model="selectedEvent"
                 @focus="!events.length && fetchEvents()"
                 class="field-input pl-10 appearance-none">
@@ -357,10 +345,7 @@ onUnmounted(async () => {
             <!-- Aperçu format code -->
             <div v-if="selectedEvent"
               class="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#faf8f5] border border-[#ede8e0]">
-<<<<<<< HEAD
-=======
-              <UIcon name="i-heroicons-ticket" class="w-3.5 h-3.5 text-[#ea6c1e] flex-shrink-0" />
->>>>>>> 20daf1d7b77dbc36a96b3b20b28e2e63c06bf503
+
               <span class="text-[11px] text-[#8a8078]">Format attendu :</span>
               <span class="text-[12px] font-bold text-[#1a1612] font-mono">
                 {{ (selectedEvent.codePrefix || '').slice(0, 3).toUpperCase() }}-<span class="text-[#ea6c1e]">XXXXXX</span>-{{ (selectedEvent.title || '').replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 4) }}
